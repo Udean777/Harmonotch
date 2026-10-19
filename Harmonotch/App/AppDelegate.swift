@@ -52,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         .store(in: &cancellables)
 
-        BatteryMonitor.shared.$currentCapacity
+        BatteryMonitor.shared.$cycleCount
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusBarButton()
@@ -77,14 +77,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         button.image?.isTemplate = true
 
-        // 2. Teks waktu/persentase: Hanya muncul jika Notch sedang di-hide
+        // 2. Teks waktu/siklus: Hanya muncul jika Notch sedang di-hide
         if isHidden {
             if isPlaying {
                 button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
             } else if selectedTab == .prayer, let next = PrayerManager.shared.nextPrayerItem {
                 button.title = " \(next.name) \(next.timeString)"
             } else if selectedTab == .battery {
-                button.title = " \(BatteryMonitor.shared.currentCapacity)%"
+                button.title = " \(BatteryMonitor.shared.cycleCount) Siklus"
             } else {
                 button.title = ""
             }
