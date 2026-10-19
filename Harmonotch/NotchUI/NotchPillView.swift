@@ -106,32 +106,76 @@ struct NotchPillView: View {
                             .foregroundColor(Color.amberCustom)
                     }
                 } else {
-                    // 4. Konten Media Player / Now Playing & Lirik Berjalan
-                    HStack(spacing: 5) {
-                        Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.6))
-                            .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
+                    // 4. Konten Media Player / Now Playing & Lirik Berjalan (Hingga 3 Baris)
+                    if mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 4) {
+                                Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.5))
+                                    .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
 
-                        if mediaManager.hasActiveTrack {
-                            Text(mediaManager.currentLyricText.isEmpty ? "\(mediaManager.trackTitle) • \(mediaManager.artistName)" : mediaManager.currentLyricText)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.white.opacity(0.9))
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                        } else {
-                            Text(L10n.Media.noTrackPlaying)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.white.opacity(0.5))
+                                Text("\(mediaManager.trackTitle) • \(mediaManager.artistName)")
+                                    .font(.system(size: 8.5, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.55))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
+
+                            Text(mediaManager.currentLyricText)
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .lineLimit(3)
+                                .lineSpacing(1.5)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .id(mediaManager.currentLyricText)
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .opacity.combined(with: .offset(y: 4)),
+                                        removal: .opacity.combined(with: .offset(y: -4))
+                                    )
+                                )
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .animation(.easeInOut(duration: 0.28), value: mediaManager.currentLyricText)
+                    } else {
+                        HStack(spacing: 5) {
+                            Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.6))
+                                .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
+
+                            if mediaManager.hasActiveTrack {
+                                Text("\(mediaManager.trackTitle) • \(mediaManager.artistName)")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            } else {
+                                Text(L10n.Media.noTrackPlaying)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.5))
+                            }
                         }
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .frame(width: geometry.physicalNotchWidth, height: 26)
+            .padding(.horizontal, 10)
+            .padding(.vertical, pillContentHeight > 26 ? 6 : 0)
+            .frame(width: geometry.physicalNotchWidth, height: pillContentHeight)
             .transition(.opacity)
         }
         .frame(width: geometry.physicalNotchWidth)
+        .animation(.spring(response: 0.32, dampingFraction: 0.8), value: pillContentHeight)
         .animation(.easeInOut(duration: 0.2), value: notchVM.selectedTab)
+    }
+
+    private var pillContentHeight: CGFloat {
+        if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+            return 64
+        } else {
+            return 26
+        }
     }
 }

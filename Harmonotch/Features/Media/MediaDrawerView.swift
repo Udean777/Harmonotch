@@ -228,7 +228,8 @@ struct MediaDrawerView: View {
                                                         RoundedRectangle(cornerRadius: 6)
                                                             .fill(isCurrent ? Color.amberCustom.opacity(0.22) : Color.clear)
                                                     )
-                                                    .animation(.easeInOut(duration: 0.2), value: isCurrent)
+                                                    .scaleEffect(isCurrent ? 1.02 : 1.0, anchor: .leading)
+                                                    .animation(.spring(response: 0.28, dampingFraction: 0.75), value: isCurrent)
                                             }
                                             .buttonStyle(.plain)
                                             .id(index)
@@ -239,10 +240,16 @@ struct MediaDrawerView: View {
                                 }
                                 .onChange(of: mediaManager.currentLyricIndex) { newIndex in
                                     if newIndex >= 0 {
-                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
                                             proxy.scrollTo(newIndex, anchor: .center)
                                         }
                                     }
+                                }
+                                .onAppear {
+                                    scrollToCurrentLyric(proxy: proxy)
+                                }
+                                .onChange(of: mediaManager.syncedLyrics.count) { _ in
+                                    scrollToCurrentLyric(proxy: proxy)
                                 }
                             }
                             .mask(
@@ -332,6 +339,16 @@ struct MediaDrawerView: View {
         .padding(.bottom, 14)
         .onAppear {
             mediaManager.pollCurrentMediaState()
+        }
+    }
+
+    private func scrollToCurrentLyric(proxy: ScrollViewProxy) {
+        let index = mediaManager.currentLyricIndex
+        guard index >= 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(index, anchor: .center)
+            }
         }
     }
 

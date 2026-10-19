@@ -33,12 +33,23 @@ struct NotchContainerView: View {
                 return notchHeight + contentHeight
             }
         } else {
-            return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
+            let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
+            if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+                return notchHeight + 64
+            } else {
+                return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
+            }
         }
     }
 
     private var targetRadius: CGFloat {
-        notchVM.isExpanded ? 20 : 12
+        if notchVM.isExpanded {
+            return 20
+        } else if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+            return 16
+        } else {
+            return 12
+        }
     }
 
     var body: some View {
@@ -144,5 +155,7 @@ struct NotchContainerView: View {
         )
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: notchVM.selectedTab)
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: adzanPlayer.isPlaying)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.currentLyricText.isEmpty)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.hasActiveTrack)
     }
 }
