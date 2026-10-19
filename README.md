@@ -1,74 +1,83 @@
 # 🏔️ Harmonotch
 
-> **Harmonotch** *(Harmony + Notch)* is a native macOS utility that transforms your MacBook's hardware notch into an intelligent, fluid, and mindful Dynamic Island.
+> **Harmonotch** *(Harmony + Notch)* is an intelligent macOS utility that transforms your MacBook's hardware camera cutout into an elegant, mindful Dynamic Island—blending Islamic prayer awareness seamlessly with native Apple design.
 
 [![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple&style=flat-square)](https://apple.com/macos)
 [![Swift 6](https://img.shields.io/badge/Swift-6.0%2B-F05138?logo=swift&logoColor=white&style=flat-square)](https://swift.org)
 [![SwiftUI & AppKit](https://img.shields.io/badge/UI-SwiftUI%20%2B%20AppKit-blue?style=flat-square)](https://developer.apple.com/swiftui/)
+[![Offline First](https://img.shields.io/badge/Offline--First-100%25-brightgreen?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
-[![Zero External Network Dep](https://img.shields.io/badge/Offline%20First-100%25-brightgreen?style=flat-square)](#)
 
 ---
 
-## ✨ Features (MVP)
+## 🌟 Features & Everyday Utility
 
-### 🕌 1. Islamic Prayer Schedule & Automatic Adzan Player
-* **High-Precision Astronomy:** Computes exact daily prayer times (Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya) using local astronomical algorithms with the standard Kemenag RI / Southeast Asia methodology (Fajr 20°, Isha 18° + 2-minute safety buffer).
-* **Automatic Full Adzan:** Plays a full, high-fidelity Adzan automatically when prayer time arrives, accompanied by an animated notch alert.
-* **Smart Region Resolver:** Works instantly with Indonesian city presets (Jakarta, Surabaya, Bandung, Medan, etc.) and optional single-shot battery-friendly GPS (`CoreLocation`).
-* **Interactive Controls:** Toggle mute, adjust volume, test playback, or stop an active adzan with a single click.
+### 🕌 Islamic Prayer Times & Automated Full Adzan
+* **Astronomical Accuracy:** Calculates daily prayer times (Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya) directly on-device using local solar calculation algorithms tailored to the standard Southeast Asian / Kemenag RI methodology (Fajr 20°, Isha 18° with safety ihtiyat adjustment).
+* **Automatic Call to Prayer (Adzan):** Plays a complete call to prayer automatically at the exact minute each prayer begins, accompanied by a dynamic visual banner directly from the notch.
+* **Instant Audio Control:** Adjust playback volume, mute notifications, test the audio, or immediately dismiss the active call to prayer with a single click.
+* **Smart Region Selection:** Choose from major Indonesian city presets (Jakarta, Surabaya, Bandung, Medan, Makassar, and more) or enable optional location detection (`CoreLocation`) to resolve your city automatically.
+* **Integrated Hijri Calendar:** Displays both current Gregorian and Hijri calendar dates accurately within the expanded drawer.
 
-### 🏝️ 2. Direct Hardware Notch Extension (Under-Notch Dynamic Island)
-* **Tailored for MacBook Hardware:** Exact 1:1 width matching (208 pt on MacBook Air M4) that naturally extends 26 pt downward from the physical camera cutout.
-* **100% Zero Menu Bar Interference:** Selective hit-testing ensures that application menus on the left (*File, Edit, View...*) and system icons on the right (*Wi-Fi, Battery, Clock*) are completely unobstructed.
-* **Apple Fluid Spring Morphing:** Continuous black surface animation that organically stretches and expands into the prayer drawer on hover, with a snappy, instantaneous snap-back on cursor departure.
+### 🏝️ Direct Hardware Notch Extension (Under-Notch Island)
+* **Custom-Molded for MacBook Screens:** Engineered to match the exact 208 pt width of MacBook Air and Pro hardware cutouts. In its resting state, Harmonotch extends 26 pt downward with smooth corner radii, appearing as a natural physical extension of the laptop's display bezel.
+* **Zero Menu Bar Interference:** Positioned directly below the camera cutout with selective hit-testing. Your active application menus on the left (*File, Edit, View...*) and system status items on the right (*Wi-Fi, Battery, Clock*) remain 100% unobstructed and fully clickable.
 
----
+### ✨ Fluid Morphing Spring Animation
+* **Continuous Surface Expansion:** Rather than a simple crossfade, the black notch body itself physically stretches and expands from a compact 208 pt pill into a spacious 540 pt prayer drawer using Apple's fluid spring dynamics (`dampingFraction: 0.76`).
+* **Ultra-Responsive Snap-Back:** The moment your cursor leaves the drawer, the notch immediately snaps back into its compact shape with an intentional 0.14-second debounce to ensure an effortless, lag-free user experience.
 
-## ⚡ Performance & Battery Optimizations
-
-Harmonotch was architected from day one to be ultra-lightweight and battery-conscious:
-
-* **0.0% CPU When Idle:** Eliminates continuous timer redraw loops. Astronomical prayer equations are computed only once upon startup, on city selection, or automatically at midnight (`NSCalendarDayChanged`). Periodic timer ticks only perform simple integer comparisons.
-* **Zero GPS Battery Drain:** CoreLocation immediately shuts down (`stopUpdatingLocation()`) as soon as the first coordinate fix is resolved.
-* **Zero Constraint Clashing:** Utilizes a fixed transparent AppKit canvas (`PassThroughHostingView`), permanently preventing Auto Layout recursion and `NSGenericException` constraint loops.
-* **Memory Efficient:** Pure local audio streaming via `AVAudioPlayer` with immediate deallocation upon stop.
+### 🌙 macOS Menu Bar Companion & Visibility Toggle
+* **Live Status Bar Display:** Displays the crescent icon alongside the upcoming prayer schedule (e.g., `🌙 Ashar 14:52`) following Apple Human Interface Guidelines (*Icon Leading, Text Trailing*). During Adzan, the status bar dynamically transitions to `🔊 Adzan Ashar`.
+* **Complete Notch Hide Option:** Need an entirely distraction-free workspace? Toggle **"Sembunyikan Notch di Layar"** from the menu bar to dismiss the floating notch overlay entirely, while continuing to track prayer times quietly from your Menu Bar.
 
 ---
 
-## 📁 Project Architecture
+## ⚡ Performance & Battery Architecture
+
+Harmonotch is engineered from the ground up for zero-overhead, whisper-quiet background operation:
+
+* **0.0% CPU When Idle:** Eliminates continuous timer redraw loops. Astronomical solar equations are computed only once upon launch, when switching cities, or automatically at midnight (`NSCalendarDayChanged`). Periodic timer ticks only perform lightweight numeric timestamp comparisons.
+* **Battery-Safe Single-Shot GPS:** CoreLocation automatically deactivates (`stopUpdatingLocation()`) as soon as the first coordinate fix is resolved, preventing continuous battery drain on MacBook hardware.
+* **100% Offline-First:** Operates completely standalone with zero external API dependencies or network connectivity required for prayer calculations and audio playback.
+* **Anti-Clash AppKit Canvas:** Utilizes a fixed transparent canvas (`PassThroughHostingView`), eliminating Auto Layout constraint recursion and ensuring rock-solid stability.
+
+---
+
+## 📁 Project Structure
 
 ```text
 Harmonotch/
 ├── App/
-│   ├── HarmonotchApp.swift           // SwiftUI App entry point (Settings scene)
+│   ├── HarmonotchApp.swift           // Application entry point (Accessory Scene)
 │   └── AppDelegate.swift             // AppKit lifecycle & macOS Menu Bar Status Item
 ├── NotchUI/
-│   ├── NotchGeometryHelper.swift     // Dynamic hardware notch detector (auxiliaryTopLeft/Right)
-│   ├── NotchWindowController.swift   // NSPanel with PassThroughHostingView selective hit-testing
-│   ├── NotchViewModel.swift          // Reactive state manager for fluid hover & snappy collapse
-│   ├── NotchContainerView.swift      // The Morphing Black Body spring animation container
-│   └── NotchPillView.swift           // 208pt idle under-notch extension view
+│   ├── NotchGeometryHelper.swift     // Dynamic hardware notch geometry detection
+│   ├── NotchWindowController.swift   // Floating NSPanel with selective hit-testing
+│   ├── NotchViewModel.swift          // Fluid hover and snappy dismiss state management
+│   ├── NotchContainerView.swift      // The Morphing Black Body spring animation canvas
+│   └── NotchPillView.swift           // 208pt direct hardware notch extension
 ├── Features/
 │   └── Prayer/
 │       ├── Adhan/                    // Bundled offline astronomical calculation engine
 │       ├── CityPreset.swift          // Indonesian major cities with coordinates & timezones
-│       ├── PrayerManager.swift       // Core scheduler, midnight listener, GPS manager
+│       ├── PrayerManager.swift       // Core scheduler, midnight rollover, and GPS manager
 │       ├── AdzanPlayer.swift         // AVAudioPlayer engine with mute & volume control
 │       ├── PrayerCardView.swift      // Compact individual prayer card view
 │       └── PrayerDrawerView.swift    // Expanded 5-time prayer drawer with location & controls
 └── Resources/
     ├── Assets.xcassets
-    └── adzan.mp3                     // Bundled full-length call to prayer audio
+    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from equran-app)
+    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from equran-app)
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Requirements
 * Mac running **macOS 14.0 (Sonoma)** or later.
-* **Xcode 16.0+** with the Swift 6 toolchain installed.
+* **Xcode 16.0+** with the Swift 6 toolchain.
 
 ### Build & Run
 1. Clone the repository:
@@ -76,27 +85,19 @@ Harmonotch/
    git clone https://github.com/ssajudn/Harmonotch.git
    cd Harmonotch
    ```
-2. Open in Xcode:
+2. Open the project in Xcode:
    ```bash
    open Harmonotch.xcodeproj
    ```
-3. Press **`Cmd + R`** to build and run in Debug mode.
+3. Press **`Cmd + R`** to compile and run.
 
-### Build from Command Line (Release)
+### Build from Command Line (Optimized Release)
 ```bash
 xcodebuild -project Harmonotch.xcodeproj -scheme Harmonotch -configuration Release -destination 'platform=macOS' build
 ```
 
 ---
 
-## 🗺️ Roadmap (Next Milestones)
-
-- [x] **Milestone 1:** Islamic Prayer Times, Automatic Full Adzan, & Under-Notch Dynamic Island.
-- [ ] **Milestone 2:** Media Island & Synced Floating Lyrics (Spotify & Apple Music Desktop integration via AppleScript + LRCLIB).
-- [ ] **Milestone 3:** Power & Battery Health Hub (Real-time wattage, battery health %, cycle count, and temperature via `IOKit`).
-
----
-
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

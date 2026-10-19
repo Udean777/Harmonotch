@@ -36,12 +36,22 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
 final class NotchWindowController: ObservableObject {
     static let shared = NotchWindowController()
 
+    @Published var isNotchHidden: Bool {
+        didSet {
+            UserDefaults.standard.set(isNotchHidden, forKey: "Harmonotch_IsNotchHidden")
+        }
+    }
+
     private var panel: NSPanel?
     private var cancellables = Set<AnyCancellable>()
 
     // Canvas tetap yang stabil untuk mencegah Auto Layout constraint loop
     static let canvasWidth: CGFloat = 560
     static let canvasHeight: CGFloat = 330
+
+    init() {
+        self.isNotchHidden = UserDefaults.standard.bool(forKey: "Harmonotch_IsNotchHidden")
+    }
 
     func setupAndShowWindow() {
         guard let screen = NSScreen.main else { return }
@@ -77,7 +87,9 @@ final class NotchWindowController: ObservableObject {
             }
             .store(in: &cancellables)
 
-        notchPanel.orderFrontRegardless()
+        if !isNotchHidden {
+            notchPanel.orderFrontRegardless()
+        }
     }
 
     private func calculateFixedFrame(for screen: NSScreen) -> NSRect {
@@ -88,6 +100,15 @@ final class NotchWindowController: ObservableObject {
         let y = screen.frame.maxY - height
 
         return NSRect(x: x, y: y, width: width, height: height)
+    }
+
+    func toggleNotchHidden() {
+        isNotchHidden.toggle()
+        if isNotchHidden {
+            panel?.orderOut(nil)
+        } else {
+            panel?.orderFrontRegardless()
+        }
     }
 
     func toggleVisibility() {

@@ -39,9 +39,14 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func play(prayerName: String) {
         guard !isMuted else { return }
 
-        // Cari file adzan.mp3 di bundle
-        guard let url = Bundle.main.url(forResource: "adzan", withExtension: "mp3") else {
-            print("[AdzanPlayer] Error: adzan.mp3 not found in main bundle.")
+        // Khusus Subuh gunakan audio adzan_subuh.m4a (dengan lafal As-shalatu khairum minan naum)
+        let isSubuh = prayerName.lowercased().contains("subuh") || prayerName.lowercased().contains("fajr")
+        let resourceName = isSubuh ? "adzan_subuh" : "adzan"
+
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: "m4a")
+            ?? Bundle.main.url(forResource: "adzan", withExtension: "m4a")
+            ?? Bundle.main.url(forResource: "adzan", withExtension: "mp3") else {
+            print("[AdzanPlayer] Error: File audio adzan tidak ditemukan di bundle.")
             return
         }
 
@@ -58,7 +63,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 self.playingPrayerName = prayerName
             }
         } catch {
-            print("[AdzanPlayer] Gagal memutar adzan: \(error.localizedDescription)")
+            print("[AdzanPlayer] Gagal memutar audio adzan: \(error.localizedDescription)")
         }
     }
 

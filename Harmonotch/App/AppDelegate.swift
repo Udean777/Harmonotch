@@ -5,16 +5,21 @@
 
 import AppKit
 import SwiftUI
+import Combine
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Tampilkan floating window di notch
+        // Inisialisasi floating window di notch
         NotchWindowController.shared.setupAndShowWindow()
 
         // Buat Menu Bar icon pendukung
         setupStatusBarItem()
+
+        // Amati jadwal sholat untuk update teks di samping icon menu bar
+        observePrayerUpdates()
     }
 
     private func setupStatusBarItem() {
@@ -23,11 +28,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch")
             button.image?.isTemplate = true
+            button.imagePosition = .imageLeading // Standar Apple HIG: Icon di KIRI, Teks di KANAN
         }
 
         let menu = NSMenu()
         menu.delegate = self
         statusItem?.menu = menu
+    }
+
+    // MARK: - Reactive Menu Bar Title Update (Icon di Kiri, Teks di Kanan)
+    private func observePrayerUpdates() {
+        Publishers.CombineLatest(
+            PrayerManager.shared.$nextPrayerItem,
+            AdzanPlayer.shared.$isPlaying
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] nextPrayer, isPlaying in
+            self?.updateStatusBarButton(nextPrayer: nextPrayer, isPlaying: isPlaying)
+        }
+        .store(in: &cancellables)
+    }
+
+    private func updateStatusBarButton(nextPrayer: PrayerScheduleItem?, isPlaying: Bool) {
+        guard let button = statusItem?.button else { return }
+
+        if isPlaying {
+            button.image = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Adzan")
+            button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
+        } else if let next = nextPrayer {
+            button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch")
+            button.title = " \(next.name) \(next.timeString)"
+        } else {
+            button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch")
+            button.title = ""
+        }
+        button.image?.isTemplate = true
     }
 
     // MARK: - NSMenuDelegate (Dynamic Menu Construction)
@@ -48,6 +83,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         toggleItem.target = self
         menu.addItem(toggleItem)
+
+        // Opsi Sembunyikan / Tampilkan Notch di Layar
+        let isHidden = NotchWindowController.shared.isNotchHidden
+        let hideTitle = isHidden ? "Tampilkan Notch di Layar" : "Sembunyikan Notch di Layar"
+        let hideItem = NSMenuItem(title: hideTitle, action: #selector(toggleNotchVisibility), keyEquivalent: "h")
+        hideItem.target = self
+        menu.addItem(hideItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -86,6 +128,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleNotchDrawer() {
         NotchViewModel.shared.toggleExpanded()
+    }
+
+    @objc private func toggleNotchVisibility() {
+        NotchWindowController.shared.toggleNotchHidden()
     }
 
     @objc private func toggleTestAdzan() {
