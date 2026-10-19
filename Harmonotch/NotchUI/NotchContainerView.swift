@@ -8,6 +8,7 @@ import SwiftUI
 struct NotchContainerView: View {
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
+    @ObservedObject var mediaManager = MediaManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -26,6 +27,10 @@ struct NotchContainerView: View {
             case .battery:
                 // Status baterai (hero header, bar, 4 stat cards, divider, dan footer buttons)
                 return notchHeight + 288
+            case .media:
+                // Media & Lirik (cover art, player controls, progress bar, synced lyrics container)
+                let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 310 : 200
+                return notchHeight + contentHeight
             }
         } else {
             return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
@@ -83,14 +88,21 @@ struct NotchContainerView: View {
 
                         // Tab Content
                         ZStack {
-                            if notchVM.selectedTab == .prayer {
+                            switch notchVM.selectedTab {
+                            case .prayer:
                                 PrayerDrawerView()
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .offset(x: -8)),
                                         removal: .opacity.combined(with: .offset(x: -8))
                                     ))
-                            } else {
+                            case .battery:
                                 BatteryDrawerView()
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .offset(x: 8)),
+                                        removal: .opacity.combined(with: .offset(x: 8))
+                                    ))
+                            case .media:
+                                MediaDrawerView()
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .offset(x: 8)),
                                         removal: .opacity.combined(with: .offset(x: 8))

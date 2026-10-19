@@ -48,6 +48,9 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     @Published var hijriDateString: String = ""
     @Published var gregorianDateString: String = ""
     @Published var activeAdzanAlertPrayer: String? = nil
+    @Published var qiblaHeading: Double = 0.0
+    @Published var qiblaString: String = ""
+    @Published var imsakTimeString: String = ""
 
     // MARK: - Private Properties
     private let locationManager = CLLocationManager()
@@ -134,6 +137,17 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
         timeFormatter.timeZone = TimeZone.current
+
+        // Hitung Arah Kiblat
+        let qibla = Qibla(coordinates: coords)
+        let heading = (qibla.direction * 10).rounded() / 10
+        self.qiblaHeading = heading
+        let cardinal = compassCardinal(for: heading)
+        self.qiblaString = "\(Int(heading.rounded()))° \(cardinal)"
+
+        // Hitung Waktu Imsak (10 menit sebelum Subuh)
+        let imsakDate = prayers.fajr.addingTimeInterval(-10 * 60)
+        self.imsakTimeString = timeFormatter.string(from: imsakDate)
 
         let rawList: [(id: String, name: String, ar: String, icon: String, date: Date)] = [
             ("subuh", L10n.Prayer.localizedPrayerName("fajr"), "الفجر", "sunrise.fill", prayers.fajr),
@@ -352,5 +366,14 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         locationManager.stopUpdatingLocation()
         print("[PrayerManager] Location error: \(error.localizedDescription)")
+    }
+
+    private func compassCardinal(for degrees: Double) -> String {
+        let isEnglish = LanguageManager.shared.currentLanguage == .english
+        let cardinalsEN = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+        let cardinalsID = ["U", "UTL", "TL", "TTL", "T", "TTG", "TG", "STG", "S", "SBD", "BD", "BBD", "B", "BBL", "BL", "UBL"]
+        let list = isEnglish ? cardinalsEN : cardinalsID
+        let index = Int(((degrees + 11.25).truncatingRemainder(dividingBy: 360) / 22.5)) % 16
+        return list[max(0, min(15, index))]
     }
 }

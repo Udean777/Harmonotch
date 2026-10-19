@@ -8,6 +8,7 @@ import SwiftUI
 enum DrawerTab: String, CaseIterable, Identifiable {
     case prayer = "prayer"
     case battery = "battery"
+    case media = "media"
 
     var id: String { rawValue }
 
@@ -17,6 +18,8 @@ enum DrawerTab: String, CaseIterable, Identifiable {
             return L10n.Drawer.prayerTab
         case .battery:
             return L10n.Drawer.batteryTab
+        case .media:
+            return L10n.Drawer.mediaTab
         }
     }
 
@@ -26,6 +29,8 @@ enum DrawerTab: String, CaseIterable, Identifiable {
             return "moon.stars.fill"
         case .battery:
             return "macbook"
+        case .media:
+            return "music.note"
         }
     }
 }

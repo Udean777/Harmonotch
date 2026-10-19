@@ -56,6 +56,41 @@ struct PrayerDrawerView: View {
                 }
                 .menuStyle(.borderlessButton)
 
+                // Qibla Direction Badge
+                if !prayerManager.qiblaString.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "safari.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(Color.amberCustom)
+                            .rotationEffect(.degrees(prayerManager.qiblaHeading))
+
+                        Text("\(L10n.Prayer.qibla) \(prayerManager.qiblaString)")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(6)
+                }
+
+                // Waktu Imsak Badge
+                if !prayerManager.imsakTimeString.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "moon.haze.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(.cyan)
+
+                        Text("\(L10n.Prayer.imsak) \(prayerManager.imsakTimeString)")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(.cyan)
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(Color.cyan.opacity(0.12))
+                    .cornerRadius(6)
+                }
+
                 Spacer()
 
                 // Tanggal Masehi & Hijriah

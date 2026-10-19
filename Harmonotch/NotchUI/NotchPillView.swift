@@ -11,6 +11,7 @@ struct NotchPillView: View {
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var batteryMonitor = BatteryMonitor.shared
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var mediaManager = MediaManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -63,7 +64,7 @@ struct NotchPillView: View {
                                 .foregroundColor(.green)
                         }
                     }
-                } else {
+                } else if notchVM.selectedTab == .battery {
                     // 3. Konten Baterai & Hardware Mac (Menggunakan ikon monitor/macbook)
                     HStack(spacing: 5) {
                         Image(systemName: "macbook")
@@ -103,6 +104,26 @@ struct NotchPillView: View {
                         Text("\(batteryMonitor.cycleCount) C")
                             .font(.system(size: 9, weight: .semibold, design: .rounded))
                             .foregroundColor(Color.amberCustom)
+                    }
+                } else {
+                    // 4. Konten Media Player / Now Playing & Lirik Berjalan
+                    HStack(spacing: 5) {
+                        Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.6))
+                            .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
+
+                        if mediaManager.hasActiveTrack {
+                            Text(mediaManager.currentLyricText.isEmpty ? "\(mediaManager.trackTitle) • \(mediaManager.artistName)" : mediaManager.currentLyricText)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.white.opacity(0.9))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        } else {
+                            Text(L10n.Media.noTrackPlaying)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
                     }
                 }
             }

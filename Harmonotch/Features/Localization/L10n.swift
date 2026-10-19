@@ -18,6 +18,9 @@ enum L10n {
         static var batteryTab: String {
             isEnglish ? "Battery Status" : "Status Baterai"
         }
+        static var mediaTab: String {
+            isEnglish ? "Music & Lyrics" : "Musik & Lirik"
+        }
     }
 
     // MARK: - Prayer Schedules & Adzan
@@ -71,6 +74,15 @@ enum L10n {
         }
         static var stopAudio: String {
             isEnglish ? "Stop Audio" : "Stop Audio"
+        }
+        static var qibla: String {
+            isEnglish ? "Qibla" : "Kiblat"
+        }
+        static var imsak: String {
+            "Imsak"
+        }
+        static var imsakDetail: String {
+            isEnglish ? "10m before Fajr" : "10m sebelum Subuh"
         }
     }
 
@@ -144,6 +156,34 @@ enum L10n {
         }
     }
 
+    // MARK: - Media & Synced Lyrics
+    enum Media {
+        static var nowPlaying: String {
+            isEnglish ? "Now Playing" : "Sedang Diputar"
+        }
+        static var paused: String {
+            isEnglish ? "Paused" : "Dijeda"
+        }
+        static var noTrackPlaying: String {
+            isEnglish ? "No Media Playing" : "Tidak Ada Musik"
+        }
+        static var openMusicPrompt: String {
+            isEnglish ? "Play a song on Apple Music or Spotify" : "Putar lagu di Apple Music atau Spotify"
+        }
+        static var syncedLyricsTitle: String {
+            isEnglish ? "Synced Lyrics" : "Lirik Lagu"
+        }
+        static var loadingLyrics: String {
+            isEnglish ? "Fetching lyrics..." : "Memuat lirik..."
+        }
+        static var noLyricsFound: String {
+            isEnglish ? "No synced lyrics available" : "Lirik lagu tidak tersedia"
+        }
+        static var instrumental: String {
+            isEnglish ? "Instrumental Track" : "Lagu Instrumental"
+        }
+    }
+
     // MARK: - Menu Bar Status Item & Dropdown Menu
     enum Menu {
         static var appTitle: String {
@@ -179,11 +219,60 @@ enum L10n {
         static var stopAdzan: String {
             isEnglish ? "Stop Adzan Audio" : "Hentikan Adzan"
         }
+        static var aboutHarmonotch: String {
+            isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
+        }
+        static var launchAtLogin: String {
+            isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
+        }
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
         }
         static var cyclesSuffix: String {
             isEnglish ? "Cycles" : "Siklus"
+        }
+    }
+
+    // MARK: - About & Acknowledgements
+    enum About {
+        static var title: String {
+            isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
+        }
+        static var subtitle: String {
+            isEnglish ? "Islamic Prayer & Battery Hub for MacBook Notch" : "Pusat Jadwal Sholat & Baterai untuk Notch MacBook"
+        }
+        static var version: String {
+            "Version 1.0.0"
+        }
+        static var developedBy: String {
+            isEnglish ? "Crafted with care by Sajudin" : "Dibuat dengan penuh dedikasi oleh Sajudin"
+        }
+        static var openSourceCredits: String {
+            isEnglish ? "Open Source Acknowledgements" : "Kredit & Lisensi Open Source"
+        }
+        static var adhanTitle: String {
+            "Adhan-Swift"
+        }
+        static var adhanDesc: String {
+            isEnglish ? "Astronomical calculation engine by Batoul Apps (MIT License)" : "Mesin kalkulasi astronomi waktu sholat oleh Batoul Apps (Lisensi MIT)"
+        }
+        static var audioTitle: String {
+            isEnglish ? "Adzan Audio Recordings" : "Rekaman Audio Adzan"
+        }
+        static var audioDesc: String {
+            isEnglish ? "High-fidelity adzan audio recordings sourced from IslamDownload.net" : "Rekaman audio adzan bersumber dari koleksi audio IslamDownload.net"
+        }
+        static var appleTechTitle: String {
+            "Apple SF Symbols & IOKit"
+        }
+        static var appleTechDesc: String {
+            isEnglish ? "Native macOS iconography & Darwin hardware battery framework" : "Ikonografi native macOS & framework baterai hardware Darwin"
+        }
+        static var viewLicense: String {
+            isEnglish ? "View License" : "Lihat Lisensi"
+        }
+        static var close: String {
+            isEnglish ? "Close" : "Tutup"
         }
     }
 }

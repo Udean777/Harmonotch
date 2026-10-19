@@ -91,8 +91,8 @@ Harmonotch/
 │       └── BatteryDrawerView.swift   // Capacity, cycles, health %, and charger status
 └── Resources/
     ├── Assets.xcassets
-    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from equran-app)
-    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from equran-app)
+    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)
+    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from IslamDownload.net)
 ```
 
 ---
@@ -122,6 +122,19 @@ xcodebuild -project Harmonotch.xcodeproj -scheme Harmonotch -configuration Relea
 
 ---
 
+## 💖 Acknowledgements & Open Source Credits
+
+Harmonotch is built with respect and gratitude for the open-source community:
+
+* **[Adhan-Swift](https://github.com/batoulapps/adhan-swift)** by [Batoul Apps](https://github.com/batoulapps) (MIT License) — Powers astronomical prayer times and sunnah calculations offline.
+* **[IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html)** — High quality audio recordings for daily calls to prayer (`adzan.m4a`, `adzan_subuh.m4a`).
+* **Apple SF Symbols & IOKit** — Native system icons and hardware power telemetry APIs.
+
+For full license texts and copyright notices, see [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
+
+---
+
 ## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
