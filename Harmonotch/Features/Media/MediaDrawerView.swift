@@ -1,0 +1,362 @@
+//
+//  MediaDrawerView.swift
+//  Harmonotch
+//
+
+import SwiftUI
+import AppKit
+
+struct MediaDrawerView: View {
+    @ObservedObject var mediaManager = MediaManager.shared
+    @ObservedObject var languageManager = LanguageManager.shared
+
+    var body: some View {
+        VStack(spacing: 12) {
+            if mediaManager.hasActiveTrack {
+                // MARK: - Active Player Card (Artwork, Track Info & Playback Controls)
+                HStack(alignment: .center, spacing: 14) {
+                    // 1. Album Artwork
+                    ZStack {
+                        if let art = mediaManager.artworkImage {
+                            Image(nsImage: art)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        } else {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.amberCustom.opacity(0.35), Color.black.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(Color.amberCustom)
+                                )
+                        }
+                    }
+                    .shadow(color: Color.black.opacity(0.4), radius: 6, x: 0, y: 3)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                    )
+
+                    // 2. Track Meta & Progress
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(mediaManager.trackTitle)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+
+                            Spacer()
+
+                            // Source App Badge
+                            HStack(spacing: 3) {
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 8))
+                                Text(mediaManager.mediaSource.rawValue)
+                                    .font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(4)
+                        }
+
+                        Text(mediaManager.artistName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white.opacity(0.75))
+                            .lineLimit(1)
+
+                        // Scrubber Slider
+                        VStack(spacing: 2) {
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.12))
+                                        .frame(height: 4)
+
+                                    Capsule()
+                                        .fill(Color.amberCustom)
+                                        .frame(width: geo.size.width * CGFloat(mediaManager.progress), height: 4)
+                                }
+                            }
+                            .frame(height: 4)
+                            .padding(.top, 4)
+
+                            HStack {
+                                Text(mediaManager.formattedPosition)
+                                Spacer()
+                                Text(mediaManager.formattedDuration)
+                            }
+                            .font(.system(size: 8, weight: .medium, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.4))
+                        }
+                    }
+
+                    // 3. Playback Controls
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            mediaManager.previousTrack()
+                        }) {
+                            Image(systemName: "backward.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.85))
+                                .frame(width: 28, height: 28)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: {
+                            mediaManager.playPause()
+                        }) {
+                            Image(systemName: mediaManager.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 34, height: 34)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: Color.white.opacity(0.2), radius: 4)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: {
+                            mediaManager.nextTrack()
+                        }) {
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.85))
+                                .frame(width: 28, height: 28)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.horizontal, 16)
+
+                // MARK: - Floating Synced Lyrics Section
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: "quote.bubble.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.amberCustom)
+
+                        Text(L10n.Media.syncedLyricsTitle)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(Color.amberCustom)
+                            .textCase(.uppercase)
+
+                        Spacer()
+
+                        Button(action: {
+                            mediaManager.refetchLyrics()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white.opacity(0.45))
+                        }
+                        .buttonStyle(.plain)
+
+                        if mediaManager.isLoadingLyrics {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .frame(width: 14, height: 14)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Lyrics Container
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.03))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+                            )
+
+                        if mediaManager.isInstrumental {
+                            HStack(spacing: 6) {
+                                Image(systemName: "guitars.fill")
+                                    .font(.system(size: 12))
+                                Text(L10n.Media.instrumental)
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.vertical, 30)
+                        } else if mediaManager.isLoadingLyrics {
+                            Text(L10n.Media.loadingLyrics)
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.45))
+                                .padding(.vertical, 30)
+                        } else if mediaManager.syncedLyrics.isEmpty {
+                            Text(L10n.Media.noLyricsFound)
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.4))
+                                .padding(.vertical, 30)
+                        } else {
+                            ScrollViewReader { proxy in
+                                ScrollView(.vertical, showsIndicators: false) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(Array(mediaManager.syncedLyrics.enumerated()), id: \.element.id) { index, line in
+                                            let isCurrent = (index == mediaManager.currentLyricIndex)
+                                            Button(action: {
+                                                mediaManager.seek(to: line.time)
+                                            }) {
+                                                Text(line.text)
+                                                    .font(.system(
+                                                        size: isCurrent ? 13 : 11,
+                                                        weight: isCurrent ? .bold : .medium,
+                                                        design: .rounded
+                                                    ))
+                                                    .foregroundColor(isCurrent ? .white : .white.opacity(0.4))
+                                                    .padding(.horizontal, isCurrent ? 8 : 4)
+                                                    .padding(.vertical, isCurrent ? 4 : 2)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 6)
+                                                            .fill(isCurrent ? Color.amberCustom.opacity(0.22) : Color.clear)
+                                                    )
+                                                    .scaleEffect(isCurrent ? 1.02 : 1.0, anchor: .leading)
+                                                    .animation(.spring(response: 0.28, dampingFraction: 0.75), value: isCurrent)
+                                            }
+                                            .buttonStyle(.plain)
+                                            .id(index)
+                                        }
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                }
+                                .onChange(of: mediaManager.currentLyricIndex) { newIndex in
+                                    if newIndex >= 0 {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            proxy.scrollTo(newIndex, anchor: .center)
+                                        }
+                                    }
+                                }
+                                .onAppear {
+                                    scrollToCurrentLyric(proxy: proxy)
+                                }
+                                .onChange(of: mediaManager.syncedLyrics.count) { _ in
+                                    scrollToCurrentLyric(proxy: proxy)
+                                }
+                            }
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white, location: 0.12),
+                                        .init(color: .white, location: 0.88),
+                                        .init(color: .clear, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                        }
+                    }
+                    .frame(height: 140)
+                    .padding(.horizontal, 16)
+                }
+            } else {
+                // MARK: - Empty Idle State
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(width: 50, height: 50)
+
+                        Image(systemName: "music.note")
+                            .font(.system(size: 22))
+                            .foregroundColor(Color.amberCustom)
+                    }
+                    .padding(.top, 14)
+
+                    VStack(spacing: 4) {
+                        Text(L10n.Media.noTrackPlaying)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text(L10n.Media.openMusicPrompt)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+
+                    HStack(spacing: 10) {
+                        Button(action: {
+                            openApp(bundleIdentifier: "com.spotify.client", fallbackUrl: "spotify:")
+                        }) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "music.note.list")
+                                    .font(.system(size: 10))
+                                Text("Spotify")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: {
+                            openApp(bundleIdentifier: "com.apple.Music", fallbackUrl: "music:")
+                        }) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "apple.logo")
+                                    .font(.system(size: 10))
+                                Text("Apple Music")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(.pink)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.pink.opacity(0.15))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 4)
+                    .padding(.bottom, 16)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+            }
+        }
+        .frame(width: 540)
+        .padding(.bottom, 14)
+        .onAppear {
+            mediaManager.pollCurrentMediaState()
+        }
+    }
+
+    private func scrollToCurrentLyric(proxy: ScrollViewProxy) {
+        let index = mediaManager.currentLyricIndex
+        guard index >= 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(index, anchor: .center)
+            }
+        }
+    }
+
+    private func openApp(bundleIdentifier: String, fallbackUrl: String) {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        } else if let url = URL(string: fallbackUrl) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}

@@ -6,6 +6,7 @@
 import AppKit
 import SwiftUI
 import Combine
+import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
@@ -52,7 +53,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         .store(in: &cancellables)
 
-        BatteryMonitor.shared.$currentCapacity
+        BatteryMonitor.shared.$cycleCount
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        LanguageManager.shared.$currentLanguage
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        MediaManager.shared.$trackTitle
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        MediaManager.shared.$isPlaying
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusBarButton()
@@ -67,24 +89,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let isPlaying = AdzanPlayer.shared.isPlaying
         let selectedTab = NotchViewModel.shared.selectedTab
 
-        // 1. Icon: Gunakan monitor/MacBook saat mode baterai aktif agar tidak duplikasi icon baterai macOS
+        // 1. Icon: Gunakan monitor/MacBook saat mode baterai aktif, waveform/music saat mode media aktif
         if isPlaying {
             button.image = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Adzan")
         } else if selectedTab == .battery {
             button.image = NSImage(systemSymbolName: "macbook", accessibilityDescription: "Harmonotch Hardware")
+        } else if selectedTab == .media {
+            let isMediaPlaying = MediaManager.shared.isPlaying
+            button.image = NSImage(systemSymbolName: isMediaPlaying ? "waveform" : "music.note", accessibilityDescription: "Harmonotch Media")
         } else {
             button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch Prayer")
         }
         button.image?.isTemplate = true
 
-        // 2. Teks waktu/persentase: Hanya muncul jika Notch sedang di-hide
+        // 2. Teks waktu/siklus/lagu: Hanya muncul jika Notch sedang di-hide
         if isHidden {
             if isPlaying {
-                button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
+                button.title = " Adzan \(L10n.Prayer.localizedPrayerName(AdzanPlayer.shared.playingPrayerName))"
             } else if selectedTab == .prayer, let next = PrayerManager.shared.nextPrayerItem {
                 button.title = " \(next.name) \(next.timeString)"
             } else if selectedTab == .battery {
-                button.title = " \(BatteryMonitor.shared.currentCapacity)%"
+                button.title = " \(BatteryMonitor.shared.cycleCount) \(L10n.Menu.cyclesSuffix)"
+            } else if selectedTab == .media {
+                let track = MediaManager.shared.trackTitle
+                button.title = track.isEmpty ? "" : " \(track)"
             } else {
                 button.title = ""
             }
@@ -98,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let titleItem = NSMenuItem(title: "Harmonotch — Islamic Notch", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: L10n.Menu.appTitle, action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
 
@@ -106,30 +134,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Toggle Notch Drawer
         let toggleItem = NSMenuItem(
-            title: NotchViewModel.shared.isExpanded ? "Tutup Drawer Notch" : "Buka Drawer Notch",
+            title: NotchViewModel.shared.isExpanded ? L10n.Menu.closeDrawer : L10n.Menu.openDrawer,
             action: #selector(toggleNotchDrawer),
             keyEquivalent: "n"
         )
         toggleItem.target = self
+        toggleItem.image = NSImage(systemSymbolName: "menubar.dock.rectangle", accessibilityDescription: nil)
         menu.addItem(toggleItem)
 
         // Opsi Sembunyikan / Tampilkan Notch di Layar
         let isHidden = NotchWindowController.shared.isNotchHidden
-        let hideTitle = isHidden ? "Tampilkan Notch di Layar" : "Sembunyikan Notch di Layar"
+        let hideTitle = isHidden ? L10n.Menu.showNotch : L10n.Menu.hideNotch
         let hideItem = NSMenuItem(title: hideTitle, action: #selector(toggleNotchVisibility), keyEquivalent: "h")
         hideItem.target = self
+        hideItem.image = NSImage(systemSymbolName: isHidden ? "eye" : "eye.slash", accessibilityDescription: nil)
         menu.addItem(hideItem)
+
+        // Submenu Ganti Bahasa
+        let langItem = NSMenuItem(title: L10n.Menu.languageMenu, action: nil, keyEquivalent: "")
+        langItem.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
+        let langSubmenu = NSMenu()
+        for lang in AppLanguage.allCases {
+            let item = NSMenuItem(
+                title: lang.displayName,
+                action: #selector(switchLanguage(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = lang
+            item.state = LanguageManager.shared.currentLanguage == lang ? .on : .off
+            langSubmenu.addItem(item)
+        }
+        langItem.submenu = langSubmenu
+        menu.addItem(langItem)
+
+        // Launch at Login Toggle
+        let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
+        let launchItem = NSMenuItem(
+            title: L10n.Menu.launchAtLogin,
+            action: #selector(toggleLaunchAtLogin),
+            keyEquivalent: ""
+        )
+        launchItem.target = self
+        launchItem.image = NSImage(systemSymbolName: "arrow.up.forward.app", accessibilityDescription: nil)
+        launchItem.state = isLaunchAtLogin ? .on : .off
+        menu.addItem(launchItem)
 
         menu.addItem(NSMenuItem.separator())
 
         // Info Lokasi
-        let locItem = NSMenuItem(title: "📍 Wilayah: \(PrayerManager.shared.currentLocationName)", action: nil, keyEquivalent: "")
+        let locItem = NSMenuItem(title: "\(L10n.Menu.locationPrefix)\(PrayerManager.shared.currentLocationName)", action: nil, keyEquivalent: "")
         locItem.isEnabled = false
+        locItem.image = NSImage(systemSymbolName: "mappin.and.ellipse", accessibilityDescription: nil)
         menu.addItem(locItem)
 
         // Daftar 5 Waktu Sholat di Menu
         for prayer in PrayerManager.shared.prayerItems {
-            let indicator = prayer.isNext ? " 🟢 (Berikutnya)" : (prayer.isCurrent ? " 🟡 (Sekarang)" : "")
+            let indicator = prayer.isNext ? L10n.Menu.nextTag : (prayer.isCurrent ? L10n.Menu.nowTag : "")
             let pItem = NSMenuItem(
                 title: "\(prayer.name) — \(prayer.timeString)\(indicator)",
                 action: nil,
@@ -142,17 +203,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // Test / Stop Adzan
-        let adzanText = AdzanPlayer.shared.isPlaying ? "⏹ Hentikan Adzan" : "▶️ Uji Coba Audio Adzan"
+        let adzanText = AdzanPlayer.shared.isPlaying ? L10n.Menu.stopAdzan : L10n.Menu.testAdzan
         let testAdzanItem = NSMenuItem(title: adzanText, action: #selector(toggleTestAdzan), keyEquivalent: "t")
         testAdzanItem.target = self
+        testAdzanItem.image = NSImage(systemSymbolName: AdzanPlayer.shared.isPlaying ? "stop.fill" : "play.fill", accessibilityDescription: nil)
         menu.addItem(testAdzanItem)
 
         menu.addItem(NSMenuItem.separator())
 
+        // About Harmonotch & Open Source Credits
+        let aboutItem = NSMenuItem(title: L10n.Menu.aboutHarmonotch, action: #selector(showAboutWindow), keyEquivalent: "")
+        aboutItem.target = self
+        aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
+        menu.addItem(aboutItem)
+
         // Keluar
-        let quitItem = NSMenuItem(title: "Keluar Harmonotch", action: #selector(quitApp), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L10n.Menu.quit, action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
+        quitItem.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         menu.addItem(quitItem)
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            print("[Harmonotch] Failed to toggle launch at login: \(error)")
+        }
+    }
+
+    @objc private func showAboutWindow() {
+        AboutWindowController.shared.show()
+    }
+
+    @objc private func switchLanguage(_ sender: NSMenuItem) {
+        guard let lang = sender.representedObject as? AppLanguage else { return }
+        LanguageManager.shared.setLanguage(lang)
+        updateStatusBarButton()
     }
 
     @objc private func toggleNotchDrawer() {

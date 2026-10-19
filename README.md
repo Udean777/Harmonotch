@@ -31,6 +31,11 @@
 * **Smart Power & Charger Detection:** Identifies power sources in real time, automatically detecting connected AC adapter wattage (e.g., 30W / 70W / 96W / 140W) and calculating dynamic time-to-full or time-to-empty estimates.
 * **Quick System Access:** One-click refresh and direct shortcut to macOS Battery System Settings.
 
+### 🌐 Multilingual & Instant Language Switching (English Default)
+* **Default English:** Designed with an international-first English interface (`Prayer Times`, `Fajr`, `Dhuhr`, `Health`, `Cycle Count`), with comprehensive native support for **Bahasa Indonesia** (`Jadwal Sholat`, `Subuh`, `Dzuhur`, `Kesehatan`, `Siklus`).
+* **Zero-Restart Reactive Toggling:** Switch instantly via the sleek `[ EN | ID ]` header toggle pill inside the notch drawer or through the macOS Menu Bar `🌐 Language` submenu without restarting the application.
+* **Full-Stack Localization:** Adapts Gregorian and Hijri calendar date formatters, dynamic prayer names, battery telemetry labels, and system menu bar action items.
+
 ### 🏝️ Direct Hardware Notch Extension (Under-Notch Island)
 * **Custom-Molded for MacBook Screens:** Engineered to match the exact 208 pt width of MacBook Air and Pro hardware cutouts. In its resting state, Harmonotch extends 26 pt downward with smooth corner radii, appearing as a natural physical extension of the laptop's display bezel.
 * **Zero Menu Bar Interference:** Positioned directly below the camera cutout with selective hit-testing. Your active application menus on the left (*File, Edit, View...*) and system status items on the right (*Wi-Fi, Battery, Clock*) remain 100% unobstructed and fully clickable.
@@ -71,6 +76,9 @@ Harmonotch/
 │   ├── NotchTab.swift                // DrawerTab enum & Segmented Control Tab Bar
 │   └── NotchPillView.swift           // 208pt direct hardware notch extension
 ├── Features/
+│   ├── Localization/
+│   │   ├── LanguageManager.swift     // Reactive language state engine (UserDefaults backed)
+│   │   └── L10n.swift                // Type-safe string keys & LanguageTogglePill view
 │   ├── Prayer/
 │   │   ├── Adhan/                    // Bundled offline astronomical calculation engine
 │   │   ├── CityPreset.swift          // Indonesian major cities with coordinates & timezones
@@ -83,8 +91,8 @@ Harmonotch/
 │       └── BatteryDrawerView.swift   // Capacity, cycles, health %, and charger status
 └── Resources/
     ├── Assets.xcassets
-    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from equran-app)
-    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from equran-app)
+    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)
+    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from IslamDownload.net)
 ```
 
 ---
@@ -114,6 +122,19 @@ xcodebuild -project Harmonotch.xcodeproj -scheme Harmonotch -configuration Relea
 
 ---
 
+## 💖 Acknowledgements & Open Source Credits
+
+Harmonotch is built with respect and gratitude for the open-source community:
+
+* **[Adhan-Swift](https://github.com/batoulapps/adhan-swift)** by [Batoul Apps](https://github.com/batoulapps) (MIT License) — Powers astronomical prayer times and sunnah calculations offline.
+* **[IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html)** — High quality audio recordings for daily calls to prayer (`adzan.m4a`, `adzan_subuh.m4a`).
+* **Apple SF Symbols & IOKit** — Native system icons and hardware power telemetry APIs.
+
+For full license texts and copyright notices, see [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
+
+---
+
 ## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+

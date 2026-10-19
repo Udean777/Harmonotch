@@ -25,10 +25,17 @@ final class BatteryMonitor: ObservableObject {
     @Published var adapterWatts: Int? = nil
 
     private var refreshTimer: AnyCancellable?
+    private var languageCancellable: AnyCancellable?
 
     init() {
         refreshBatteryInfo()
         startPeriodicRefresh()
+
+        languageCancellable = NotificationCenter.default.publisher(for: .languageDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshBatteryInfo()
+            }
     }
 
     func startPeriodicRefresh() {
@@ -61,15 +68,15 @@ final class BatteryMonitor: ObservableObject {
                     if let timeToEmpty = desc[kIOPSTimeToEmptyKey] as? Int, timeToEmpty > 0, !isPluggedIn {
                         let hours = timeToEmpty / 60
                         let mins = timeToEmpty % 60
-                        self.timeRemainingFormatted = "\(hours)j \(mins)m tersisa"
+                        self.timeRemainingFormatted = L10n.Battery.timeRemaining(hours: hours, mins: mins)
                     } else if let timeToFull = desc[kIOPSTimeToFullChargeKey] as? Int, timeToFull > 0, isCharging {
                         let hours = timeToFull / 60
                         let mins = timeToFull % 60
-                        self.timeRemainingFormatted = "\(hours)j \(mins)m hingga penuh"
+                        self.timeRemainingFormatted = L10n.Battery.timeToFull(hours: hours, mins: mins)
                     } else if isPluggedIn && !isCharging && currentCapacity >= 95 {
-                        self.timeRemainingFormatted = "Daya Penuh (Adaptor AC)"
+                        self.timeRemainingFormatted = L10n.Battery.fullChargeAc
                     } else {
-                        self.timeRemainingFormatted = isPluggedIn ? "Tersambung ke Pengisi Daya" : "Menggunakan Baterai"
+                        self.timeRemainingFormatted = isPluggedIn ? L10n.Battery.connectedCharger : L10n.Battery.onBattery
                     }
                 }
             }

@@ -8,6 +8,7 @@ import SwiftUI
 struct NotchContainerView: View {
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
+    @ObservedObject var mediaManager = MediaManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -26,14 +27,29 @@ struct NotchContainerView: View {
             case .battery:
                 // Status baterai (hero header, bar, 4 stat cards, divider, dan footer buttons)
                 return notchHeight + 288
+            case .media:
+                // Media & Lirik (cover art, player controls, progress bar, synced lyrics container)
+                let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 310 : 200
+                return notchHeight + contentHeight
             }
         } else {
-            return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
+            let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
+            if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+                return notchHeight + 64
+            } else {
+                return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
+            }
         }
     }
 
     private var targetRadius: CGFloat {
-        notchVM.isExpanded ? 20 : 12
+        if notchVM.isExpanded {
+            return 20
+        } else if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
+            return 16
+        } else {
+            return 12
+        }
     }
 
     var body: some View {
@@ -83,14 +99,21 @@ struct NotchContainerView: View {
 
                         // Tab Content
                         ZStack {
-                            if notchVM.selectedTab == .prayer {
+                            switch notchVM.selectedTab {
+                            case .prayer:
                                 PrayerDrawerView()
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .offset(x: -8)),
                                         removal: .opacity.combined(with: .offset(x: -8))
                                     ))
-                            } else {
+                            case .battery:
                                 BatteryDrawerView()
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .offset(x: 8)),
+                                        removal: .opacity.combined(with: .offset(x: 8))
+                                    ))
+                            case .media:
+                                MediaDrawerView()
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .offset(x: 8)),
                                         removal: .opacity.combined(with: .offset(x: 8))
@@ -132,5 +155,7 @@ struct NotchContainerView: View {
         )
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: notchVM.selectedTab)
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: adzanPlayer.isPlaying)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.currentLyricText.isEmpty)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.hasActiveTrack)
     }
 }

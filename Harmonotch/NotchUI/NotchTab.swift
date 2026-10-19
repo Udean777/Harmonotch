@@ -8,15 +8,18 @@ import SwiftUI
 enum DrawerTab: String, CaseIterable, Identifiable {
     case prayer = "prayer"
     case battery = "battery"
+    case media = "media"
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .prayer:
-            return "Jadwal Sholat"
+            return L10n.Drawer.prayerTab
         case .battery:
-            return "Status Baterai"
+            return L10n.Drawer.batteryTab
+        case .media:
+            return L10n.Drawer.mediaTab
         }
     }
 
@@ -26,12 +29,15 @@ enum DrawerTab: String, CaseIterable, Identifiable {
             return "moon.stars.fill"
         case .battery:
             return "macbook"
+        case .media:
+            return "music.note"
         }
     }
 }
 
 struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
+    @ObservedObject var languageManager = LanguageManager.shared
     @Namespace private var tabAnimation
 
     var body: some View {

@@ -8,6 +8,7 @@ import AppKit
 
 struct BatteryDrawerView: View {
     @ObservedObject var batteryMonitor = BatteryMonitor.shared
+    @ObservedObject var languageManager = LanguageManager.shared
     @State private var isRefreshing: Bool = false
 
     var body: some View {
@@ -34,14 +35,14 @@ struct BatteryDrawerView: View {
                             .foregroundColor(.white)
 
                         if batteryMonitor.isCharging {
-                            Text("Mengisi Daya")
+                            Text(L10n.Battery.charging)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.green)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Capsule().fill(Color.green.opacity(0.2)))
                         } else if batteryMonitor.isPluggedIn {
-                            Text("Tersambung")
+                            Text(L10n.Battery.connected)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.cyan)
                                 .padding(.horizontal, 6)
@@ -104,36 +105,36 @@ struct BatteryDrawerView: View {
                 BatteryStatCard(
                     icon: "heart.fill",
                     iconColor: .green,
-                    title: "Kesehatan",
+                    title: L10n.Battery.healthTitle,
                     value: "\(batteryMonitor.healthPercent)%",
-                    subtext: batteryMonitor.conditionString
+                    subtext: L10n.Battery.conditionNormal
                 )
 
                 // 2. Cycle Count
                 BatteryStatCard(
                     icon: "arrow.triangle.2.circlepath",
                     iconColor: .cyan,
-                    title: "Siklus Baterai",
+                    title: L10n.Battery.cycleTitle,
                     value: "\(batteryMonitor.cycleCount)",
-                    subtext: "Maks. \(batteryMonitor.maxCycleCount)"
+                    subtext: "\(L10n.Battery.maxPrefix)\(batteryMonitor.maxCycleCount)"
                 )
 
                 // 3. Real vs Design Capacity
                 BatteryStatCard(
                     icon: "gauge.with.needle.fill",
                     iconColor: Color.amberCustom,
-                    title: "Kapasitas Penuh",
+                    title: L10n.Battery.capacityTitle,
                     value: batteryMonitor.nominalCapacity > 0 ? "\(batteryMonitor.nominalCapacity) mAh" : "-",
-                    subtext: batteryMonitor.designCapacity > 0 ? "Desain: \(batteryMonitor.designCapacity)" : "Maks"
+                    subtext: batteryMonitor.designCapacity > 0 ? "\(L10n.Battery.designPrefix)\(batteryMonitor.designCapacity)" : "-"
                 )
 
                 // 4. Power Source / State
                 BatteryStatCard(
                     icon: batteryMonitor.isPluggedIn ? "powerplug.fill" : "bolt.batteryblock",
                     iconColor: batteryMonitor.isPluggedIn ? .green : .white.opacity(0.7),
-                    title: "Sumber Daya",
-                    value: batteryMonitor.isPluggedIn ? "Adaptor AC" : "Baterai",
-                    subtext: batteryMonitor.adapterWatts != nil ? "\(batteryMonitor.adapterWatts!)W Daya" : "Mandiri"
+                    title: L10n.Battery.powerSourceTitle,
+                    value: batteryMonitor.isPluggedIn ? L10n.Battery.powerAC : L10n.Battery.powerBattery,
+                    subtext: batteryMonitor.adapterWatts != nil ? "\(batteryMonitor.adapterWatts!)W" : L10n.Battery.internalBattery
                 )
             }
             .padding(.horizontal, 16)
@@ -159,7 +160,7 @@ struct BatteryDrawerView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .rotationEffect(.degrees(isRefreshing ? 360 : 0))
 
-                        Text("Perbarui Data")
+                        Text(L10n.Battery.refreshData)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.white.opacity(0.8))
@@ -181,7 +182,7 @@ struct BatteryDrawerView: View {
                     HStack(spacing: 5) {
                         Image(systemName: "gearshape.fill")
                             .font(.system(size: 10))
-                        Text("Pengaturan Baterai macOS")
+                        Text(L10n.Battery.batterySettings)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(Color.amberCustom)
@@ -202,11 +203,11 @@ struct BatteryDrawerView: View {
     private var powerSourceLabel: String {
         if batteryMonitor.isPluggedIn {
             if let watts = batteryMonitor.adapterWatts {
-                return "\(watts)W Adaptor AC"
+                return L10n.Battery.acAdapterWatts(watts)
             }
-            return "Adaptor AC"
+            return L10n.Battery.acAdapter
         }
-        return "Baterai Internal"
+        return L10n.Battery.internalBattery
     }
 
     private var batteryIconName: String {
