@@ -18,8 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Buat Menu Bar icon pendukung
         setupStatusBarItem()
 
-        // Amati jadwal sholat untuk update teks di samping icon menu bar
-        observePrayerUpdates()
+        // Amati perubahan untuk update tampilan status bar item
+        observeUpdates()
     }
 
     private func setupStatusBarItem() {
@@ -34,35 +34,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         statusItem?.menu = menu
+
+        updateStatusBarButton()
     }
 
-    // MARK: - Reactive Menu Bar Title Update (Icon di Kiri, Teks di Kanan)
-    private func observePrayerUpdates() {
-        Publishers.CombineLatest(
+    // MARK: - Reactive Menu Bar Update
+    private func observeUpdates() {
+        Publishers.CombineLatest4(
             PrayerManager.shared.$nextPrayerItem,
-            AdzanPlayer.shared.$isPlaying
+            AdzanPlayer.shared.$isPlaying,
+            NotchWindowController.shared.$isNotchHidden,
+            NotchViewModel.shared.$selectedTab
         )
         .receive(on: DispatchQueue.main)
-        .sink { [weak self] nextPrayer, isPlaying in
-            self?.updateStatusBarButton(nextPrayer: nextPrayer, isPlaying: isPlaying)
+        .sink { [weak self] _ in
+            self?.updateStatusBarButton()
         }
         .store(in: &cancellables)
+
+        BatteryMonitor.shared.$currentCapacity
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
     }
 
-    private func updateStatusBarButton(nextPrayer: PrayerScheduleItem?, isPlaying: Bool) {
+    private func updateStatusBarButton() {
         guard let button = statusItem?.button else { return }
 
+        let isHidden = NotchWindowController.shared.isNotchHidden
+        let isPlaying = AdzanPlayer.shared.isPlaying
+        let selectedTab = NotchViewModel.shared.selectedTab
+
+        // 1. Icon: Gunakan monitor/MacBook saat mode baterai aktif agar tidak duplikasi icon baterai macOS
         if isPlaying {
             button.image = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Adzan")
-            button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
-        } else if let next = nextPrayer {
-            button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch")
-            button.title = " \(next.name) \(next.timeString)"
+        } else if selectedTab == .battery {
+            button.image = NSImage(systemSymbolName: "macbook", accessibilityDescription: "Harmonotch Hardware")
         } else {
-            button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch")
-            button.title = ""
+            button.image = NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: "Harmonotch Prayer")
         }
         button.image?.isTemplate = true
+
+        // 2. Teks waktu/persentase: Hanya muncul jika Notch sedang di-hide
+        if isHidden {
+            if isPlaying {
+                button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
+            } else if selectedTab == .prayer, let next = PrayerManager.shared.nextPrayerItem {
+                button.title = " \(next.name) \(next.timeString)"
+            } else if selectedTab == .battery {
+                button.title = " \(BatteryMonitor.shared.currentCapacity)%"
+            } else {
+                button.title = ""
+            }
+        } else {
+            // Ketika notch muncul di layar, tampilkan ICON SAJA
+            button.title = ""
+        }
     }
 
     // MARK: - NSMenuDelegate (Dynamic Menu Construction)

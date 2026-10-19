@@ -28,6 +28,12 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
             if point.x < minX || point.x > maxX {
                 return nil // Menu kiri & status bar kanan tembus 100%
             }
+        } else {
+            // Saat expanded: jika klik di bawah batas drawer (misal sisa canvas), tembuskan ke desktop
+            let maxDrawerBottomFromTop: CGFloat = activeNotchHeight + 350
+            if point.y < (bounds.height - maxDrawerBottomFromTop) {
+                return nil
+            }
         }
         return super.hitTest(point)
     }
@@ -47,7 +53,7 @@ final class NotchWindowController: ObservableObject {
 
     // Canvas tetap yang stabil untuk mencegah Auto Layout constraint loop
     static let canvasWidth: CGFloat = 560
-    static let canvasHeight: CGFloat = 330
+    static let canvasHeight: CGFloat = 400
 
     init() {
         self.isNotchHidden = UserDefaults.standard.bool(forKey: "Harmonotch_IsNotchHidden")

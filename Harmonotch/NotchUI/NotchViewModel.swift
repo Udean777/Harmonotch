@@ -11,8 +11,23 @@ final class NotchViewModel: ObservableObject {
 
     @Published var isExpanded: Bool = false
     @Published var isHovered: Bool = false
+    @Published var selectedTab: DrawerTab = .prayer
 
     private var collapseWorkItem: DispatchWorkItem?
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        AdzanPlayer.shared.$isPlaying
+            .receive(on: DispatchQueue.main)
+            .filter { $0 }
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+                    self.selectedTab = .prayer
+                }
+            }
+            .store(in: &cancellables)
+    }
 
     func setHovered(_ hovered: Bool) {
         isHovered = hovered

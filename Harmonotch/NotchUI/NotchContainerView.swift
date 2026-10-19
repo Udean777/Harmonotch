@@ -17,8 +17,16 @@ struct NotchContainerView: View {
 
     private var targetHeight: CGFloat {
         if notchVM.isExpanded {
-            // Ruang vertikal yang cukup lapang agar seluruh kartu dan footer tidak terpotong
-            return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 255) : 265
+            let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
+            switch notchVM.selectedTab {
+            case .prayer:
+                // Jadwal sholat normal vs saat adzan aktif (dengan banner pemutar)
+                let contentHeight: CGFloat = adzanPlayer.isPlaying ? 325 : 272
+                return notchHeight + contentHeight
+            case .battery:
+                // Status baterai (hero header, bar, 4 stat cards, divider, dan footer buttons)
+                return notchHeight + 288
+            }
         } else {
             return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
         }
@@ -60,14 +68,43 @@ struct NotchContainerView: View {
             // MARK: - 2. Konten
             Group {
                 if notchVM.isExpanded {
-                    PrayerDrawerView()
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: -6)),
-                            removal: .opacity
-                        ))
-                        .onHover { isHovered in
-                            notchVM.setHovered(isHovered)
+                    VStack(spacing: 10) {
+                        // Hardware Notch Clearance Spacer
+                        if geometry.hasHardwareNotch {
+                            Color.clear
+                                .frame(height: geometry.physicalNotchHeight + 4)
+                        } else {
+                            Color.clear
+                                .frame(height: 8)
                         }
+
+                        // Segmented Control Switcher
+                        NotchTabBar(selectedTab: $notchVM.selectedTab)
+
+                        // Tab Content
+                        ZStack {
+                            if notchVM.selectedTab == .prayer {
+                                PrayerDrawerView()
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .offset(x: -8)),
+                                        removal: .opacity.combined(with: .offset(x: -8))
+                                    ))
+                            } else {
+                                BatteryDrawerView()
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .offset(x: 8)),
+                                        removal: .opacity.combined(with: .offset(x: 8))
+                                    ))
+                            }
+                        }
+                    }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: -6)),
+                        removal: .opacity
+                    ))
+                    .onHover { isHovered in
+                        notchVM.setHovered(isHovered)
+                    }
                 } else {
                     NotchPillView()
                         .transition(.asymmetric(
@@ -93,6 +130,7 @@ struct NotchContainerView: View {
                 : .spring(response: 0.25, dampingFraction: 0.88, blendDuration: 0.05),
             value: notchVM.isExpanded
         )
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: notchVM.selectedTab)
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: adzanPlayer.isPlaying)
     }
 }

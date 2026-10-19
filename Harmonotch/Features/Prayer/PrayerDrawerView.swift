@@ -9,19 +9,8 @@ struct PrayerDrawerView: View {
     @ObservedObject var prayerManager = PrayerManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
 
-    let geometry = NotchGeometry.current()
-
     var body: some View {
-        VStack(spacing: 12) {
-            // MARK: - Notch Hardware Clearance Spacer (Mencegah konten naik ke notch fisik)
-            if geometry.hasHardwareNotch {
-                Color.clear
-                    .frame(height: geometry.physicalNotchHeight + 6)
-            } else {
-                Color.clear
-                    .frame(height: 8)
-            }
-
+        VStack(spacing: 10) {
             // MARK: - Header (Wilayah & Tanggal)
             HStack(alignment: .center) {
                 // Lokasi & Picker
@@ -132,7 +121,7 @@ struct PrayerDrawerView: View {
                                 .stroke(Color.green.opacity(0.4), lineWidth: 1)
                         )
                 )
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
                 .transition(.opacity.combined(with: .scale))
             }
 
@@ -142,11 +131,11 @@ struct PrayerDrawerView: View {
                     PrayerCardView(item: item)
                 }
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 16)
 
             Divider()
                 .background(Color.white.opacity(0.1))
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
 
             // MARK: - Footer Controls
             HStack(spacing: 14) {
@@ -207,8 +196,8 @@ struct PrayerDrawerView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
         }
         .frame(width: 540)
     }
