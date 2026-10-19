@@ -79,9 +79,16 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         }
     }
 
-    // MARK: - Midnight Rollover Listener (Hemat Baterai & CPU)
+    // MARK: - Day & Language Change Listeners
     private func setupDayChangeListener() {
         NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.recalculatePrayerTimes()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .languageDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.recalculatePrayerTimes()
@@ -129,12 +136,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         timeFormatter.timeZone = TimeZone.current
 
         let rawList: [(id: String, name: String, ar: String, icon: String, date: Date)] = [
-            ("subuh", "Subuh", "الفجر", "sunrise.fill", prayers.fajr),
-            ("terbit", "Terbit", "الشروق", "sun.horizon.fill", prayers.sunrise),
-            ("dzuhur", "Dzuhur", "الظهر", "sun.max.fill", prayers.dhuhr),
-            ("ashar", "Ashar", "العصر", "sun.haze.fill", prayers.asr),
-            ("maghrib", "Maghrib", "المغرب", "sunset.fill", prayers.maghrib),
-            ("isya", "Isya", "العشاء", "moon.stars.fill", prayers.isha)
+            ("subuh", L10n.Prayer.localizedPrayerName("fajr"), "الفجر", "sunrise.fill", prayers.fajr),
+            ("terbit", L10n.Prayer.localizedPrayerName("sunrise"), "الشروق", "sun.horizon.fill", prayers.sunrise),
+            ("dzuhur", L10n.Prayer.localizedPrayerName("dhuhr"), "الظهر", "sun.max.fill", prayers.dhuhr),
+            ("ashar", L10n.Prayer.localizedPrayerName("asr"), "العصر", "sun.haze.fill", prayers.asr),
+            ("maghrib", L10n.Prayer.localizedPrayerName("maghrib"), "المغرب", "sunset.fill", prayers.maghrib),
+            ("isya", L10n.Prayer.localizedPrayerName("isha"), "العشاء", "moon.stars.fill", prayers.isha)
         ]
 
         let now = Date()
@@ -286,7 +293,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     // MARK: - Formatters
     private func formatGregorianDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
         formatter.dateFormat = "EEEE, d MMMM yyyy"
         return formatter.string(from: date)
     }
@@ -295,8 +302,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let hijriCal = Calendar(identifier: .islamicUmmAlQura)
         let formatter = DateFormatter()
         formatter.calendar = hijriCal
-        formatter.locale = Locale(identifier: "id_ID")
-        formatter.dateFormat = "d MMMM yyyy 'H'"
+        formatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
+        if LanguageManager.shared.currentLanguage == .english {
+            formatter.dateFormat = "d MMMM yyyy 'AH'"
+        } else {
+            formatter.dateFormat = "d MMMM yyyy 'H'"
+        }
         return formatter.string(from: date)
     }
 

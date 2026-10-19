@@ -8,15 +8,16 @@ import SwiftUI
 struct PrayerDrawerView: View {
     @ObservedObject var prayerManager = PrayerManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
+    @ObservedObject var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 10) {
-            // MARK: - Header (Wilayah & Tanggal)
-            HStack(alignment: .center) {
+            // MARK: - Header (Wilayah, Language Toggle, & Tanggal)
+            HStack(alignment: .center, spacing: 10) {
                 // Lokasi & Picker
                 Menu {
                     Toggle(isOn: $prayerManager.useGPS) {
-                        Label("Gunakan Lokasi Otomatis (GPS)", systemImage: "location.fill")
+                        Label(L10n.Prayer.autoGPS, systemImage: "location.fill")
                     }
 
                     Divider()
@@ -79,11 +80,11 @@ struct PrayerDrawerView: View {
                         .symbolEffect(.variableColor.iterative.reversing)
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Adzan \(adzanPlayer.playingPrayerName) Sedang Berkumandang")
+                        Text(L10n.Prayer.adzanBannerTitle(name: adzanPlayer.playingPrayerName))
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("Hayya 'alash Shalaah...")
+                        Text(L10n.Prayer.adzanBannerSubtitle)
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.8))
                     }
@@ -96,7 +97,7 @@ struct PrayerDrawerView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "stop.fill")
                                 .font(.system(size: 9, weight: .bold))
-                            Text("Hentikan")
+                            Text(L10n.Prayer.stop)
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -148,7 +149,7 @@ struct PrayerDrawerView: View {
                             .font(.system(size: 11))
                             .foregroundColor(adzanPlayer.isMuted ? .red : .green)
 
-                        Text(adzanPlayer.isMuted ? "Adzan Dimatikan" : "Adzan Aktif")
+                        Text(adzanPlayer.isMuted ? L10n.Prayer.adzanMuted : L10n.Prayer.adzanActive)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                     }
@@ -185,7 +186,7 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: adzanPlayer.isPlaying ? "stop.circle.fill" : "play.circle.fill")
                             .font(.system(size: 12))
-                        Text(adzanPlayer.isPlaying ? "Stop Audio" : "Uji Audio")
+                        Text(adzanPlayer.isPlaying ? L10n.Prayer.stopAudio : L10n.Prayer.testAudio)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(adzanPlayer.isPlaying ? .red : Color.amberCustom)

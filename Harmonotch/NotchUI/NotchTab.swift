@@ -14,9 +14,9 @@ enum DrawerTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .prayer:
-            return "Jadwal Sholat"
+            return L10n.Drawer.prayerTab
         case .battery:
-            return "Status Baterai"
+            return L10n.Drawer.batteryTab
         }
     }
 
@@ -32,6 +32,7 @@ enum DrawerTab: String, CaseIterable, Identifiable {
 
 struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
+    @ObservedObject var languageManager = LanguageManager.shared
     @Namespace private var tabAnimation
 
     var body: some View {

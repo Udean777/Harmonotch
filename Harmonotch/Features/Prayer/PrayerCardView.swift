@@ -7,6 +7,7 @@ import SwiftUI
 
 struct PrayerCardView: View {
     let item: PrayerScheduleItem
+    @ObservedObject var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 4) {
@@ -45,7 +46,7 @@ struct PrayerCardView: View {
 
             // Badge Status
             if item.isNext {
-                Text("Berikutnya")
+                Text(L10n.Prayer.nextBadge)
                     .font(.system(size: 8, weight: .bold))
                     .foregroundColor(.green)
                     .textCase(.uppercase)
@@ -53,7 +54,7 @@ struct PrayerCardView: View {
                     .padding(.vertical, 1)
                     .background(Capsule().fill(Color.green.opacity(0.2)))
             } else if item.isCurrent {
-                Text("Sekarang")
+                Text(L10n.Prayer.currentBadge)
                     .font(.system(size: 8, weight: .bold))
                     .foregroundColor(Color.amberCustom)
                     .textCase(.uppercase)

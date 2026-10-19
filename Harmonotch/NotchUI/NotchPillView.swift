@@ -10,6 +10,7 @@ struct NotchPillView: View {
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var batteryMonitor = BatteryMonitor.shared
+    @ObservedObject var languageManager = LanguageManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -31,7 +32,7 @@ struct NotchPillView: View {
                             .foregroundColor(.green)
                             .symbolEffect(.variableColor.iterative.reversing)
 
-                        Text("Adzan \(adzanPlayer.playingPrayerName)")
+                        Text("Adzan \(L10n.Prayer.localizedPrayerName(adzanPlayer.playingPrayerName))")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.green)
                     }
@@ -81,16 +82,16 @@ struct NotchPillView: View {
                             HStack(spacing: 2) {
                                 Image(systemName: "bolt.fill")
                                     .font(.system(size: 8))
-                                Text("Mengisi")
+                                Text(L10n.Battery.charging)
                                     .font(.system(size: 10, weight: .semibold))
                             }
                             .foregroundColor(.green)
                         } else if batteryMonitor.isPluggedIn {
-                            Text("Adaptor AC")
+                            Text(L10n.Battery.acAdapter)
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(.cyan)
                         } else {
-                            Text("\(batteryMonitor.healthPercent)% Sehat")
+                            Text("\(batteryMonitor.healthPercent)% \(L10n.Battery.healthSuffix)")
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(.white.opacity(0.85))
                         }

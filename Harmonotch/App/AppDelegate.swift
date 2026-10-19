@@ -58,6 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.updateStatusBarButton()
             }
             .store(in: &cancellables)
+
+        LanguageManager.shared.$currentLanguage
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
     }
 
     private func updateStatusBarButton() {
@@ -80,11 +87,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // 2. Teks waktu/siklus: Hanya muncul jika Notch sedang di-hide
         if isHidden {
             if isPlaying {
-                button.title = " Adzan \(AdzanPlayer.shared.playingPrayerName)"
+                button.title = " Adzan \(L10n.Prayer.localizedPrayerName(AdzanPlayer.shared.playingPrayerName))"
             } else if selectedTab == .prayer, let next = PrayerManager.shared.nextPrayerItem {
                 button.title = " \(next.name) \(next.timeString)"
             } else if selectedTab == .battery {
-                button.title = " \(BatteryMonitor.shared.cycleCount) Siklus"
+                button.title = " \(BatteryMonitor.shared.cycleCount) \(L10n.Menu.cyclesSuffix)"
             } else {
                 button.title = ""
             }
@@ -98,7 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let titleItem = NSMenuItem(title: "Harmonotch — Islamic Notch", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: L10n.Menu.appTitle, action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
 
@@ -106,30 +113,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Toggle Notch Drawer
         let toggleItem = NSMenuItem(
-            title: NotchViewModel.shared.isExpanded ? "Tutup Drawer Notch" : "Buka Drawer Notch",
+            title: NotchViewModel.shared.isExpanded ? L10n.Menu.closeDrawer : L10n.Menu.openDrawer,
             action: #selector(toggleNotchDrawer),
             keyEquivalent: "n"
         )
         toggleItem.target = self
+        toggleItem.image = NSImage(systemSymbolName: "menubar.dock.rectangle", accessibilityDescription: nil)
         menu.addItem(toggleItem)
 
         // Opsi Sembunyikan / Tampilkan Notch di Layar
         let isHidden = NotchWindowController.shared.isNotchHidden
-        let hideTitle = isHidden ? "Tampilkan Notch di Layar" : "Sembunyikan Notch di Layar"
+        let hideTitle = isHidden ? L10n.Menu.showNotch : L10n.Menu.hideNotch
         let hideItem = NSMenuItem(title: hideTitle, action: #selector(toggleNotchVisibility), keyEquivalent: "h")
         hideItem.target = self
+        hideItem.image = NSImage(systemSymbolName: isHidden ? "eye" : "eye.slash", accessibilityDescription: nil)
         menu.addItem(hideItem)
+
+        // Submenu Ganti Bahasa
+        let langItem = NSMenuItem(title: L10n.Menu.languageMenu, action: nil, keyEquivalent: "")
+        langItem.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
+        let langSubmenu = NSMenu()
+        for lang in AppLanguage.allCases {
+            let item = NSMenuItem(
+                title: lang.displayName,
+                action: #selector(switchLanguage(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = lang
+            item.state = LanguageManager.shared.currentLanguage == lang ? .on : .off
+            langSubmenu.addItem(item)
+        }
+        langItem.submenu = langSubmenu
+        menu.addItem(langItem)
 
         menu.addItem(NSMenuItem.separator())
 
         // Info Lokasi
-        let locItem = NSMenuItem(title: "📍 Wilayah: \(PrayerManager.shared.currentLocationName)", action: nil, keyEquivalent: "")
+        let locItem = NSMenuItem(title: "\(L10n.Menu.locationPrefix)\(PrayerManager.shared.currentLocationName)", action: nil, keyEquivalent: "")
         locItem.isEnabled = false
+        locItem.image = NSImage(systemSymbolName: "mappin.and.ellipse", accessibilityDescription: nil)
         menu.addItem(locItem)
 
         // Daftar 5 Waktu Sholat di Menu
         for prayer in PrayerManager.shared.prayerItems {
-            let indicator = prayer.isNext ? " 🟢 (Berikutnya)" : (prayer.isCurrent ? " 🟡 (Sekarang)" : "")
+            let indicator = prayer.isNext ? L10n.Menu.nextTag : (prayer.isCurrent ? L10n.Menu.nowTag : "")
             let pItem = NSMenuItem(
                 title: "\(prayer.name) — \(prayer.timeString)\(indicator)",
                 action: nil,
@@ -142,17 +170,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // Test / Stop Adzan
-        let adzanText = AdzanPlayer.shared.isPlaying ? "⏹ Hentikan Adzan" : "▶️ Uji Coba Audio Adzan"
+        let adzanText = AdzanPlayer.shared.isPlaying ? L10n.Menu.stopAdzan : L10n.Menu.testAdzan
         let testAdzanItem = NSMenuItem(title: adzanText, action: #selector(toggleTestAdzan), keyEquivalent: "t")
         testAdzanItem.target = self
+        testAdzanItem.image = NSImage(systemSymbolName: AdzanPlayer.shared.isPlaying ? "stop.fill" : "play.fill", accessibilityDescription: nil)
         menu.addItem(testAdzanItem)
 
         menu.addItem(NSMenuItem.separator())
 
         // Keluar
-        let quitItem = NSMenuItem(title: "Keluar Harmonotch", action: #selector(quitApp), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L10n.Menu.quit, action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
+        quitItem.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         menu.addItem(quitItem)
+    }
+
+    @objc private func switchLanguage(_ sender: NSMenuItem) {
+        guard let lang = sender.representedObject as? AppLanguage else { return }
+        LanguageManager.shared.setLanguage(lang)
+        updateStatusBarButton()
     }
 
     @objc private func toggleNotchDrawer() {
