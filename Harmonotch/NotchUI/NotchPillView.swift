@@ -101,9 +101,13 @@ struct NotchPillView: View {
                             .font(.system(size: 7))
                             .foregroundColor(.white.opacity(0.3))
 
-                        Text("\(batteryMonitor.cycleCount) C")
-                            .font(.system(size: 9, weight: .semibold, design: .rounded))
-                            .foregroundColor(Color.amberCustom)
+                        HStack(spacing: 2.5) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 7.5, weight: .bold))
+                            Text("\(batteryMonitor.cycleCount)")
+                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(Color.amberCustom)
                     }
                 } else {
                     // 4. Konten Media Player / Now Playing & Lirik Berjalan (Hingga 3 Baris)

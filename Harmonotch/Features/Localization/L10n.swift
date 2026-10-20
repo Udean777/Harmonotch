@@ -242,7 +242,8 @@ enum L10n {
             isEnglish ? "Islamic Prayer & Battery Hub for MacBook Notch" : "Pusat Jadwal Sholat & Baterai untuk Notch MacBook"
         }
         static var version: String {
-            "Version 1.0.0"
+            let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+            return "Version \(ver)"
         }
         static var developedBy: String {
             isEnglish ? "Crafted with care by Sajudin" : "Dibuat dengan penuh dedikasi oleh Sajudin"
