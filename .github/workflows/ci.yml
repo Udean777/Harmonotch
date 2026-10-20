@@ -37,10 +37,15 @@ jobs:
 
       - name: Build Harmonotch (Debug)
         run: |
+          set -o pipefail
           xcodebuild clean build \
             -project Harmonotch.xcodeproj \
             -scheme Harmonotch \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log || {
+              echo "::error::Build failed! Printing compile errors from log:"
+              grep -E "(error:|fatal error:)" xcodebuild.log || tail -n 100 xcodebuild.log
+              exit 1
+            }
