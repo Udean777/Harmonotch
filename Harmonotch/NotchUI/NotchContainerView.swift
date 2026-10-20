@@ -1,14 +1,10 @@
-//
-//  NotchContainerView.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 struct NotchContainerView: View {
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var mediaManager = MediaManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -21,14 +17,11 @@ struct NotchContainerView: View {
             let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
             switch notchVM.selectedTab {
             case .prayer:
-                // Jadwal sholat normal vs saat adzan aktif (dengan banner pemutar)
                 let contentHeight: CGFloat = adzanPlayer.isPlaying ? 325 : 272
                 return notchHeight + contentHeight
             case .battery:
-                // Status baterai (hero header, bar, 4 stat cards, divider, dan footer buttons)
                 return notchHeight + 288
             case .media:
-                // Media & Lirik (cover art, player controls, progress bar, synced lyrics container)
                 let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 350 : 288
                 return notchHeight + contentHeight
             }
@@ -52,40 +45,27 @@ struct NotchContainerView: View {
         }
     }
 
+    private var notchShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 0,
+            bottomLeadingRadius: targetRadius,
+            bottomTrailingRadius: targetRadius,
+            topTrailingRadius: 0,
+            style: .continuous
+        )
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-            // MARK: - 1. The Morphing Black Body
-            UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: targetRadius,
-                bottomTrailingRadius: targetRadius,
-                topTrailingRadius: 0,
-                style: .continuous
-            )
-            .fill(Color.black)
-            .overlay(
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 0,
-                    bottomLeadingRadius: targetRadius,
-                    bottomTrailingRadius: targetRadius,
-                    topTrailingRadius: 0,
-                    style: .continuous
-                )
-                .stroke(Color.white.opacity(notchVM.isExpanded ? 0.14 : 0.12), lineWidth: 0.8)
-            )
-            .shadow(
-                color: Color.black.opacity(notchVM.isExpanded ? 0.5 : 0.35),
-                radius: notchVM.isExpanded ? 14 : 6,
-                x: 0,
-                y: notchVM.isExpanded ? 8 : 3
+            HarmonotchSurface(
+                shape: notchShape,
+                isExpanded: notchVM.isExpanded
             )
             .frame(width: targetWidth, height: targetHeight)
 
-            // MARK: - 2. Konten
             Group {
                 if notchVM.isExpanded {
                     VStack(spacing: 10) {
-                        // Hardware Notch Clearance Spacer
                         if geometry.hasHardwareNotch {
                             Color.clear
                                 .frame(height: geometry.physicalNotchHeight + 4)
@@ -94,10 +74,8 @@ struct NotchContainerView: View {
                                 .frame(height: 8)
                         }
 
-                        // Segmented Control Switcher
                         NotchTabBar(selectedTab: $notchVM.selectedTab)
 
-                        // Tab Content
                         ZStack {
                             switch notchVM.selectedTab {
                             case .prayer:
@@ -146,7 +124,6 @@ struct NotchContainerView: View {
         .clipped()
         .frame(width: NotchWindowController.canvasWidth, alignment: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // Animasi asimetris: Expand lembut & elastis, Close super snappy & responsif
         .animation(
             notchVM.isExpanded
                 ? .spring(response: 0.34, dampingFraction: 0.76, blendDuration: 0.08)
@@ -157,5 +134,6 @@ struct NotchContainerView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: adzanPlayer.isPlaying)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.currentLyricText.isEmpty)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.hasActiveTrack)
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }

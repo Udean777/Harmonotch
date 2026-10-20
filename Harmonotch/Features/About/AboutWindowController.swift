@@ -1,8 +1,3 @@
-//
-//  AboutWindowController.swift
-//  Harmonotch
-//
-
 import AppKit
 import SwiftUI
 

@@ -1,24 +1,18 @@
-//
-//  BatteryDrawerView.swift
-//  Harmonotch
-//
-
 import SwiftUI
 import AppKit
 
 struct BatteryDrawerView: View {
     @ObservedObject var batteryMonitor = BatteryMonitor.shared
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
     @State private var isRefreshing: Bool = false
 
     var body: some View {
         VStack(spacing: 10) {
-            // MARK: - Hero Battery Status Header
             HStack(alignment: .center, spacing: 14) {
-                // Large Battery Icon
                 ZStack {
                     Circle()
-                        .fill(batteryAccentColor.opacity(0.18))
+                        .fill(batteryAccentColor.opacity(AppTheme.isDark ? 0.18 : 0.12))
                         .frame(width: 42, height: 42)
 
                     Image(systemName: batteryIconName)
@@ -27,65 +21,79 @@ struct BatteryDrawerView: View {
                         .symbolEffect(.pulse, isActive: batteryMonitor.isCharging)
                 }
 
-                // Battery % & State Text
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(batteryMonitor.currentCapacity)%")
                             .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppTheme.textPrimary)
 
                         if batteryMonitor.isCharging {
                             Text(L10n.Battery.charging)
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.accentGreen)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.green.opacity(0.2)))
+                                .background(Capsule().fill(AppTheme.accentGreen.opacity(0.18)))
                         } else if batteryMonitor.isPluggedIn {
                             Text(L10n.Battery.connected)
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.cyan)
+                                .foregroundColor(AppTheme.accentCyan)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.cyan.opacity(0.2)))
+                                .background(Capsule().fill(AppTheme.accentCyan.opacity(0.18)))
                         }
                     }
 
                     Text(batteryMonitor.timeRemainingFormatted)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white.opacity(0.75))
+                        .foregroundColor(AppTheme.textSecondary)
                 }
 
                 Spacer()
 
-                // Power Source Badge
                 HStack(spacing: 5) {
                     Image(systemName: batteryMonitor.isPluggedIn ? "bolt.fill" : "batteryblock.fill")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(batteryMonitor.isPluggedIn ? .green : .white.opacity(0.6))
+                        .foregroundColor(batteryMonitor.isPluggedIn ? AppTheme.accentGreen : AppTheme.textTertiary)
 
                     Text(powerSourceLabel)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(AppTheme.textPrimary)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.white.opacity(0.08))
-                .cornerRadius(8)
+                .background(
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(AppTheme.badgeBackground)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: AppTheme.isDark
+                                        ? [Color.white.opacity(0.25), Color.white.opacity(0.05)]
+                                        : [Color.white.opacity(0.8), Color.black.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.6
+                            )
+                    }
+                )
             }
             .padding(.horizontal, 16)
 
-            // MARK: - Visual Battery Level Bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.10))
+                        .fill(AppTheme.cardBorder)
                         .frame(height: 5)
 
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [batteryAccentColor.opacity(0.8), batteryAccentColor],
+                                colors: [batteryAccentColor.opacity(0.85), batteryAccentColor],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -99,39 +107,34 @@ struct BatteryDrawerView: View {
             .frame(height: 5)
             .padding(.horizontal, 16)
 
-            // MARK: - Metric Stat Cards (Grid of 4)
             HStack(spacing: 8) {
-                // 1. Health
                 BatteryStatCard(
                     icon: "heart.fill",
-                    iconColor: .green,
+                    iconColor: AppTheme.accentGreen,
                     title: L10n.Battery.healthTitle,
                     value: "\(batteryMonitor.healthPercent)%",
                     subtext: L10n.Battery.conditionNormal
                 )
 
-                // 2. Cycle Count
                 BatteryStatCard(
                     icon: "arrow.triangle.2.circlepath",
-                    iconColor: .cyan,
+                    iconColor: AppTheme.accentCyan,
                     title: L10n.Battery.cycleTitle,
                     value: "\(batteryMonitor.cycleCount)",
                     subtext: "\(L10n.Battery.maxPrefix)\(batteryMonitor.maxCycleCount)"
                 )
 
-                // 3. Real vs Design Capacity
                 BatteryStatCard(
                     icon: "gauge.with.needle.fill",
-                    iconColor: Color.amberCustom,
+                    iconColor: AppTheme.accentAmber,
                     title: L10n.Battery.capacityTitle,
                     value: batteryMonitor.nominalCapacity > 0 ? "\(batteryMonitor.nominalCapacity) mAh" : "-",
                     subtext: batteryMonitor.designCapacity > 0 ? "\(L10n.Battery.designPrefix)\(batteryMonitor.designCapacity)" : "-"
                 )
 
-                // 4. Power Source / State
                 BatteryStatCard(
                     icon: batteryMonitor.isPluggedIn ? "powerplug.fill" : "bolt.batteryblock",
-                    iconColor: batteryMonitor.isPluggedIn ? .green : .white.opacity(0.7),
+                    iconColor: batteryMonitor.isPluggedIn ? AppTheme.accentGreen : AppTheme.textSecondary,
                     title: L10n.Battery.powerSourceTitle,
                     value: batteryMonitor.isPluggedIn ? L10n.Battery.powerAC : L10n.Battery.powerBattery,
                     subtext: batteryMonitor.adapterWatts != nil ? "\(batteryMonitor.adapterWatts!)W" : L10n.Battery.internalBattery
@@ -140,12 +143,10 @@ struct BatteryDrawerView: View {
             .padding(.horizontal, 16)
 
             Divider()
-                .background(Color.white.opacity(0.1))
+                .background(AppTheme.divider)
                 .padding(.horizontal, 16)
 
-            // MARK: - Footer Controls
             HStack(spacing: 12) {
-                // Refresh Button
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         isRefreshing = true
@@ -163,17 +164,20 @@ struct BatteryDrawerView: View {
                         Text(L10n.Battery.refreshData)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(AppTheme.textSecondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.06))
+                    .background(AppTheme.badgeBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                    )
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
 
-                // Open macOS Battery Settings
                 Button(action: {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.battery") {
                         NSWorkspace.shared.open(url)
@@ -185,10 +189,14 @@ struct BatteryDrawerView: View {
                         Text(L10n.Battery.batterySettings)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(Color.amberCustom)
+                    .foregroundColor(AppTheme.accentAmber)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.06))
+                    .background(AppTheme.badgeBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                    )
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
@@ -199,7 +207,6 @@ struct BatteryDrawerView: View {
         .frame(width: 540)
     }
 
-    // MARK: - Helpers
     private var powerSourceLabel: String {
         if batteryMonitor.isPluggedIn {
             if let watts = batteryMonitor.adapterWatts {
@@ -228,20 +235,19 @@ struct BatteryDrawerView: View {
 
     private var batteryAccentColor: Color {
         if batteryMonitor.isCharging {
-            return .green
+            return AppTheme.accentGreen
         }
         let cap = batteryMonitor.currentCapacity
         if cap > 20 {
-            return .green
+            return AppTheme.accentGreen
         } else if cap > 10 {
-            return .orange
+            return AppTheme.accentAmber
         } else {
-            return .red
+            return AppTheme.accentRed
         }
     }
 }
 
-// MARK: - Compact Stat Card Component
 struct BatteryStatCard: View {
     let icon: String
     let iconColor: Color
@@ -253,7 +259,7 @@ struct BatteryStatCard: View {
         VStack(spacing: 4) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(0.16))
+                    .fill(iconColor.opacity(AppTheme.isDark ? 0.16 : 0.12))
                     .frame(width: 26, height: 26)
 
                 Image(systemName: icon)
@@ -264,12 +270,12 @@ struct BatteryStatCard: View {
             VStack(spacing: 2) {
                 Text(title)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(AppTheme.textSecondary)
                     .lineLimit(1)
 
                 Text(value)
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)
             }
 
@@ -280,19 +286,46 @@ struct BatteryStatCard: View {
                 .padding(.vertical, 1)
                 .background(
                     Capsule()
-                        .fill(iconColor.opacity(0.14))
+                        .fill(iconColor.opacity(AppTheme.isDark ? 0.14 : 0.10))
                 )
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 11)
-                .fill(Color.white.opacity(0.04))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
-                )
+            ZStack {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: AppTheme.isDark
+                                ? [Color.white.opacity(0.08), Color.white.opacity(0.03)]
+                                : [Color.white.opacity(0.60), Color.white.opacity(0.25)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: AppTheme.isDark
+                                ? [Color.white.opacity(0.28), Color.white.opacity(0.06)]
+                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.7
+                    )
+            }
+        )
+        .shadow(
+            color: AppTheme.isDark ? Color.clear : Color.black.opacity(0.04),
+            radius: 2,
+            x: 0,
+            y: 1
         )
     }
 }

@@ -1,8 +1,3 @@
-//
-//  LanguageManager.swift
-//  Harmonotch
-//
-
 import SwiftUI
 import Combine
 
@@ -51,7 +46,6 @@ final class LanguageManager: ObservableObject {
     }
 
     init() {
-        // Default: English unless explicitly set by user
         let savedCode = UserDefaults.standard.string(forKey: "Harmonotch_AppLanguage") ?? AppLanguage.english.rawValue
         self.currentLanguage = AppLanguage(rawValue: savedCode) ?? .english
     }

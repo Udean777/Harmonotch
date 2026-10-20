@@ -28,12 +28,24 @@ jobs:
           done
           xcodebuild -version
 
+      - name: Ensure Xcode Project Compatibility
+        run: |
+          # Ensure project file objectVersion is compatible with Xcode 16 runners
+          sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' Harmonotch.xcodeproj/project.pbxproj || true
+          # Ensure deployment target is set to macOS 14.0
+          sed -i '' 's/MACOSX_DEPLOYMENT_TARGET = [0-9.]*;/MACOSX_DEPLOYMENT_TARGET = 14.0;/' Harmonotch.xcodeproj/project.pbxproj || true
+
       - name: Build Harmonotch (Debug)
         run: |
+          set -o pipefail
           xcodebuild clean build \
             -project Harmonotch.xcodeproj \
             -scheme Harmonotch \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log || {
+              echo "::error::Build failed! Printing compile errors from log:"
+              grep -E "(error:|fatal error:)" xcodebuild.log || tail -n 100 xcodebuild.log
+              exit 1
+            }

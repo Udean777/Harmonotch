@@ -1,10 +1,8 @@
-//
-//  PrayerManager.swift
-//  Harmonotch
-//
-
 import Foundation
 import CoreLocation
+#if compiler(>=6.4)
+import MapKit
+#endif
 import Combine
 import UserNotifications
 
@@ -22,7 +20,6 @@ struct PrayerScheduleItem: Identifiable, Hashable {
 final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = PrayerManager()
 
-    // MARK: - Published Properties
     @Published var selectedCity: CityPreset {
         didSet {
             UserDefaults.standard.set(selectedCity.id, forKey: "Harmonotch_SelectedCityId")
@@ -52,13 +49,31 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     @Published var qiblaString: String = ""
     @Published var imsakTimeString: String = ""
 
-    // MARK: - Private Properties
     private let locationManager = CLLocationManager()
     private var customGPSCoordinates: CLLocationCoordinate2D?
     private var checkTimer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     private var lastTriggeredPrayerKey: String = ""
     private var lastCalculationDate: Date = Date()
+
+    private let calendar = Calendar.current
+    private let hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
+    private let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        f.timeZone = TimeZone.current
+        return f
+    }()
+    private let gregorianFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, d MMMM yyyy"
+        return f
+    }()
+    private let hijriFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .islamicUmmAlQura)
+        return f
+    }()
 
     override init() {
         let savedCityId = UserDefaults.standard.string(forKey: "Harmonotch_SelectedCityId") ?? CityPreset.defaultCity.id
@@ -70,7 +85,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
-        locationManager.distanceFilter = 5000 // 5 km hemat daya
+        locationManager.distanceFilter = 5000
 
         requestNotificationPermissions()
         recalculatePrayerTimes()
@@ -82,7 +97,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         }
     }
 
-    // MARK: - Day & Language Change Listeners
     private func setupDayChangeListener() {
         NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
             .receive(on: DispatchQueue.main)
@@ -99,7 +113,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
             .store(in: &cancellables)
     }
 
-    // MARK: - Calculations (Hanya dipanggil saat startup, ganti kota, atau ganti hari)
     func recalculatePrayerTimes() {
         let cal = Calendar.current
         let today = Date()
@@ -134,18 +147,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
             return
         }
 
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
-        timeFormatter.timeZone = TimeZone.current
-
-        // Hitung Arah Kiblat
         let qibla = Qibla(coordinates: coords)
         let heading = (qibla.direction * 10).rounded() / 10
         self.qiblaHeading = heading
         let cardinal = compassCardinal(for: heading)
         self.qiblaString = "\(Int(heading.rounded()))° \(cardinal)"
 
-        // Hitung Waktu Imsak (10 menit sebelum Subuh)
         let imsakDate = prayers.fajr.addingTimeInterval(-10 * 60)
         self.imsakTimeString = timeFormatter.string(from: imsakDate)
 
@@ -245,7 +252,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         }
     }
 
-    // MARK: - Optimized Periodic Timer (Hanya Cek Angka, Nol Redraw Saat Idle)
     private func startPeriodicTimer() {
         checkTimer = Timer.publish(every: 15, on: .main, in: .common)
             .autoconnect()
@@ -256,9 +262,8 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
     private func checkTimeAndTriggerAdzanIfNeeded() {
         let now = Date()
-        let cal = Calendar.current
+        let cal = self.calendar
 
-        // Cek jika hari sudah berganti
         if !cal.isDate(now, inSameDayAs: lastCalculationDate) {
             recalculatePrayerTimes()
             return
@@ -281,13 +286,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
                 if lastTriggeredPrayerKey != triggerKey {
                     lastTriggeredPrayerKey = triggerKey
                     triggerAdzan(for: prayer)
-                    recalculatePrayerTimes() // Update status active prayer
+                    recalculatePrayerTimes()
                 }
                 break
             }
         }
 
-        // Cek apakah next prayer sudah terlewati (update status tanpa full math)
         if let next = nextPrayerItem, now >= next.time {
             recalculatePrayerTimes()
         }
@@ -304,28 +308,21 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         self.activeAdzanAlertPrayer = nil
     }
 
-    // MARK: - Formatters
     private func formatGregorianDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
-        formatter.dateFormat = "EEEE, d MMMM yyyy"
-        return formatter.string(from: date)
+        gregorianFormatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
+        return gregorianFormatter.string(from: date)
     }
 
     private func formatHijriDate(_ date: Date) -> String {
-        let hijriCal = Calendar(identifier: .islamicUmmAlQura)
-        let formatter = DateFormatter()
-        formatter.calendar = hijriCal
-        formatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
+        hijriFormatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
         if LanguageManager.shared.currentLanguage == .english {
-            formatter.dateFormat = "d MMMM yyyy 'AH'"
+            hijriFormatter.dateFormat = "d MMMM yyyy 'AH'"
         } else {
-            formatter.dateFormat = "d MMMM yyyy 'H'"
+            hijriFormatter.dateFormat = "d MMMM yyyy 'H'"
         }
-        return formatter.string(from: date)
+        return hijriFormatter.string(from: date)
     }
 
-    // MARK: - Notifications
     private func requestNotificationPermissions() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             if granted {
@@ -344,13 +341,30 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         UNUserNotificationCenter.current().add(request)
     }
 
-    // MARK: - CLLocationManagerDelegate (Hemat Baterai: Langsung Berhenti Setelah Dapat Lokasi)
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last, useGPS else { return }
         self.customGPSCoordinates = location.coordinate
 
-        // Matikan GPS segera setelah posisi didapat untuk menghemat baterai MacBook
         locationManager.stopUpdatingLocation()
+
+#if compiler(>=6.4)
+        if #available(macOS 26.0, *) {
+            if let request = MKReverseGeocodingRequest(location: location) {
+                request.getMapItems { [weak self] mapItems, _ in
+                    let city = mapItems?.first?.addressRepresentations?.cityName
+                        ?? mapItems?.first?.address?.shortAddress
+                        ?? mapItems?.first?.name
+                    if let city = city, !city.isEmpty {
+                        DispatchQueue.main.async {
+                            self?.currentLocationName = city
+                            self?.recalculatePrayerTimes()
+                        }
+                    }
+                }
+                return
+            }
+        }
+#endif
 
         let geocoder = CLGeocoder()
         geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in

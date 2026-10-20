@@ -1,21 +1,15 @@
-//
-//  MediaDrawerView.swift
-//  Harmonotch
-//
-
 import SwiftUI
 import AppKit
 
 struct MediaDrawerView: View {
     @ObservedObject var mediaManager = MediaManager.shared
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(spacing: 12) {
             if mediaManager.hasActiveTrack {
-                // MARK: - Active Player Card (Artwork, Track Info & Playback Controls)
                 HStack(alignment: .center, spacing: 14) {
-                    // 1. Album Artwork
                     ZStack {
                         if let art = mediaManager.artworkImage {
                             Image(nsImage: art)
@@ -27,7 +21,7 @@ struct MediaDrawerView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color.amberCustom.opacity(0.35), Color.black.opacity(0.8)],
+                                        colors: [AppTheme.accentAmber.opacity(0.35), AppTheme.isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -40,23 +34,30 @@ struct MediaDrawerView: View {
                                 )
                         }
                     }
-                    .shadow(color: Color.black.opacity(0.4), radius: 6, x: 0, y: 3)
+                    .shadow(color: AppTheme.isDark ? Color.black.opacity(0.4) : Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: AppTheme.isDark
+                                        ? [Color.white.opacity(0.35), Color.white.opacity(0.08)]
+                                        : [Color.white.opacity(0.85), Color.black.opacity(0.08)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.8
+                            )
                     )
 
-                    // 2. Track Meta & Progress
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             Text(mediaManager.trackTitle)
                                 .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppTheme.textPrimary)
                                 .lineLimit(1)
 
                             Spacer()
 
-                            // Source App Badge
                             HStack(spacing: 3) {
                                 Image(systemName: mediaManager.mediaSource.iconName)
                                     .font(.system(size: 8))
@@ -66,25 +67,24 @@ struct MediaDrawerView: View {
                             .foregroundColor(mediaManager.mediaSource.brandColor)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(mediaManager.mediaSource.brandColor.opacity(0.15))
+                            .background(mediaManager.mediaSource.brandColor.opacity(AppTheme.isDark ? 0.15 : 0.10))
                             .cornerRadius(4)
                         }
 
                         Text(mediaManager.artistName)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.75))
+                            .foregroundColor(AppTheme.textSecondary)
                             .lineLimit(1)
 
-                        // Scrubber Slider
                         VStack(spacing: 2) {
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     Capsule()
-                                        .fill(Color.white.opacity(0.12))
+                                        .fill(AppTheme.cardBorder)
                                         .frame(height: 4)
 
                                     Capsule()
-                                        .fill(Color.amberCustom)
+                                        .fill(AppTheme.accentAmber)
                                         .frame(width: geo.size.width * CGFloat(mediaManager.progress), height: 4)
                                 }
                             }
@@ -97,21 +97,21 @@ struct MediaDrawerView: View {
                                 Text(mediaManager.formattedDuration)
                             }
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.4))
+                            .foregroundColor(AppTheme.textTertiary)
                         }
                     }
 
-                    // 3. Playback Controls
                     HStack(spacing: 8) {
                         Button(action: {
                             mediaManager.previousTrack()
                         }) {
                             Image(systemName: "backward.fill")
                                 .font(.system(size: 12))
-                                .foregroundColor(.white.opacity(0.85))
+                                .foregroundColor(AppTheme.textPrimary)
                                 .frame(width: 28, height: 28)
-                                .background(Color.white.opacity(0.08))
+                                .background(AppTheme.badgeBackground)
                                 .clipShape(Circle())
+                                .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
 
@@ -120,11 +120,11 @@ struct MediaDrawerView: View {
                         }) {
                             Image(systemName: mediaManager.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.system(size: 14))
-                                .foregroundColor(.black)
+                                .foregroundColor(AppTheme.isDark ? .black : .white)
                                 .frame(width: 34, height: 34)
-                                .background(Color.white)
+                                .background(AppTheme.isDark ? Color.white : Color(red: 0.12, green: 0.12, blue: 0.14))
                                 .clipShape(Circle())
-                                .shadow(color: Color.white.opacity(0.2), radius: 4)
+                                .shadow(color: AppTheme.isDark ? Color.white.opacity(0.2) : Color.black.opacity(0.15), radius: 4)
                         }
                         .buttonStyle(.plain)
 
@@ -133,10 +133,11 @@ struct MediaDrawerView: View {
                         }) {
                             Image(systemName: "forward.fill")
                                 .font(.system(size: 12))
-                                .foregroundColor(.white.opacity(0.85))
+                                .foregroundColor(AppTheme.textPrimary)
                                 .frame(width: 28, height: 28)
-                                .background(Color.white.opacity(0.08))
+                                .background(AppTheme.badgeBackground)
                                 .clipShape(Circle())
+                                .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
                     }
@@ -144,19 +145,18 @@ struct MediaDrawerView: View {
                 .padding(.horizontal, 16)
 
                 Divider()
-                    .background(Color.white.opacity(0.1))
+                    .background(AppTheme.divider)
                     .padding(.horizontal, 16)
 
-                // MARK: - Floating Synced Lyrics Section
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Image(systemName: "quote.bubble.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(Color.amberCustom)
+                            .foregroundColor(AppTheme.accentAmber)
 
                         Text(L10n.Media.syncedLyricsTitle)
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.amberCustom)
+                            .foregroundColor(AppTheme.accentAmber)
                             .textCase(.uppercase)
 
                         Spacer()
@@ -166,7 +166,7 @@ struct MediaDrawerView: View {
                         }) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white.opacity(0.45))
+                                .foregroundColor(AppTheme.textTertiary)
                         }
                         .buttonStyle(.plain)
 
@@ -178,13 +178,31 @@ struct MediaDrawerView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    // Lyrics Container
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.03))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(.ultraThinMaterial)
+
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: AppTheme.isDark
+                                        ? [Color.white.opacity(0.06), Color.white.opacity(0.02)]
+                                        : [Color.white.opacity(0.50), Color.white.opacity(0.20)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: AppTheme.isDark
+                                        ? [Color.white.opacity(0.28), Color.white.opacity(0.05)]
+                                        : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.8
                             )
 
                         if mediaManager.isInstrumental {
@@ -194,17 +212,17 @@ struct MediaDrawerView: View {
                                 Text(L10n.Media.instrumental)
                                     .font(.system(size: 11, weight: .medium))
                             }
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundColor(AppTheme.textSecondary)
                             .padding(.vertical, 30)
                         } else if mediaManager.isLoadingLyrics {
                             Text(L10n.Media.loadingLyrics)
                                 .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.45))
+                                .foregroundColor(AppTheme.textTertiary)
                                 .padding(.vertical, 30)
                         } else if mediaManager.syncedLyrics.isEmpty {
                             Text(L10n.Media.noLyricsFound)
                                 .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.4))
+                                .foregroundColor(AppTheme.textTertiary)
                                 .padding(.vertical, 30)
                         } else {
                             ScrollViewReader { proxy in
@@ -221,12 +239,12 @@ struct MediaDrawerView: View {
                                                         weight: isCurrent ? .bold : .medium,
                                                         design: .rounded
                                                     ))
-                                                    .foregroundColor(isCurrent ? .white : .white.opacity(0.4))
+                                                    .foregroundColor(isCurrent ? AppTheme.textPrimary : AppTheme.textTertiary)
                                                     .padding(.horizontal, isCurrent ? 8 : 4)
                                                     .padding(.vertical, isCurrent ? 4 : 2)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 6)
-                                                            .fill(isCurrent ? Color.amberCustom.opacity(0.22) : Color.clear)
+                                                            .fill(isCurrent ? AppTheme.accentAmber.opacity(AppTheme.isDark ? 0.22 : 0.15) : Color.clear)
                                                     )
                                                     .scaleEffect(isCurrent ? 1.02 : 1.0, anchor: .leading)
                                                     .animation(.spring(response: 0.28, dampingFraction: 0.75), value: isCurrent)
@@ -270,28 +288,27 @@ struct MediaDrawerView: View {
                     .padding(.horizontal, 16)
                 }
             } else {
-                // MARK: - Empty Idle State
                 VStack(spacing: 16) {
                     Spacer(minLength: 8)
 
                     ZStack {
                         Circle()
-                            .fill(Color.white.opacity(0.06))
+                            .fill(AppTheme.badgeBackground)
                             .frame(width: 54, height: 54)
 
                         Image(systemName: "music.note")
                             .font(.system(size: 24))
-                            .foregroundColor(Color.amberCustom)
+                            .foregroundColor(AppTheme.accentAmber)
                     }
 
                     VStack(spacing: 5) {
                         Text(L10n.Media.noTrackPlaying)
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppTheme.textPrimary)
 
                         Text(L10n.Media.openMusicPrompt)
                             .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundColor(AppTheme.textSecondary)
                     }
 
                     HStack(spacing: 12) {
@@ -307,7 +324,7 @@ struct MediaDrawerView: View {
                             .foregroundColor(.green)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
-                            .background(Color.green.opacity(0.15))
+                            .background(Color.green.opacity(AppTheme.isDark ? 0.15 : 0.10))
                             .cornerRadius(6)
                         }
                         .buttonStyle(.plain)
@@ -324,7 +341,7 @@ struct MediaDrawerView: View {
                             .foregroundColor(.pink)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
-                            .background(Color.pink.opacity(0.15))
+                            .background(Color.pink.opacity(AppTheme.isDark ? 0.15 : 0.10))
                             .cornerRadius(6)
                         }
                         .buttonStyle(.plain)

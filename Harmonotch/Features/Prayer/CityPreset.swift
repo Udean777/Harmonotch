@@ -1,8 +1,3 @@
-//
-//  CityPreset.swift
-//  Harmonotch
-//
-
 import Foundation
 import CoreLocation
 
@@ -34,6 +29,6 @@ struct CityPreset: Identifiable, Hashable {
     ]
 
     static var defaultCity: CityPreset {
-        presets[0] // Jakarta
+        presets[0]
     }
 }

@@ -1,8 +1,3 @@
-//
-//  L10n.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 enum L10n {
@@ -10,7 +5,6 @@ enum L10n {
         LanguageManager.shared.currentLanguage == .english
     }
 
-    // MARK: - Drawer Navigation
     enum Drawer {
         static var prayerTab: String {
             isEnglish ? "Prayer Times" : "Jadwal Sholat"
@@ -23,7 +17,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Prayer Schedules & Adzan
     enum Prayer {
         static func localizedPrayerName(_ key: String) -> String {
             switch key.lowercased() {
@@ -69,6 +62,9 @@ enum L10n {
         static var adzanMuted: String {
             isEnglish ? "Adzan Muted" : "Adzan Dimatikan"
         }
+        static var audioAdzanTitle: String {
+            isEnglish ? "Adzan Audio" : "Audio Adzan"
+        }
         static var testAudio: String {
             isEnglish ? "Test Audio" : "Uji Audio"
         }
@@ -86,7 +82,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Battery & Power Health Hub
     enum Battery {
         static var charging: String {
             isEnglish ? "Charging" : "Mengisi Daya"
@@ -156,7 +151,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Media & Synced Lyrics
     enum Media {
         static var nowPlaying: String {
             isEnglish ? "Now Playing" : "Sedang Diputar"
@@ -184,7 +178,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Menu Bar Status Item & Dropdown Menu
     enum Menu {
         static var appTitle: String {
             "Harmonotch — Islamic Notch"
@@ -204,14 +197,8 @@ enum L10n {
         static var languageMenu: String {
             isEnglish ? "Language" : "Bahasa"
         }
-        static var locationPrefix: String {
-            isEnglish ? "Location: " : "Wilayah: "
-        }
-        static var nextTag: String {
-            isEnglish ? " [Next]" : " [Berikutnya]"
-        }
-        static var nowTag: String {
-            isEnglish ? " [Now]" : " [Sekarang]"
+        static var tabsMenu: String {
+            isEnglish ? "Quick Tab Switcher" : "Pindah Tampilan Tab"
         }
         static var testAdzan: String {
             isEnglish ? "Test Adzan Audio" : "Uji Coba Audio Adzan"
@@ -219,8 +206,26 @@ enum L10n {
         static var stopAdzan: String {
             isEnglish ? "Stop Adzan Audio" : "Hentikan Adzan"
         }
+        static var muteAdzan: String {
+            isEnglish ? "Mute Adzan Audio" : "Bisukan Audio Adzan"
+        }
+        static var unmuteAdzan: String {
+            isEnglish ? "Unmute Adzan Audio" : "Bunyikan Audio Adzan"
+        }
         static var aboutHarmonotch: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
+        }
+        static var checkForUpdates: String {
+            isEnglish ? "Check for Updates..." : "Periksa Pembaruan..."
+        }
+        static func updateAvailable(version: String) -> String {
+            isEnglish ? "New Version Available (v\(version))" : "Versi Baru Tersedia (v\(version))"
+        }
+        static var downloadDMGAction: String {
+            isEnglish ? "Download DMG Installer" : "Unduh Installer DMG"
+        }
+        static var viewReleaseNotesAction: String {
+            isEnglish ? "View Release Notes on GitHub" : "Lihat Catatan Rilis di GitHub"
         }
         static var launchAtLogin: String {
             isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
@@ -233,7 +238,33 @@ enum L10n {
         }
     }
 
-    // MARK: - About & Acknowledgements
+    enum Theme {
+        static var themeMenu: String {
+            isEnglish ? "Theme" : "Tema Tampilan"
+        }
+        static var designStyleSection: String {
+            isEnglish ? "Design Style" : "Gaya Desain"
+        }
+        static var liquidGlass: String {
+            isEnglish ? "Liquid Glass (Frosted Blur)" : "Liquid Glass (Kaca Cair)"
+        }
+        static var zenSerenity: String {
+            isEnglish ? "Zen Serenity (Warm Paper)" : "Zen Serenity (Kertas Hangat)"
+        }
+        static var appearanceSection: String {
+            isEnglish ? "Appearance Mode" : "Mode Tampilan"
+        }
+        static var system: String {
+            isEnglish ? "Match System" : "Ikuti Sistem"
+        }
+        static var dark: String {
+            isEnglish ? "Always Dark" : "Selalu Gelap"
+        }
+        static var light: String {
+            isEnglish ? "Always Light" : "Selalu Terang"
+        }
+    }
+
     enum About {
         static var title: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
@@ -276,41 +307,43 @@ enum L10n {
             isEnglish ? "Close" : "Tutup"
         }
     }
-}
 
-// MARK: - Sleek Language Toggle Pill View Component
-struct LanguageTogglePill: View {
-    @ObservedObject var languageManager = LanguageManager.shared
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(AppLanguage.allCases) { lang in
-                Button(action: {
-                    languageManager.setLanguage(lang)
-                }) {
-                    Text(lang.shortCode)
-                        .font(.system(size: 10, weight: languageManager.currentLanguage == lang ? .bold : .medium))
-                        .foregroundColor(languageManager.currentLanguage == lang ? .white : .white.opacity(0.45))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background {
-                            if languageManager.currentLanguage == lang {
-                                Capsule()
-                                    .fill(Color.white.opacity(0.20))
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
+    enum Update {
+        static var available: String {
+            isEnglish ? "New Update Available" : "Pembaruan Tersedia"
         }
-        .padding(2)
-        .background(
-            Capsule()
-                .fill(Color.white.opacity(0.08))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.6)
-                )
-        )
+        static var checkForUpdates: String {
+            isEnglish ? "Check for Updates" : "Periksa Pembaruan"
+        }
+        static var checking: String {
+            isEnglish ? "Checking for updates..." : "Memeriksa pembaruan..."
+        }
+        static var upToDateTitle: String {
+            isEnglish ? "You're Up to Date!" : "Aplikasi Sudah Versi Terbaru!"
+        }
+        static func upToDateMessage(version: String) -> String {
+            isEnglish ? "Harmonotch \(version) is currently the newest version available." : "Harmonotch \(version) adalah versi terbaru yang tersedia saat ini."
+        }
+        static var checkFailedTitle: String {
+            isEnglish ? "Update Check Failed" : "Gagal Memeriksa Pembaruan"
+        }
+        static var networkErrorDesc: String {
+            isEnglish ? "Unable to reach GitHub servers. Please check your internet connection." : "Tidak dapat terhubung ke server GitHub. Silakan periksa koneksi internet Anda."
+        }
+        static func updateAvailableTitle(version: String) -> String {
+            isEnglish ? "Harmonotch \(version) is Available!" : "Harmonotch \(version) Telah Tersedia!"
+        }
+        static var updateAvailablePrompt: String {
+            isEnglish ? "A newer version of Harmonotch has been released with improvements and fixes. Would you like to download the DMG installer or view the release notes?" : "Versi terbaru Harmonotch telah dirilis dengan berbagai perbaikan dan peningkatan. Apakah Anda ingin mengunduh installer DMG atau membaca catatan rilis?"
+        }
+        static var downloadDMG: String {
+            isEnglish ? "Download DMG" : "Unduh DMG"
+        }
+        static var viewReleaseNotes: String {
+            isEnglish ? "Release Notes" : "Catatan Rilis"
+        }
+        static var later: String {
+            isEnglish ? "Later" : "Nanti"
+        }
     }
 }
