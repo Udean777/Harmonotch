@@ -34,9 +34,9 @@ struct MediaDrawerView: View {
                                 )
                                 .frame(width: 60, height: 60)
                                 .overlay(
-                                    Image(systemName: "music.note")
+                                    Image(systemName: mediaManager.mediaSource.iconName)
                                         .font(.system(size: 24))
-                                        .foregroundColor(Color.amberCustom)
+                                        .foregroundColor(mediaManager.mediaSource.brandColor)
                                 )
                         }
                     }
@@ -58,15 +58,15 @@ struct MediaDrawerView: View {
 
                             // Source App Badge
                             HStack(spacing: 3) {
-                                Image(systemName: "music.note")
+                                Image(systemName: mediaManager.mediaSource.iconName)
                                     .font(.system(size: 8))
                                 Text(mediaManager.mediaSource.rawValue)
                                     .font(.system(size: 9, weight: .semibold))
                             }
-                            .foregroundColor(.green)
+                            .foregroundColor(mediaManager.mediaSource.brandColor)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.15))
+                            .background(mediaManager.mediaSource.brandColor.opacity(0.15))
                             .cornerRadius(4)
                         }
 
@@ -238,7 +238,7 @@ struct MediaDrawerView: View {
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
                                 }
-                                .onChange(of: mediaManager.currentLyricIndex) { newIndex in
+                                .onChange(of: mediaManager.currentLyricIndex) { oldValue, newIndex in
                                     if newIndex >= 0 {
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             proxy.scrollTo(newIndex, anchor: .center)
@@ -248,7 +248,7 @@ struct MediaDrawerView: View {
                                 .onAppear {
                                     scrollToCurrentLyric(proxy: proxy)
                                 }
-                                .onChange(of: mediaManager.syncedLyrics.count) { _ in
+                                .onChange(of: mediaManager.syncedLyrics.count) {
                                     scrollToCurrentLyric(proxy: proxy)
                                 }
                             }
@@ -266,24 +266,25 @@ struct MediaDrawerView: View {
                             )
                         }
                     }
-                    .frame(height: 140)
+                    .frame(height: 180)
                     .padding(.horizontal, 16)
                 }
             } else {
                 // MARK: - Empty Idle State
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
+                    Spacer(minLength: 8)
+
                     ZStack {
                         Circle()
                             .fill(Color.white.opacity(0.06))
-                            .frame(width: 50, height: 50)
+                            .frame(width: 54, height: 54)
 
                         Image(systemName: "music.note")
-                            .font(.system(size: 22))
+                            .font(.system(size: 24))
                             .foregroundColor(Color.amberCustom)
                     }
-                    .padding(.top, 14)
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: 5) {
                         Text(L10n.Media.noTrackPlaying)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
@@ -293,19 +294,19 @@ struct MediaDrawerView: View {
                             .foregroundColor(.white.opacity(0.6))
                     }
 
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Button(action: {
                             openApp(bundleIdentifier: "com.spotify.client", fallbackUrl: "spotify:")
                         }) {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 6) {
                                 Image(systemName: "music.note.list")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 11))
                                 Text("Spotify")
                                     .font(.system(size: 11, weight: .semibold))
                             }
                             .foregroundColor(.green)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
                             .background(Color.green.opacity(0.15))
                             .cornerRadius(6)
                         }
@@ -314,24 +315,26 @@ struct MediaDrawerView: View {
                         Button(action: {
                             openApp(bundleIdentifier: "com.apple.Music", fallbackUrl: "music:")
                         }) {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 6) {
                                 Image(systemName: "apple.logo")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 11))
                                 Text("Apple Music")
                                     .font(.system(size: 11, weight: .semibold))
                             }
                             .foregroundColor(.pink)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
                             .background(Color.pink.opacity(0.15))
                             .cornerRadius(6)
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(.top, 4)
-                    .padding(.bottom, 16)
+
+                    Spacer(minLength: 12)
                 }
                 .frame(maxWidth: .infinity)
+                .frame(height: 250)
                 .padding(.horizontal, 20)
             }
         }

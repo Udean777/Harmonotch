@@ -29,7 +29,7 @@ struct NotchContainerView: View {
                 return notchHeight + 288
             case .media:
                 // Media & Lirik (cover art, player controls, progress bar, synced lyrics container)
-                let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 310 : 200
+                let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 350 : 288
                 return notchHeight + contentHeight
             }
         } else {

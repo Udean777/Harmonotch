@@ -1,6 +1,6 @@
 # 🏔️ Harmonotch
 
-> **Harmonotch** *(Harmony + Notch)* is an intelligent macOS utility that transforms your MacBook's hardware camera cutout into an elegant, mindful Dynamic Island—blending Islamic prayer awareness and comprehensive hardware battery monitoring seamlessly with native Apple design.
+> **Harmonotch** *(Harmony + Notch)* is an intelligent macOS utility that transforms your MacBook's hardware camera cutout into an elegant, mindful Dynamic Island—blending Islamic prayer awareness, comprehensive hardware battery monitoring, and active media playback with real-time synced lyrics seamlessly with native Apple design.
 
 [![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple&style=flat-square)](https://apple.com/macos)
 [![Swift 6](https://img.shields.io/badge/Swift-6.0%2B-F05138?logo=swift&logoColor=white&style=flat-square)](https://swift.org)
@@ -13,9 +13,17 @@
 ## 🌟 Features & Everyday Utility
 
 ### 🎛️ Segmented Capsule Navigation
-* **Multi-Mode Drawer Switcher:** Switch effortlessly between your daily prayer schedules and comprehensive power metrics with a fluid, native segmented pill control (`[ 🕌 Jadwal Sholat ]` and `[ 🔋 Status Baterai ]`).
-* **Intelligent Auto-Switching:** If an Adzan starts while inspecting battery metrics, Harmonotch automatically slides back to the prayer view, highlighting the active call to prayer with instant playback controls.
-* **Extensible Architecture:** Designed to scale effortlessly to future modules (such as Media Island & floating synced lyrics).
+* **Multi-Mode Drawer Switcher:** Switch effortlessly between daily prayer schedules, comprehensive power metrics, and active media playback with a fluid, native segmented pill control (`[ 🕌 Jadwal Sholat ]`, `[ 🔋 Status Baterai ]`, and `[ 🎵 Media & Lirik ]`).
+* **Intelligent Auto-Switching:** If an Adzan starts while inspecting battery or media metrics, Harmonotch automatically slides back to the prayer view, highlighting the active call to prayer with instant playback controls.
+* **Extensible & Fluid Geometry:** The drawer dynamically adapts its height based on the active tab and track state (e.g., 288 pt for battery & idle media, 350 pt for active player with synced lyrics).
+
+### 🎵 Media Island & Real-Time Synced Lyrics
+* **Universal Multi-Source Audio:** Seamlessly tracks playback from desktop players (**Spotify**, **Apple Music**) via lightweight native push notifications, as well as web browsers (**YouTube**, **YouTube Music**, and **Spotify Web** on Safari & Google Chrome).
+* **Smart Metadata Resolver (iTunes Search API):** Automatically cleans noisy video titles (stripping `[Official Video]`, `MV`, etc.) and resolves verified track titles, artist names, exact track durations, and crisp 600x600 high-resolution album artwork.
+* **Multi-Tier Synced Lyrics (LRCLIB):** Automatically fetches time-synchronized lyrics from [LRCLIB](https://lrclib.net/) with intelligent fallback (track + artist, general query, track-only, and Apple Music local lyrics).
+* **Dynamic 3-Line Mini Notch Lyrics:** In its resting notch state, active lyrics display with smooth cross-slide & fade transition animations up to 3 lines, turning the notch into a glanceable karaoke display.
+* **Interactive Scrubber & Seekable Lyrics:** Real-time 0.25-second playback tracking with an interactive amber scrubber bar and seekable lyric lines (click any line to jump directly to that timestamp in the track).
+* **Auto-Scroll Resume:** When reopening the expanded drawer, the lyric scroll view automatically animates directly to the currently playing line without resetting to the top.
 
 ### 🕌 Islamic Prayer Times & Automated Full Adzan
 * **Astronomical Accuracy:** Calculates daily prayer times (Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya) directly on-device using local solar calculation algorithms tailored to the standard Southeast Asian / Kemenag RI methodology (Fajr 20°, Isha 18° with safety ihtiyat adjustment).
@@ -37,12 +45,12 @@
 * **Full-Stack Localization:** Adapts Gregorian and Hijri calendar date formatters, dynamic prayer names, battery telemetry labels, and system menu bar action items.
 
 ### 🏝️ Direct Hardware Notch Extension (Under-Notch Island)
-* **Custom-Molded for MacBook Screens:** Engineered to match the exact 208 pt width of MacBook Air and Pro hardware cutouts. In its resting state, Harmonotch extends 26 pt downward with smooth corner radii, appearing as a natural physical extension of the laptop's display bezel.
+* **Custom-Molded for MacBook Screens:** Engineered to match the exact 208 pt width of MacBook Air and Pro hardware cutouts. In its resting state, Harmonotch extends downward with smooth corner radii, appearing as a natural physical extension of the laptop's display bezel.
 * **Zero Menu Bar Interference:** Positioned directly below the camera cutout with selective hit-testing. Your active application menus on the left (*File, Edit, View...*) and system status items on the right (*Wi-Fi, Battery, Clock*) remain 100% unobstructed and fully clickable.
 
 ### ✨ Fluid Morphing Spring Animation
-* **Continuous Surface Expansion:** Rather than a simple crossfade, the black notch body itself physically stretches and expands from a compact 208 pt pill into a spacious 540 pt drawer using Apple's fluid spring dynamics (`dampingFraction: 0.76`).
-* **Ultra-Responsive Snap-Back:** The moment your cursor leaves the drawer, the notch immediately snaps back into its compact shape with an intentional 0.14-second debounce to ensure an effortless, lag-free user experience.
+* **Continuous Surface Expansion:** Rather than a simple crossfade, the black notch body itself physically stretches and expands from a compact pill into a spacious 540 pt drawer using Apple's fluid spring dynamics (`dampingFraction: 0.76`).
+* **Snappy Dismiss:** The moment your cursor leaves the drawer, the notch immediately snaps back into its compact shape with an intentional 0.14-second debounce to ensure an effortless, lag-free user experience.
 
 ### 🌙 macOS Menu Bar Companion & Visibility Toggle
 * **Live Status Bar Display:** Displays the crescent icon alongside the upcoming prayer schedule (e.g., `🌙 Ashar 14:52`) following Apple Human Interface Guidelines (*Icon Leading, Text Trailing*). During Adzan, the status bar dynamically transitions to `🔊 Adzan Ashar`.
@@ -55,8 +63,9 @@
 Harmonotch is engineered from the ground up for zero-overhead, whisper-quiet background operation:
 
 * **0.0% CPU When Idle:** Eliminates continuous timer redraw loops. Astronomical solar equations are computed only once upon launch, when switching cities, or automatically at midnight (`NSCalendarDayChanged`). Battery metrics refresh once every 30 seconds on a low-priority background publisher.
+* **Precompiled Caching:** AppleScripts used for media and browser tab queries are precompiled and cached in memory, preventing continuous XProtect rule parsing and eliminating unnecessary I/O.
 * **Battery-Safe Single-Shot GPS:** CoreLocation automatically deactivates (`stopUpdatingLocation()`) as soon as the first coordinate fix is resolved, preventing continuous battery drain on MacBook hardware.
-* **100% Offline-First:** Operates completely standalone with zero external API dependencies or network connectivity required for prayer calculations and audio playback.
+* **100% Offline-First for Prayers:** Operates completely standalone with zero external API dependencies or network connectivity required for prayer calculations and audio playback.
 * **Anti-Clash AppKit Canvas:** Utilizes a fixed transparent canvas (`PassThroughHostingView`), eliminating Auto Layout constraint recursion and ensuring rock-solid stability.
 
 ---
@@ -74,7 +83,7 @@ Harmonotch/
 │   ├── NotchViewModel.swift          // Fluid hover and snappy dismiss state management
 │   ├── NotchContainerView.swift      // Morphing black body & multi-tab drawer
 │   ├── NotchTab.swift                // DrawerTab enum & Segmented Control Tab Bar
-│   └── NotchPillView.swift           // 208pt direct hardware notch extension
+│   └── NotchPillView.swift           // Direct hardware notch extension (Lyrics & Status)
 ├── Features/
 │   ├── Localization/
 │   │   ├── LanguageManager.swift     // Reactive language state engine (UserDefaults backed)
@@ -86,9 +95,12 @@ Harmonotch/
 │   │   ├── AdzanPlayer.swift         // AVAudioPlayer engine with mute & volume control
 │   │   ├── PrayerCardView.swift      // Compact individual prayer card view
 │   │   └── PrayerDrawerView.swift    // Expanded 5-time prayer drawer with location & controls
-│   └── Battery/
-│       ├── BatteryMonitor.swift      // IOKit & AppleSmartBattery hardware monitor
-│       └── BatteryDrawerView.swift   // Capacity, cycles, health %, and charger status
+│   ├── Battery/
+│   │   ├── BatteryMonitor.swift      // IOKit & AppleSmartBattery hardware monitor
+│   │   └── BatteryDrawerView.swift   // Capacity, cycles, health %, and charger status
+│   └── Media/
+│       ├── MediaManager.swift        // Native/Web media tracking, iTunes resolver & LRCLIB engine
+│       └── MediaDrawerView.swift     // Active player card, scrubber bar & floating synced lyrics
 └── Resources/
     ├── Assets.xcassets
     ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)
@@ -127,8 +139,9 @@ xcodebuild -project Harmonotch.xcodeproj -scheme Harmonotch -configuration Relea
 Harmonotch is built with respect and gratitude for the open-source community:
 
 * **[Adhan-Swift](https://github.com/batoulapps/adhan-swift)** by [Batoul Apps](https://github.com/batoulapps) (MIT License) — Powers astronomical prayer times and sunnah calculations offline.
+* **[LRCLIB](https://lrclib.net/)** by [tranxuanthang](https://github.com/tranxuanthang/lrcget) — Open community-driven database powering synchronized LRC lyrics matching.
 * **[IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html)** — High quality audio recordings for daily calls to prayer (`adzan.m4a`, `adzan_subuh.m4a`).
-* **Apple SF Symbols & IOKit** — Native system icons and hardware power telemetry APIs.
+* **Apple iTunes Search API, SF Symbols & IOKit** — Powering metadata resolution, native iconography, and hardware power telemetry.
 
 For full license texts and copyright notices, see [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
 
@@ -137,4 +150,3 @@ For full license texts and copyright notices, see [ACKNOWLEDGEMENTS.md](ACKNOWLE
 ## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
-
