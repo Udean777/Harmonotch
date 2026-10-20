@@ -1,6 +1,8 @@
 import Foundation
 import CoreLocation
+#if compiler(>=6.4)
 import MapKit
+#endif
 import Combine
 import UserNotifications
 
@@ -345,6 +347,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
         locationManager.stopUpdatingLocation()
 
+#if compiler(>=6.4)
         if #available(macOS 26.0, *) {
             if let request = MKReverseGeocodingRequest(location: location) {
                 request.getMapItems { [weak self] mapItems, _ in
@@ -358,15 +361,17 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
                         }
                     }
                 }
+                return
             }
-        } else {
-            let geocoder = CLGeocoder()
-            geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
-                if let city = placemarks?.first?.locality ?? placemarks?.first?.subAdministrativeArea {
-                    DispatchQueue.main.async {
-                        self?.currentLocationName = city
-                        self?.recalculatePrayerTimes()
-                    }
+        }
+#endif
+
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
+            if let city = placemarks?.first?.locality ?? placemarks?.first?.subAdministrativeArea {
+                DispatchQueue.main.async {
+                    self?.currentLocationName = city
+                    self?.recalculatePrayerTimes()
                 }
             }
         }
