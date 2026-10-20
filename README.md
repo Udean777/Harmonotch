@@ -1,12 +1,19 @@
-# 🏔️ Harmonotch
-
-> **Harmonotch** *(Harmony + Notch)* is an intelligent macOS utility that transforms your MacBook's hardware camera cutout into an elegant, mindful Dynamic Island—blending Islamic prayer awareness, comprehensive hardware battery monitoring, and active media playback with real-time synced lyrics seamlessly with native Apple design.
+<div align="center">
+  <img src="assets/logo.png" width="128" alt="Harmonotch Logo">
+  <h1>Harmonotch</h1>
+  <p><strong>Intelligent MacBook Notch Companion: Islamic Prayer Awareness, Battery Telemetry & Media Lyrics Island</strong></p>
 
 [![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple&style=flat-square)](https://apple.com/macos)
 [![Swift 6](https://img.shields.io/badge/Swift-6.0%2B-F05138?logo=swift&logoColor=white&style=flat-square)](https://swift.org)
 [![SwiftUI & AppKit](https://img.shields.io/badge/UI-SwiftUI%20%2B%20AppKit-blue?style=flat-square)](https://developer.apple.com/swiftui/)
 [![Offline First](https://img.shields.io/badge/Offline--First-100%25-brightgreen?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+
+</div>
+
+<br/>
+
+> **Harmonotch** *(Harmony + Notch)* is an intelligent macOS utility that transforms your MacBook's hardware camera cutout into an elegant, mindful Dynamic Island—blending Islamic prayer awareness, comprehensive hardware battery monitoring, and active media playback with real-time synced lyrics seamlessly with native Apple design.
 
 ---
 
@@ -101,10 +108,16 @@ Harmonotch/
 │   └── Media/
 │       ├── MediaManager.swift        // Native/Web media tracking, iTunes resolver & LRCLIB engine
 │       └── MediaDrawerView.swift     // Active player card, scrubber bar & floating synced lyrics
-└── Resources/
-    ├── Assets.xcassets
-    ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)
-    └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from IslamDownload.net)
+├── Assets.xcassets/
+│   ├── AppIcon.appiconset/           // Production macOS AppIcon assets (16x16 to 1024x1024 px)
+│   └── AccentColor.colorset/
+├── Resources/
+│   ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)
+│   └── adzan_subuh.m4a               // Specialized Fajr Adzan audio (AAC 48kHz from IslamDownload.net)
+└── .github/
+    └── workflows/
+        ├── ci.yml                    // Continuous integration & compile check on PRs
+        └── release.yml               // Manual DMG packaging, ad-hoc signing & GitHub Release
 ```
 
 ---
