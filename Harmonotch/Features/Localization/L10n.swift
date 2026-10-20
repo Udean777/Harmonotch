@@ -233,6 +233,34 @@ enum L10n {
         }
     }
 
+    // MARK: - Theme & Appearance
+    enum Theme {
+        static var themeMenu: String {
+            isEnglish ? "Theme" : "Tema Tampilan"
+        }
+        static var designStyleSection: String {
+            isEnglish ? "Design Style" : "Gaya Desain"
+        }
+        static var liquidGlass: String {
+            isEnglish ? "Liquid Glass (Frosted Blur)" : "Liquid Glass (Kaca Cair)"
+        }
+        static var zenSerenity: String {
+            isEnglish ? "Zen Serenity (Warm Paper)" : "Zen Serenity (Kertas Hangat)"
+        }
+        static var appearanceSection: String {
+            isEnglish ? "Appearance Mode" : "Mode Tampilan"
+        }
+        static var system: String {
+            isEnglish ? "Match System" : "Ikuti Sistem"
+        }
+        static var dark: String {
+            isEnglish ? "Always Dark" : "Selalu Gelap"
+        }
+        static var light: String {
+            isEnglish ? "Always Light" : "Selalu Terang"
+        }
+    }
+
     // MARK: - About & Acknowledgements
     enum About {
         static var title: String {
@@ -281,6 +309,7 @@ enum L10n {
 // MARK: - Sleek Language Toggle Pill View Component
 struct LanguageTogglePill: View {
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
 
     var body: some View {
         HStack(spacing: 2) {
@@ -290,13 +319,14 @@ struct LanguageTogglePill: View {
                 }) {
                     Text(lang.shortCode)
                         .font(.system(size: 10, weight: languageManager.currentLanguage == lang ? .bold : .medium))
-                        .foregroundColor(languageManager.currentLanguage == lang ? .white : .white.opacity(0.45))
+                        .foregroundColor(languageManager.currentLanguage == lang ? AppTheme.textPrimary : AppTheme.textTertiary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                         .background {
                             if languageManager.currentLanguage == lang {
                                 Capsule()
-                                    .fill(Color.white.opacity(0.20))
+                                    .fill(AppTheme.tabActiveBackground)
+                                    .shadow(color: AppTheme.isDark ? .clear : Color.black.opacity(0.08), radius: 2, y: 1)
                             }
                         }
                 }
@@ -305,12 +335,72 @@ struct LanguageTogglePill: View {
         }
         .padding(2)
         .background(
-            Capsule()
-                .fill(Color.white.opacity(0.08))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.6)
-                )
+            ZStack {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                Capsule()
+                    .fill(AppTheme.tabBarBackground)
+                Capsule()
+                    .stroke(
+                        LinearGradient(
+                            colors: AppTheme.isDark
+                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
+                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.6
+                    )
+            }
+        )
+    }
+}
+
+// MARK: - Sleek Theme Toggle Pill View Component
+struct ThemeTogglePill: View {
+    @ObservedObject var themeManager = ThemeManager.shared
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(AppThemeMode.allCases) { mode in
+                Button(action: {
+                    themeManager.setTheme(mode)
+                }) {
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 10, weight: themeManager.currentMode == mode ? .bold : .medium))
+                        .foregroundColor(themeManager.currentMode == mode ? AppTheme.textPrimary : AppTheme.textTertiary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background {
+                            if themeManager.currentMode == mode {
+                                Capsule()
+                                    .fill(AppTheme.tabActiveBackground)
+                                    .shadow(color: AppTheme.isDark ? .clear : Color.black.opacity(0.08), radius: 2, y: 1)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(
+            ZStack {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                Capsule()
+                    .fill(AppTheme.tabBarBackground)
+                Capsule()
+                    .stroke(
+                        LinearGradient(
+                            colors: AppTheme.isDark
+                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
+                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.6
+                    )
+            }
         )
     }
 }

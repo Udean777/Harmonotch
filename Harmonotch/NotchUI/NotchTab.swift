@@ -38,6 +38,7 @@ enum DrawerTab: String, CaseIterable, Identifiable {
 struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
     @Namespace private var tabAnimation
 
     var body: some View {
@@ -55,16 +56,31 @@ struct NotchTabBar: View {
                         Text(tab.title)
                             .font(.system(size: 12, weight: selectedTab == tab ? .semibold : .medium))
                     }
-                    .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.55))
+                    .foregroundColor(selectedTab == tab ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 5)
                     .background {
                         if selectedTab == tab {
                             Capsule()
-                                .fill(Color.white.opacity(0.18))
+                                .fill(AppTheme.tabActiveBackground)
                                 .overlay(
                                     Capsule()
-                                        .stroke(Color.white.opacity(0.25), lineWidth: 0.7)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: AppTheme.isDark
+                                                    ? [Color.white.opacity(0.40), Color.white.opacity(0.10)]
+                                                    : [Color.white.opacity(0.95), Color.black.opacity(0.08)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 0.7
+                                        )
+                                )
+                                .shadow(
+                                    color: AppTheme.isDark ? Color.black.opacity(0.25) : Color.black.opacity(0.08),
+                                    radius: 3,
+                                    x: 0,
+                                    y: 1.5
                                 )
                                 .matchedGeometryEffect(id: "ActiveTabIndicator", in: tabAnimation)
                         }
@@ -76,12 +92,23 @@ struct NotchTabBar: View {
         }
         .padding(3)
         .background(
-            Capsule()
-                .fill(Color.white.opacity(0.08))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                )
+            ZStack {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                Capsule()
+                    .fill(AppTheme.tabBarBackground)
+                Capsule()
+                    .stroke(
+                        LinearGradient(
+                            colors: AppTheme.isDark
+                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
+                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.6
+                    )
+            }
         )
     }
 }

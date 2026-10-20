@@ -9,6 +9,7 @@ struct NotchContainerView: View {
     @ObservedObject var notchVM = NotchViewModel.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var mediaManager = MediaManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
 
     let geometry = NotchGeometry.current()
 
@@ -52,32 +53,22 @@ struct NotchContainerView: View {
         }
     }
 
+    private var notchShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 0,
+            bottomLeadingRadius: targetRadius,
+            bottomTrailingRadius: targetRadius,
+            topTrailingRadius: 0,
+            style: .continuous
+        )
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-            // MARK: - 1. The Morphing Black Body
-            UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: targetRadius,
-                bottomTrailingRadius: targetRadius,
-                topTrailingRadius: 0,
-                style: .continuous
-            )
-            .fill(Color.black)
-            .overlay(
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 0,
-                    bottomLeadingRadius: targetRadius,
-                    bottomTrailingRadius: targetRadius,
-                    topTrailingRadius: 0,
-                    style: .continuous
-                )
-                .stroke(Color.white.opacity(notchVM.isExpanded ? 0.14 : 0.12), lineWidth: 0.8)
-            )
-            .shadow(
-                color: Color.black.opacity(notchVM.isExpanded ? 0.5 : 0.35),
-                radius: notchVM.isExpanded ? 14 : 6,
-                x: 0,
-                y: notchVM.isExpanded ? 8 : 3
+            // MARK: - 1. The Morphing Adaptive Body (Liquid Glass vs Zen Serenity)
+            HarmonotchSurface(
+                shape: notchShape,
+                isExpanded: notchVM.isExpanded
             )
             .frame(width: targetWidth, height: targetHeight)
 
@@ -157,5 +148,6 @@ struct NotchContainerView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: adzanPlayer.isPlaying)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.currentLyricText.isEmpty)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: mediaManager.hasActiveTrack)
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }

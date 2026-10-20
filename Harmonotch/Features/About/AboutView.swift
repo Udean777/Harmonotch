@@ -2,45 +2,45 @@
 //  AboutView.swift
 //  Harmonotch
 //
+//
 
 import SwiftUI
 import AppKit
 
 struct AboutView: View {
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
     @State private var showingAdhanLicense: Bool = false
 
     var body: some View {
         VStack(spacing: 16) {
             // MARK: - App Branding Header
-            VStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.amberCustom.opacity(0.3), Color.black],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 56, height: 56)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.amberCustom.opacity(0.4), lineWidth: 1)
-                        )
-
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 26))
-                        .foregroundColor(Color.amberCustom)
+            VStack(spacing: 10) {
+                Group {
+                    if let nsImage = NSImage(named: "AppLogo") ?? NSImage(named: NSImage.applicationIconName) ?? NSApplication.shared.applicationIconImage {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                    } else {
+                        Image("AppLogo")
+                            .resizable()
+                    }
                 }
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 68, height: 68)
+                .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(AppTheme.accentAmber.opacity(0.35), lineWidth: 1)
+                )
+                .shadow(color: AppTheme.accentAmber.opacity(AppTheme.isDark ? 0.25 : 0.15), radius: 10, x: 0, y: 3)
 
                 Text("Harmonotch")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.textPrimary)
 
                 Text(L10n.About.subtitle)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.65))
+                    .foregroundColor(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
 
@@ -50,18 +50,18 @@ struct AboutView: View {
                     Text(L10n.About.developedBy)
                 }
                 .font(.system(size: 10, weight: .regular))
-                .foregroundColor(.white.opacity(0.45))
+                .foregroundColor(AppTheme.textTertiary)
             }
             .padding(.top, 8)
 
             Divider()
-                .background(Color.white.opacity(0.1))
+                .background(AppTheme.divider)
 
             // MARK: - Open Source Acknowledgements Section
             VStack(alignment: .leading, spacing: 10) {
                 Text(L10n.About.openSourceCredits)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color.amberCustom)
+                    .foregroundColor(AppTheme.accentAmber)
                     .textCase(.uppercase)
 
                 ScrollView(.vertical, showsIndicators: true) {
@@ -83,15 +83,15 @@ struct AboutView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("MIT License — Copyright © 2018 Batoul Apps")
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .foregroundColor(AppTheme.textPrimary)
 
                                 Text("Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software...")
                                     .font(.system(size: 8, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .foregroundColor(AppTheme.textSecondary)
                                     .lineSpacing(2)
                             }
                             .padding(8)
-                            .background(Color.white.opacity(0.04))
+                            .background(AppTheme.badgeBackground)
                             .cornerRadius(6)
                             .transition(.opacity)
                         }
@@ -130,7 +130,7 @@ struct AboutView: View {
             HStack {
                 Text("MIT License © 2026 Sajudin")
                     .font(.system(size: 9))
-                    .foregroundColor(.white.opacity(0.3))
+                    .foregroundColor(AppTheme.textTertiary)
 
                 Spacer()
 
@@ -148,10 +148,9 @@ struct AboutView: View {
             .padding(.bottom, 12)
         }
         .frame(width: 440, height: 420)
-        .background(
-            Color(nsColor: .windowBackgroundColor)
-                .opacity(0.96)
-        )
+        .background(AppTheme.surfaceBackground)
+        .background(.ultraThinMaterial)
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }
 
@@ -169,39 +168,39 @@ private struct AcknowledgementCard: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: iconName)
                 .font(.system(size: 14))
-                .foregroundColor(Color.amberCustom)
+                .foregroundColor(AppTheme.accentAmber)
                 .frame(width: 22, height: 22)
-                .background(Color.white.opacity(0.06))
+                .background(AppTheme.badgeBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 5))
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(title)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppTheme.textPrimary)
 
                     Text("•")
                         .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.3))
+                        .foregroundColor(AppTheme.textTertiary)
 
                     Text(author)
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.white.opacity(0.65))
+                        .foregroundColor(AppTheme.textSecondary)
 
                     Spacer()
 
                     Text(license)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.green.opacity(0.9))
+                        .foregroundColor(AppTheme.accentGreen)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(Color.green.opacity(0.12))
+                        .background(AppTheme.accentGreen.opacity(0.12))
                         .cornerRadius(4)
                 }
 
                 Text(description)
                     .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.55))
+                    .foregroundColor(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
@@ -213,7 +212,7 @@ private struct AcknowledgementCard: View {
                                     .font(.system(size: 8))
                             }
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(.cyan)
+                            .foregroundColor(AppTheme.accentCyan)
                         }
                     }
 
@@ -221,7 +220,7 @@ private struct AcknowledgementCard: View {
                         Button(action: onViewLicense) {
                             Text(L10n.About.viewLicense)
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(Color.amberCustom)
+                                .foregroundColor(AppTheme.accentAmber)
                         }
                         .buttonStyle(.plain)
                     }
@@ -230,7 +229,11 @@ private struct AcknowledgementCard: View {
             }
         }
         .padding(10)
-        .background(Color.white.opacity(0.04))
+        .background(AppTheme.cardBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+        )
         .cornerRadius(8)
     }
 }

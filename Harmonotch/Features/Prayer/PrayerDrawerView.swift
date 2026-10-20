@@ -2,6 +2,7 @@
 //  PrayerDrawerView.swift
 //  Harmonotch
 //
+//
 
 import SwiftUI
 
@@ -9,11 +10,12 @@ struct PrayerDrawerView: View {
     @ObservedObject var prayerManager = PrayerManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var languageManager = LanguageManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(spacing: 10) {
             // MARK: - Header (Wilayah, Language Toggle, & Tanggal)
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
                 // Lokasi & Picker
                 Menu {
                     Toggle(isOn: $prayerManager.useGPS) {
@@ -39,20 +41,37 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 5) {
                         Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.green)
+                            .foregroundColor(AppTheme.accentGreen)
 
                         Text(prayerManager.currentLocationName)
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppTheme.textPrimary)
 
                         Image(systemName: "chevron.down")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundColor(AppTheme.textTertiary)
                     }
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(8)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(AppTheme.badgeBackground)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: AppTheme.isDark
+                                            ? [Color.white.opacity(0.25), Color.white.opacity(0.05)]
+                                            : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.6
+                                )
+                        }
+                    )
                 }
                 .menuStyle(.borderlessButton)
 
@@ -61,17 +80,34 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "safari.fill")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(Color.amberCustom)
+                            .foregroundColor(AppTheme.accentAmber)
                             .rotationEffect(.degrees(prayerManager.qiblaHeading))
 
                         Text("\(L10n.Prayer.qibla) \(prayerManager.qiblaString)")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.85))
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(6)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(AppTheme.badgeBackground)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: AppTheme.isDark
+                                            ? [Color.white.opacity(0.22), Color.white.opacity(0.04)]
+                                            : [Color.white.opacity(0.80), Color.black.opacity(0.05)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.5
+                                )
+                        }
+                    )
                 }
 
                 // Waktu Imsak Badge
@@ -79,16 +115,31 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "moon.haze.fill")
                             .font(.system(size: 9))
-                            .foregroundColor(.cyan)
+                            .foregroundColor(AppTheme.accentCyan)
 
                         Text("\(L10n.Prayer.imsak) \(prayerManager.imsakTimeString)")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(.cyan)
+                            .foregroundColor(AppTheme.accentCyan)
                     }
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
-                    .background(Color.cyan.opacity(0.12))
-                    .cornerRadius(6)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(AppTheme.accentCyan.opacity(AppTheme.isDark ? 0.12 : 0.08))
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [AppTheme.accentCyan.opacity(0.4), AppTheme.accentCyan.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.5
+                                )
+                        }
+                    )
                 }
 
                 Spacer()
@@ -97,11 +148,11 @@ struct PrayerDrawerView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(prayerManager.gregorianDateString)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(AppTheme.textSecondary)
 
                     Text(prayerManager.hijriDateString)
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(Color.amberCustom)
+                        .foregroundColor(AppTheme.accentAmber)
                 }
             }
             .padding(.horizontal, 16)
@@ -111,17 +162,17 @@ struct PrayerDrawerView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "speaker.wave.3.fill")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppTheme.accentGreen)
                         .symbolEffect(.variableColor.iterative.reversing)
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(L10n.Prayer.adzanBannerTitle(name: adzanPlayer.playingPrayerName))
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppTheme.textPrimary)
 
                         Text(L10n.Prayer.adzanBannerSubtitle)
                             .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(AppTheme.textSecondary)
                     }
 
                     Spacer()
@@ -138,7 +189,7 @@ struct PrayerDrawerView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Color.red.opacity(0.85))
+                        .background(Color.red.opacity(0.88))
                         .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
@@ -148,13 +199,15 @@ struct PrayerDrawerView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(LinearGradient(
-                            colors: [Color.green.opacity(0.35), Color.black.opacity(0.6)],
+                            colors: AppTheme.isDark
+                                ? [Color.green.opacity(0.35), Color.black.opacity(0.6)]
+                                : [AppTheme.accentGreen.opacity(0.18), AppTheme.accentGreen.opacity(0.06)],
                             startPoint: .leading,
                             endPoint: .trailing
                         ))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.green.opacity(0.4), lineWidth: 1)
+                                .stroke(AppTheme.accentGreen.opacity(0.4), lineWidth: 1)
                         )
                 )
                 .padding(.horizontal, 16)
@@ -170,11 +223,11 @@ struct PrayerDrawerView: View {
             .padding(.horizontal, 16)
 
             Divider()
-                .background(Color.white.opacity(0.1))
+                .background(AppTheme.divider)
                 .padding(.horizontal, 16)
 
             // MARK: - Footer Controls
-            HStack(spacing: 14) {
+            HStack(spacing: 12) {
                 // Mute / Unmute Toggle
                 Button(action: {
                     adzanPlayer.isMuted.toggle()
@@ -182,15 +235,19 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 5) {
                         Image(systemName: adzanPlayer.isMuted ? "bell.slash.fill" : "bell.fill")
                             .font(.system(size: 11))
-                            .foregroundColor(adzanPlayer.isMuted ? .red : .green)
+                            .foregroundColor(adzanPlayer.isMuted ? AppTheme.accentRed : AppTheme.accentGreen)
 
                         Text(adzanPlayer.isMuted ? L10n.Prayer.adzanMuted : L10n.Prayer.adzanActive)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.06))
+                    .background(AppTheme.badgeBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                    )
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
@@ -199,20 +256,26 @@ struct PrayerDrawerView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "speaker.fill")
                         .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(AppTheme.textTertiary)
 
                     Slider(value: Binding(
                         get: { Double(adzanPlayer.volume) },
                         set: { adzanPlayer.volume = Float($0) }
                     ), in: 0...1)
-                    .frame(width: 80)
+                    .frame(width: 75)
 
                     Image(systemName: "speaker.wave.3.fill")
                         .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(AppTheme.textTertiary)
                 }
 
                 Spacer()
+
+                // Theme Quick Toggle Pill
+                ThemeTogglePill()
+
+                // Language Quick Toggle Pill
+                LanguageTogglePill()
 
                 // Test Adzan Button
                 Button(action: {
@@ -224,15 +287,19 @@ struct PrayerDrawerView: View {
                         Text(adzanPlayer.isPlaying ? L10n.Prayer.stopAudio : L10n.Prayer.testAudio)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(adzanPlayer.isPlaying ? .red : Color.amberCustom)
+                    .foregroundColor(adzanPlayer.isPlaying ? AppTheme.accentRed : AppTheme.accentAmber)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.06))
+                    .background(AppTheme.badgeBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                    )
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 18)
             .padding(.bottom, 16)
         }
         .frame(width: 540)

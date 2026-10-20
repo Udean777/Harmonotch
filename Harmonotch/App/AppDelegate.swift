@@ -80,6 +80,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.updateStatusBarButton()
             }
             .store(in: &cancellables)
+
+        ThemeManager.shared.$currentMode
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        ThemeManager.shared.$currentStyle
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
     }
 
     private func updateStatusBarButton() {
@@ -157,16 +171,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for lang in AppLanguage.allCases {
             let item = NSMenuItem(
                 title: lang.displayName,
-                action: #selector(switchLanguage(_:)),
+                action: #selector(AppDelegate.switchLanguage(_:)),
                 keyEquivalent: ""
             )
             item.target = self
             item.representedObject = lang
-            item.state = LanguageManager.shared.currentLanguage == lang ? .on : .off
+            item.state = (LanguageManager.shared.currentLanguage == lang) ? NSControl.StateValue.on : NSControl.StateValue.off
             langSubmenu.addItem(item)
         }
         langItem.submenu = langSubmenu
         menu.addItem(langItem)
+
+        // Submenu Pilihan Tema
+        let themeItem = NSMenuItem(title: L10n.Theme.themeMenu, action: nil, keyEquivalent: "")
+        themeItem.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: nil)
+        let themeSubmenu = NSMenu()
+
+        // 1. Seksi Gaya Desain (Design Style)
+        let styleHeader = NSMenuItem(title: L10n.Theme.designStyleSection, action: nil, keyEquivalent: "")
+        styleHeader.isEnabled = false
+        themeSubmenu.addItem(styleHeader)
+
+        for style in ThemeStyle.allCases {
+            let title: String
+            switch style {
+            case .liquidGlass:
+                title = L10n.Theme.liquidGlass
+            case .zenSerenity:
+                title = L10n.Theme.zenSerenity
+            }
+            let item = NSMenuItem(
+                title: title,
+                action: #selector(AppDelegate.switchThemeStyle(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = style
+            item.image = NSImage(systemSymbolName: style.icon, accessibilityDescription: nil)
+            item.state = (ThemeManager.shared.currentStyle == style) ? NSControl.StateValue.on : NSControl.StateValue.off
+            themeSubmenu.addItem(item)
+        }
+
+        themeSubmenu.addItem(NSMenuItem.separator())
+
+        // 2. Seksi Mode Tampilan (Appearance Mode)
+        let appearanceHeader = NSMenuItem(title: L10n.Theme.appearanceSection, action: nil, keyEquivalent: "")
+        appearanceHeader.isEnabled = false
+        themeSubmenu.addItem(appearanceHeader)
+
+        for mode in AppThemeMode.allCases {
+            let title: String
+            switch mode {
+            case .system:
+                title = L10n.Theme.system
+            case .dark:
+                title = L10n.Theme.dark
+            case .light:
+                title = L10n.Theme.light
+            }
+            let item = NSMenuItem(
+                title: title,
+                action: #selector(AppDelegate.switchTheme(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = mode
+            item.image = NSImage(systemSymbolName: mode.icon, accessibilityDescription: nil)
+            item.state = (ThemeManager.shared.currentMode == mode) ? NSControl.StateValue.on : NSControl.StateValue.off
+            themeSubmenu.addItem(item)
+        }
+        themeItem.submenu = themeSubmenu
+        menu.addItem(themeItem)
 
         // Launch at Login Toggle
         let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
@@ -240,9 +315,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         AboutWindowController.shared.show()
     }
 
-    @objc private func switchLanguage(_ sender: NSMenuItem) {
+    @objc func switchLanguage(_ sender: NSMenuItem) {
         guard let lang = sender.representedObject as? AppLanguage else { return }
         LanguageManager.shared.setLanguage(lang)
+        updateStatusBarButton()
+    }
+
+    @objc func switchTheme(_ sender: NSMenuItem) {
+        guard let mode = sender.representedObject as? AppThemeMode else { return }
+        ThemeManager.shared.setTheme(mode)
+        updateStatusBarButton()
+    }
+
+    @objc func switchThemeStyle(_ sender: NSMenuItem) {
+        guard let style = sender.representedObject as? ThemeStyle else { return }
+        ThemeManager.shared.setThemeStyle(style)
         updateStatusBarButton()
     }
 
