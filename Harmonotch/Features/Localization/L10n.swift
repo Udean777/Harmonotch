@@ -215,6 +215,18 @@ enum L10n {
         static var aboutHarmonotch: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
         }
+        static var checkForUpdates: String {
+            isEnglish ? "Check for Updates..." : "Periksa Pembaruan..."
+        }
+        static func updateAvailable(version: String) -> String {
+            isEnglish ? "New Version Available (v\(version))" : "Versi Baru Tersedia (v\(version))"
+        }
+        static var downloadDMGAction: String {
+            isEnglish ? "Download DMG Installer" : "Unduh Installer DMG"
+        }
+        static var viewReleaseNotesAction: String {
+            isEnglish ? "View Release Notes on GitHub" : "Lihat Catatan Rilis di GitHub"
+        }
         static var launchAtLogin: String {
             isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
         }
@@ -293,6 +305,45 @@ enum L10n {
         }
         static var close: String {
             isEnglish ? "Close" : "Tutup"
+        }
+    }
+
+    enum Update {
+        static var available: String {
+            isEnglish ? "New Update Available" : "Pembaruan Tersedia"
+        }
+        static var checkForUpdates: String {
+            isEnglish ? "Check for Updates" : "Periksa Pembaruan"
+        }
+        static var checking: String {
+            isEnglish ? "Checking for updates..." : "Memeriksa pembaruan..."
+        }
+        static var upToDateTitle: String {
+            isEnglish ? "You're Up to Date!" : "Aplikasi Sudah Versi Terbaru!"
+        }
+        static func upToDateMessage(version: String) -> String {
+            isEnglish ? "Harmonotch \(version) is currently the newest version available." : "Harmonotch \(version) adalah versi terbaru yang tersedia saat ini."
+        }
+        static var checkFailedTitle: String {
+            isEnglish ? "Update Check Failed" : "Gagal Memeriksa Pembaruan"
+        }
+        static var networkErrorDesc: String {
+            isEnglish ? "Unable to reach GitHub servers. Please check your internet connection." : "Tidak dapat terhubung ke server GitHub. Silakan periksa koneksi internet Anda."
+        }
+        static func updateAvailableTitle(version: String) -> String {
+            isEnglish ? "Harmonotch \(version) is Available!" : "Harmonotch \(version) Telah Tersedia!"
+        }
+        static var updateAvailablePrompt: String {
+            isEnglish ? "A newer version of Harmonotch has been released with improvements and fixes. Would you like to download the DMG installer or view the release notes?" : "Versi terbaru Harmonotch telah dirilis dengan berbagai perbaikan dan peningkatan. Apakah Anda ingin mengunduh installer DMG atau membaca catatan rilis?"
+        }
+        static var downloadDMG: String {
+            isEnglish ? "Download DMG" : "Unduh DMG"
+        }
+        static var viewReleaseNotes: String {
+            isEnglish ? "Release Notes" : "Catatan Rilis"
+        }
+        static var later: String {
+            isEnglish ? "Later" : "Nanti"
         }
     }
 }

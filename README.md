@@ -35,9 +35,14 @@
 ### 🕌 Islamic Prayer Times & Automated Full Adzan
 * **Astronomical Accuracy:** Calculates daily prayer times (Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya) directly on-device using local solar calculation algorithms tailored to the standard Southeast Asian / Kemenag RI methodology (Fajr 20°, Isha 18° with safety ihtiyat adjustment).
 * **Automatic Call to Prayer (Adzan):** Plays a complete call to prayer automatically at the exact minute each prayer begins, accompanied by a dynamic visual banner directly from the notch.
-* **Instant Audio Control:** Adjust playback volume, mute notifications, test the audio, or immediately dismiss the active call to prayer with a single click.
-* **Smart Region Selection:** Choose from major Indonesian city presets (Jakarta, Surabaya, Bandung, Medan, Makassar, and more) or enable optional location detection (`CoreLocation`) to resolve your city automatically.
+* **Streamlined Audio & Volume Control:** Easily toggle Adzan mute, fine-tune volume with an expanded 130 pt slider and real-time percentage readout, test the audio, or immediately dismiss the active call to prayer with a single click.
+* **Smart Region Selection:** Choose from major Indonesian city presets (Jakarta, Surabaya, Bandung, Medan, Makassar, and more) or enable optional location detection (`CoreLocation` & `MapKit`) to resolve your city automatically.
 * **Integrated Hijri Calendar:** Displays both current Gregorian and Hijri calendar dates accurately within the expanded drawer.
+
+### 🎨 Dual Design Themes & Appearance Modes
+* **Liquid Glass:** Cutting-edge macOS aesthetic featuring multi-layered optical frosted glass materials (`.ultraThinMaterial`), directional specular rim-light strokes, and translucent sheen gradients.
+* **Zen Serenity:** Warm, tactile, paper-inspired design grounded in earth tones (sage green, amber, cedar wood, and warm sand) designed for calm and mindful focus.
+* **Flexible Appearance Modes:** Choose between **Match System**, **Always Dark**, or **Always Light** modes to match your workflow environment.
 
 ### 🔋 Battery & Power Health Hub
 * **Deep Hardware Metrics:** Interfaces directly with native macOS `IOKit` (`IOPowerSources` and `AppleSmartBattery`) to provide transparent hardware analytics without third-party daemons.
@@ -48,7 +53,7 @@
 
 ### 🌐 Multilingual & Instant Language Switching (English Default)
 * **Default English:** Designed with an international-first English interface (`Prayer Times`, `Fajr`, `Dhuhr`, `Health`, `Cycle Count`), with comprehensive native support for **Bahasa Indonesia** (`Jadwal Sholat`, `Subuh`, `Dzuhur`, `Kesehatan`, `Siklus`).
-* **Zero-Restart Reactive Toggling:** Switch instantly via the sleek `[ EN | ID ]` header toggle pill inside the notch drawer or through the macOS Menu Bar `🌐 Language` submenu without restarting the application.
+* **Zero-Restart Reactive Toggling:** Switch instantly via the macOS Menu Bar `Language` submenu without restarting the application.
 * **Full-Stack Localization:** Adapts Gregorian and Hijri calendar date formatters, dynamic prayer names, battery telemetry labels, and system menu bar action items.
 
 ### 🏝️ Direct Hardware Notch Extension (Under-Notch Island)
@@ -59,9 +64,11 @@
 * **Continuous Surface Expansion:** Rather than a simple crossfade, the black notch body itself physically stretches and expands from a compact pill into a spacious 540 pt drawer using Apple's fluid spring dynamics (`dampingFraction: 0.76`).
 * **Snappy Dismiss:** The moment your cursor leaves the drawer, the notch immediately snaps back into its compact shape with an intentional 0.14-second debounce to ensure an effortless, lag-free user experience.
 
-### 🌙 macOS Menu Bar Companion & Visibility Toggle
-* **Live Status Bar Display:** Displays the crescent icon alongside the upcoming prayer schedule (e.g., `🌙 Ashar 14:52`) following Apple Human Interface Guidelines (*Icon Leading, Text Trailing*). During Adzan, the status bar dynamically transitions to `🔊 Adzan Ashar`.
-* **Complete Notch Hide Option:** Need an entirely distraction-free workspace? Toggle **"Sembunyikan Notch di Layar"** from the menu bar to dismiss the floating notch overlay entirely, while continuing to track prayer times quietly from your Menu Bar.
+### 🍎 macOS Menu Bar Companion & Quick Controls
+* **App Logo Status Item:** Features the official Harmonotch app logo in the menu bar, keeping the menu bar clutter-free without distracting text or emojis.
+* **Polished Dropdown Menu:** Displays an integrated header card with live app status, quick drawer toggles, and direct tab navigation (`Cmd+1`, `Cmd+2`, `Cmd+3`).
+* **Instant Adzan Controls:** Mute/unmute Adzan audio (`Cmd+M`) and test audio playback directly from the menu bar.
+* **Complete Notch Hide Option:** Toggle **"Hide Notch on Screen"** (`Cmd+H`) to dismiss the floating notch overlay entirely while continuing to run in the background.
 
 ---
 
@@ -90,26 +97,34 @@ Harmonotch/
 │   ├── NotchViewModel.swift          // Fluid hover and snappy dismiss state management
 │   ├── NotchContainerView.swift      // Morphing black body & multi-tab drawer
 │   ├── NotchTab.swift                // DrawerTab enum & Segmented Control Tab Bar
-│   └── NotchPillView.swift           // Direct hardware notch extension (Lyrics & Status)
+│   ├── NotchPillView.swift           // Direct hardware notch extension (Lyrics & Status)
+│   └── LiquidGlassBackground.swift   // Liquid glass and paper theme background layers
 ├── Features/
+│   ├── Theme/
+│   │   ├── ThemeManager.swift        // Style and appearance mode reactive state engine
+│   │   └── AppTheme.swift            // Dynamic color tokens and theme styling palettes
 │   ├── Localization/
 │   │   ├── LanguageManager.swift     // Reactive language state engine (UserDefaults backed)
-│   │   └── L10n.swift                // Type-safe string keys & LanguageTogglePill view
+│   │   └── L10n.swift                // Type-safe localized string keys and helpers
 │   ├── Prayer/
 │   │   ├── Adhan/                    // Bundled offline astronomical calculation engine
 │   │   ├── CityPreset.swift          // Indonesian major cities with coordinates & timezones
-│   │   ├── PrayerManager.swift       // Core scheduler, midnight rollover, and GPS manager
+│   │   ├── PrayerManager.swift       // Core scheduler, MapKit reverse geocoding & GPS
 │   │   ├── AdzanPlayer.swift         // AVAudioPlayer engine with mute & volume control
 │   │   ├── PrayerCardView.swift      // Compact individual prayer card view
 │   │   └── PrayerDrawerView.swift    // Expanded 5-time prayer drawer with location & controls
 │   ├── Battery/
 │   │   ├── BatteryMonitor.swift      // IOKit & AppleSmartBattery hardware monitor
 │   │   └── BatteryDrawerView.swift   // Capacity, cycles, health %, and charger status
-│   └── Media/
-│       ├── MediaManager.swift        // Native/Web media tracking, iTunes resolver & LRCLIB engine
-│       └── MediaDrawerView.swift     // Active player card, scrubber bar & floating synced lyrics
+│   ├── Media/
+│   │   ├── MediaManager.swift        // Native/Web media tracking, iTunes resolver & LRCLIB engine
+│   │   └── MediaDrawerView.swift     // Active player card, scrubber bar & floating synced lyrics
+│   └── About/
+│       ├── AboutView.swift           // Clean app branding & open-source credits view
+│       └── AboutWindowController.swift // Floating dedicated about window controller
 ├── Assets.xcassets/
 │   ├── AppIcon.appiconset/           // Production macOS AppIcon assets (16x16 to 1024x1024 px)
+│   ├── AppLogo.imageset/             // High-resolution app branding logo & status item icon
 │   └── AccentColor.colorset/
 ├── Resources/
 │   ├── adzan.m4a                     // Standard Adzan audio (AAC 48kHz from IslamDownload.net)

@@ -4,6 +4,7 @@ import AppKit
 struct AboutView: View {
     @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var themeManager = ThemeManager.shared
+    @ObservedObject var updateManager = UpdateManager.shared
     @State private var showingAdhanLicense: Bool = false
 
     var body: some View {
@@ -44,6 +45,29 @@ struct AboutView: View {
                 }
                 .font(.system(size: 10, weight: .regular))
                 .foregroundColor(AppTheme.textTertiary)
+
+                Button(action: {
+                    if updateManager.hasUpdate {
+                        updateManager.downloadLatestDMG()
+                    } else {
+                        updateManager.checkForUpdates(isUserInitiated: true)
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        if updateManager.isChecking {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .frame(width: 10, height: 10)
+                        } else {
+                            Image(systemName: updateManager.hasUpdate ? "arrow.down.circle.fill" : "arrow.triangle.2.circlepath")
+                                .font(.system(size: 9))
+                        }
+                        Text(updateManager.hasUpdate ? L10n.Update.updateAvailableTitle(version: updateManager.latestVersion) : L10n.Update.checkForUpdates)
+                            .font(.system(size: 10, weight: updateManager.hasUpdate ? .semibold : .medium))
+                    }
+                    .foregroundColor(updateManager.hasUpdate ? AppTheme.accentAmber : AppTheme.accentCyan)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.top, 8)
 

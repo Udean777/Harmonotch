@@ -11,6 +11,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NotchWindowController.shared.setupAndShowWindow()
         setupStatusBarItem()
         observeUpdates()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            UpdateManager.shared.checkForUpdates(isUserInitiated: false)
+        }
     }
 
     private var appLogoStatusBarImage: NSImage? {
@@ -96,6 +100,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &cancellables)
 
         ThemeManager.shared.$currentStyle
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        UpdateManager.shared.$hasUpdate
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        UpdateManager.shared.$isChecking
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusBarButton()
@@ -285,6 +303,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        if UpdateManager.shared.hasUpdate {
+            let updateItem = NSMenuItem(
+                title: "✦ " + L10n.Menu.updateAvailable(version: UpdateManager.shared.latestVersion),
+                action: nil,
+                keyEquivalent: ""
+            )
+            updateItem.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
+
+            let updateSubmenu = NSMenu()
+            let downloadItem = NSMenuItem(
+                title: L10n.Menu.downloadDMGAction,
+                action: #selector(downloadUpdateDMG),
+                keyEquivalent: ""
+            )
+            downloadItem.target = self
+            downloadItem.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+            updateSubmenu.addItem(downloadItem)
+
+            let notesItem = NSMenuItem(
+                title: L10n.Menu.viewReleaseNotesAction,
+                action: #selector(openReleaseNotes),
+                keyEquivalent: ""
+            )
+            notesItem.target = self
+            notesItem.image = NSImage(systemSymbolName: "safari.fill", accessibilityDescription: nil)
+            updateSubmenu.addItem(notesItem)
+
+            updateItem.submenu = updateSubmenu
+            menu.addItem(updateItem)
+        } else {
+            let checkUpdateItem = NSMenuItem(
+                title: UpdateManager.shared.isChecking ? L10n.Update.checking : L10n.Menu.checkForUpdates,
+                action: #selector(checkForUpdatesManual),
+                keyEquivalent: "u"
+            )
+            checkUpdateItem.target = self
+            checkUpdateItem.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: nil)
+            checkUpdateItem.isEnabled = !UpdateManager.shared.isChecking
+            menu.addItem(checkUpdateItem)
+        }
+
         let aboutItem = NSMenuItem(title: L10n.Menu.aboutHarmonotch, action: #selector(showAboutWindow), keyEquivalent: "")
         aboutItem.target = self
         aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
@@ -364,6 +423,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         AdzanPlayer.shared.testPlay()
     }
 
+    @objc private func checkForUpdatesManual() {
+        UpdateManager.shared.checkForUpdates(isUserInitiated: true)
+    }
+
+    @objc private func downloadUpdateDMG() {
+        UpdateManager.shared.downloadLatestDMG()
+    }
+
+    @objc private func openReleaseNotes() {
+        UpdateManager.shared.openReleasePage()
+    }
+
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
@@ -373,6 +444,7 @@ private struct MenuBarHeaderView: View {
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var mediaManager = MediaManager.shared
     @ObservedObject var themeManager = ThemeManager.shared
+    @ObservedObject var updateManager = UpdateManager.shared
 
     var body: some View {
         HStack(spacing: 10) {
@@ -394,9 +466,21 @@ private struct MenuBarHeaderView: View {
             )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Harmonotch")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(AppTheme.textPrimary)
+                HStack(spacing: 4) {
+                    Text("Harmonotch")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+
+                    if updateManager.hasUpdate {
+                        Text("v\(updateManager.latestVersion)")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(AppTheme.accentAmber)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(AppTheme.accentAmber.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
 
                 if adzanPlayer.isPlaying {
                     HStack(spacing: 4) {
@@ -415,6 +499,10 @@ private struct MenuBarHeaderView: View {
                             .lineLimit(1)
                     }
                     .foregroundColor(AppTheme.accentAmber)
+                } else if updateManager.hasUpdate {
+                    Text(L10n.Update.available)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppTheme.accentAmber)
                 } else {
                     Text(themeManager.currentStyle == .liquidGlass ? "Liquid Glass" : "Zen Serenity")
                         .font(.system(size: 10, weight: .medium))
