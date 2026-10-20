@@ -1,8 +1,3 @@
-//
-//  NotchTab.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 enum DrawerTab: String, CaseIterable, Identifiable {

@@ -1,10 +1,3 @@
-//
-//  AppTheme.swift
-//  Harmonotch
-//
-//  Multi-style semantic design system supporting Liquid Glass & Zen Serenity.
-//
-
 import SwiftUI
 
 struct AppTheme {
@@ -18,7 +11,6 @@ struct AppTheme {
         themeManager.currentStyle == .zenSerenity
     }
 
-    // MARK: - Surfaces
     static var surfaceBackground: Color {
         if isZen {
             return isDark
@@ -65,7 +57,6 @@ struct AppTheme {
         }
     }
 
-    // MARK: - Cards & Badges
     static var cardBackground: Color {
         if isZen {
             return isDark
@@ -116,7 +107,6 @@ struct AppTheme {
         }
     }
 
-    // MARK: - Typography Hierarchy
     static var textPrimary: Color {
         if isZen {
             return isDark
@@ -147,7 +137,6 @@ struct AppTheme {
         }
     }
 
-    // MARK: - Semantic Accent Colors
     static var accentAmber: Color {
         if isZen {
             return isDark
@@ -188,7 +177,6 @@ struct AppTheme {
         }
     }
 
-    // MARK: - Segmented Tab Bar
     static var tabBarBackground: Color {
         if isZen {
             return isDark

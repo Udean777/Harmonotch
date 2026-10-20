@@ -1,9 +1,3 @@
-//
-//  PrayerCardView.swift
-//  Harmonotch
-//
-//
-
 import SwiftUI
 
 struct PrayerCardView: View {
@@ -13,7 +7,6 @@ struct PrayerCardView: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Icon & status indicator
             ZStack {
                 Circle()
                     .fill(backgroundCircleColor)
@@ -24,7 +17,6 @@ struct PrayerCardView: View {
                     .foregroundColor(iconColor)
             }
 
-            // Nama Sholat & Arab
             VStack(spacing: 1) {
                 Text(item.name)
                     .font(.system(size: 11, weight: item.isNext || item.isCurrent ? .bold : .medium))
@@ -35,7 +27,6 @@ struct PrayerCardView: View {
                     .foregroundColor(AppTheme.textTertiary)
             }
 
-            // Jam Sholat
             Text(item.timeString)
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundColor(item.isNext ? AppTheme.accentGreen : (item.isCurrent ? AppTheme.accentAmber : AppTheme.textPrimary))
@@ -46,7 +37,6 @@ struct PrayerCardView: View {
                         .fill(item.isNext ? AppTheme.accentGreen.opacity(0.16) : (item.isCurrent ? AppTheme.accentAmber.opacity(0.16) : AppTheme.cardBackground))
                 )
 
-            // Badge Status
             if item.isNext {
                 Text(L10n.Prayer.nextBadge)
                     .font(.system(size: 8, weight: .bold))
@@ -73,15 +63,12 @@ struct PrayerCardView: View {
         .padding(.vertical, 8)
         .background(
             ZStack {
-                // Nested Frosted Glass Material
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(.ultraThinMaterial)
 
-                // Translucent Sheen Wash
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(cardBackgroundColor)
 
-                // Directional Specular Rim Light Border
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(cardBorderStroke, lineWidth: item.isNext || item.isCurrent ? 1.0 : 0.7)
             }
@@ -165,7 +152,6 @@ struct PrayerCardView: View {
     }
 }
 
-// Helper Color for Backward Compatibility
 extension Color {
     static var amberCustom: Color {
         AppTheme.accentAmber

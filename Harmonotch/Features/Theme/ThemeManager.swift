@@ -1,10 +1,3 @@
-//
-//  ThemeManager.swift
-//  Harmonotch
-//
-//  Theme engine managing Design Style and Appearance Mode.
-//
-
 import SwiftUI
 import AppKit
 import Combine

@@ -1,8 +1,3 @@
-//
-//  L10n.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 enum L10n {
@@ -10,7 +5,6 @@ enum L10n {
         LanguageManager.shared.currentLanguage == .english
     }
 
-    // MARK: - Drawer Navigation
     enum Drawer {
         static var prayerTab: String {
             isEnglish ? "Prayer Times" : "Jadwal Sholat"
@@ -23,7 +17,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Prayer Schedules & Adzan
     enum Prayer {
         static func localizedPrayerName(_ key: String) -> String {
             switch key.lowercased() {
@@ -69,6 +62,9 @@ enum L10n {
         static var adzanMuted: String {
             isEnglish ? "Adzan Muted" : "Adzan Dimatikan"
         }
+        static var audioAdzanTitle: String {
+            isEnglish ? "Adzan Audio" : "Audio Adzan"
+        }
         static var testAudio: String {
             isEnglish ? "Test Audio" : "Uji Audio"
         }
@@ -86,7 +82,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Battery & Power Health Hub
     enum Battery {
         static var charging: String {
             isEnglish ? "Charging" : "Mengisi Daya"
@@ -156,7 +151,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Media & Synced Lyrics
     enum Media {
         static var nowPlaying: String {
             isEnglish ? "Now Playing" : "Sedang Diputar"
@@ -184,7 +178,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Menu Bar Status Item & Dropdown Menu
     enum Menu {
         static var appTitle: String {
             "Harmonotch — Islamic Notch"
@@ -204,20 +197,20 @@ enum L10n {
         static var languageMenu: String {
             isEnglish ? "Language" : "Bahasa"
         }
-        static var locationPrefix: String {
-            isEnglish ? "Location: " : "Wilayah: "
-        }
-        static var nextTag: String {
-            isEnglish ? " [Next]" : " [Berikutnya]"
-        }
-        static var nowTag: String {
-            isEnglish ? " [Now]" : " [Sekarang]"
+        static var tabsMenu: String {
+            isEnglish ? "Quick Tab Switcher" : "Pindah Tampilan Tab"
         }
         static var testAdzan: String {
             isEnglish ? "Test Adzan Audio" : "Uji Coba Audio Adzan"
         }
         static var stopAdzan: String {
             isEnglish ? "Stop Adzan Audio" : "Hentikan Adzan"
+        }
+        static var muteAdzan: String {
+            isEnglish ? "Mute Adzan Audio" : "Bisukan Audio Adzan"
+        }
+        static var unmuteAdzan: String {
+            isEnglish ? "Unmute Adzan Audio" : "Bunyikan Audio Adzan"
         }
         static var aboutHarmonotch: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
@@ -233,7 +226,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Theme & Appearance
     enum Theme {
         static var themeMenu: String {
             isEnglish ? "Theme" : "Tema Tampilan"
@@ -261,7 +253,6 @@ enum L10n {
         }
     }
 
-    // MARK: - About & Acknowledgements
     enum About {
         static var title: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
@@ -303,104 +294,5 @@ enum L10n {
         static var close: String {
             isEnglish ? "Close" : "Tutup"
         }
-    }
-}
-
-// MARK: - Sleek Language Toggle Pill View Component
-struct LanguageTogglePill: View {
-    @ObservedObject var languageManager = LanguageManager.shared
-    @ObservedObject var themeManager = ThemeManager.shared
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(AppLanguage.allCases) { lang in
-                Button(action: {
-                    languageManager.setLanguage(lang)
-                }) {
-                    Text(lang.shortCode)
-                        .font(.system(size: 10, weight: languageManager.currentLanguage == lang ? .bold : .medium))
-                        .foregroundColor(languageManager.currentLanguage == lang ? AppTheme.textPrimary : AppTheme.textTertiary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background {
-                            if languageManager.currentLanguage == lang {
-                                Capsule()
-                                    .fill(AppTheme.tabActiveBackground)
-                                    .shadow(color: AppTheme.isDark ? .clear : Color.black.opacity(0.08), radius: 2, y: 1)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(
-            ZStack {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                Capsule()
-                    .fill(AppTheme.tabBarBackground)
-                Capsule()
-                    .stroke(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
-                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.6
-                    )
-            }
-        )
-    }
-}
-
-// MARK: - Sleek Theme Toggle Pill View Component
-struct ThemeTogglePill: View {
-    @ObservedObject var themeManager = ThemeManager.shared
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(AppThemeMode.allCases) { mode in
-                Button(action: {
-                    themeManager.setTheme(mode)
-                }) {
-                    Image(systemName: mode.icon)
-                        .font(.system(size: 10, weight: themeManager.currentMode == mode ? .bold : .medium))
-                        .foregroundColor(themeManager.currentMode == mode ? AppTheme.textPrimary : AppTheme.textTertiary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background {
-                            if themeManager.currentMode == mode {
-                                Capsule()
-                                    .fill(AppTheme.tabActiveBackground)
-                                    .shadow(color: AppTheme.isDark ? .clear : Color.black.opacity(0.08), radius: 2, y: 1)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(
-            ZStack {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                Capsule()
-                    .fill(AppTheme.tabBarBackground)
-                Capsule()
-                    .stroke(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
-                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.6
-                    )
-            }
-        )
     }
 }

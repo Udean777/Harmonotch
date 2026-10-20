@@ -1,8 +1,3 @@
-//
-//  MediaManager.swift
-//  Harmonotch
-//
-
 import Foundation
 import AppKit
 import Combine
@@ -52,7 +47,6 @@ struct ParsedWebMedia {
 final class MediaManager: ObservableObject {
     static let shared = MediaManager()
 
-    // MARK: - Published Properties
     @Published var isPlaying: Bool = false
     @Published var mediaSource: MediaSource = .none
     @Published var trackTitle: String = ""
@@ -84,25 +78,28 @@ final class MediaManager: ObservableObject {
         formatTime(duration)
     }
 
-    // MARK: - Private Properties
     private var playbackTimer: AnyCancellable?
+    private var webPollingTimer: AnyCancellable?
     private var lastFetchedTrackKey: String = ""
     private var cancellables = Set<AnyCancellable>()
-    private var syncTickCounter: Int = 0
     private var scriptCache: [String: NSAppleScript] = [:]
     private var lastDetectedRawWebTitle: String = ""
 
+    private let appleScriptQueue = DispatchQueue(label: "com.harmonotch.media.applescript", qos: .utility)
+    private let appleScriptQueueKey = DispatchSpecificKey<Void>()
+    private let artworkCache = NSCache<NSString, NSImage>()
+    private var lyricsCache: [String: (lyrics: [LyricLine], isInstrumental: Bool, duration: TimeInterval)] = [:]
+
     private init() {
+        appleScriptQueue.setSpecific(key: appleScriptQueueKey, value: ())
         setupDistributedNotificationObservers()
-        startPeriodicSyncTimer()
+        setupWebPollingTimer()
         pollCurrentMediaState()
     }
 
-    // MARK: - Distributed Notification Observers (Push Event Driven)
     private func setupDistributedNotificationObservers() {
         let center = DistributedNotificationCenter.default()
 
-        // Spotify Notification
         center.addObserver(
             forName: NSNotification.Name("com.spotify.client.PlaybackStateChanged"),
             object: nil,
@@ -111,7 +108,6 @@ final class MediaManager: ObservableObject {
             self?.handleSpotifyNotification(notification)
         }
 
-        // Apple Music Notification
         center.addObserver(
             forName: NSNotification.Name("com.apple.Music.playerInfo"),
             object: nil,
@@ -201,6 +197,7 @@ final class MediaManager: ObservableObject {
 
             self.mediaSource = source
             self.isPlaying = isPlaying
+            self.updatePlaybackTimerState()
 
             let trackChanged = (self.trackTitle != title || self.artistName != artist)
             if position > 0 || trackChanged {
@@ -222,26 +219,35 @@ final class MediaManager: ObservableObject {
         }
     }
 
-    // MARK: - Playback Timer & Position Tracking
-    private func startPeriodicSyncTimer() {
-        playbackTimer = Timer.publish(every: 0.25, on: .main, in: .common)
+    private func updatePlaybackTimerState() {
+        if isPlaying {
+            if playbackTimer == nil {
+                playbackTimer = Timer.publish(every: 0.25, on: .main, in: .common)
+                    .autoconnect()
+                    .sink { [weak self] _ in
+                        guard let self = self, self.isPlaying else { return }
+                        self.playbackPosition += 0.25
+                        if self.duration > 0 && self.playbackPosition > self.duration {
+                            self.playbackPosition = self.duration
+                        }
+                        self.updateCurrentLyric()
+                    }
+            }
+        } else {
+            playbackTimer?.cancel()
+            playbackTimer = nil
+        }
+    }
+
+    private func setupWebPollingTimer() {
+        webPollingTimer = Timer.publish(every: 6.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                self.syncTickCounter += 1
-                if self.syncTickCounter % 4 == 0 {
-                    if (self.mediaSource != .spotify && self.mediaSource != .appleMusic) || !self.isPlaying {
-                        self.pollWebMediaState()
-                    }
+                if (self.mediaSource == .spotify || self.mediaSource == .appleMusic) && self.isPlaying {
+                    return
                 }
-
-                if self.isPlaying {
-                    self.playbackPosition += 0.25
-                    if self.duration > 0 && self.playbackPosition > self.duration {
-                        self.playbackPosition = self.duration
-                    }
-                    self.updateCurrentLyric()
-                }
+                self.pollWebMediaState()
             }
     }
 
@@ -267,10 +273,8 @@ final class MediaManager: ObservableObject {
         }
     }
 
-    // MARK: - Polling Fallback & Web Media Integration
     func pollCurrentMediaState() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            // Cek Spotify via AppleScript
+        appleScriptQueue.async { [weak self] in
             let spotifyScript = """
             if application id "com.spotify.client" is running then
                 tell application id "com.spotify.client"
@@ -303,7 +307,6 @@ final class MediaManager: ObservableObject {
                 }
             }
 
-            // Cek Apple Music via AppleScript
             let musicScript = """
             if application id "com.apple.Music" is running then
                 tell application id "com.apple.Music"
@@ -336,13 +339,11 @@ final class MediaManager: ObservableObject {
                 }
             }
 
-            // Web Media Fallback (YouTube, YouTube Music, Spotify Web)
             self?.pollWebMediaState()
         }
     }
 
     func pollWebMediaState() {
-        // Jangan timpa jika Spotify atau Apple Music native sedang aktif memutar lagu
         if (mediaSource == .spotify || mediaSource == .appleMusic) && isPlaying {
             return
         }
@@ -355,12 +356,13 @@ final class MediaManager: ObservableObject {
                 DispatchQueue.main.async {
                     self.isPlaying = false
                     self.lastDetectedRawWebTitle = ""
+                    self.updatePlaybackTimerState()
                 }
             }
             return
         }
 
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        appleScriptQueue.async { [weak self] in
             guard let self = self else { return }
 
             if isSafariRunning {
@@ -425,6 +427,7 @@ final class MediaManager: ObservableObject {
                 DispatchQueue.main.async {
                     self.isPlaying = false
                     self.lastDetectedRawWebTitle = ""
+                    self.updatePlaybackTimerState()
                 }
             }
         }
@@ -628,13 +631,13 @@ final class MediaManager: ObservableObject {
         return (mediaSource == .appleMusic) ? "id \"com.apple.Music\"" : "id \"com.spotify.client\""
     }
 
-    // MARK: - Playback Controls
     func playPause() {
         if mediaSource == .safari || mediaSource == .web {
             toggleWebPlayback()
         } else {
             runAppleScriptAsync("tell application \(currentAppTarget) to playpause")
             isPlaying.toggle()
+            updatePlaybackTimerState()
         }
     }
 
@@ -678,6 +681,7 @@ final class MediaManager: ObservableObject {
 
     private func toggleWebPlayback() {
         isPlaying.toggle()
+        updatePlaybackTimerState()
         let safariJSScript = """
         tell application "Safari"
             try
@@ -695,7 +699,7 @@ final class MediaManager: ObservableObject {
             end try
         end tell
         """
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        appleScriptQueue.async { [weak self] in
             let res = self?.executeAppleScript(safariJSScript)
             if res != "ok" {
                 self?.sendSystemMediaKey(key: 16) // NX_KEYTYPE_PLAY
@@ -726,11 +730,19 @@ final class MediaManager: ObservableObject {
         postKey(down: false)
     }
 
-    // MARK: - Artwork Fetching
     private func fetchArtworkAsync(source: MediaSource, directURL: URL? = nil) {
+        let cacheKey = (directURL?.absoluteString ?? "\(trackTitle)--\(artistName)") as NSString
+        if let cached = artworkCache.object(forKey: cacheKey) {
+            DispatchQueue.main.async {
+                self.artworkImage = cached
+            }
+            return
+        }
+
         if let direct = directURL {
             URLSession.shared.dataTask(with: direct) { [weak self] data, _, _ in
                 if let data = data, let image = NSImage(data: data) {
+                    self?.artworkCache.setObject(image, forKey: cacheKey)
                     DispatchQueue.main.async {
                         self?.artworkImage = image
                     }
@@ -740,11 +752,12 @@ final class MediaManager: ObservableObject {
         }
 
         if source == .spotify {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            appleScriptQueue.async { [weak self] in
                 let script = "tell application id \"com.spotify.client\" to get artwork url of current track"
                 if let urlString = self?.executeAppleScript(script), let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                    URLSession.shared.dataTask(with: url) { data, _, _ in
+                    URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
                         if let data = data, let image = NSImage(data: data) {
+                            self?.artworkCache.setObject(image, forKey: cacheKey)
                             DispatchQueue.main.async {
                                 self?.artworkImage = image
                             }
@@ -753,7 +766,7 @@ final class MediaManager: ObservableObject {
                 }
             }
         } else if source == .appleMusic {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            appleScriptQueue.async { [weak self] in
                 let script = """
                 tell application id "com.apple.Music"
                     try
@@ -765,18 +778,14 @@ final class MediaManager: ObservableObject {
                 end tell
                 """
                 if let raw = self?.executeAppleScript(script), !raw.isEmpty {
-                    // AppleScript raw artwork fallback
                 }
             }
         }
     }
 
-    // MARK: - Track Title & Artist Sanitization
     private func sanitizeTrackTitle(_ title: String) -> String {
         var clean = title
-        // Hapus (feat. ...) / [feat. ...]
         clean = clean.replacingOccurrences(of: #"\s*[\(\[](?:feat\.|featuring|with).*?[\)\]]"#, with: "", options: [.regularExpression, .caseInsensitive])
-        // Hapus - Remastered / (Remastered) / (Live) / dsb.
         clean = clean.replacingOccurrences(of: #"\s*[-–—]\s*(?:Remastered|Live|Acoustic|Single|Bonus Track|Radio Edit).*"#, with: "", options: [.regularExpression, .caseInsensitive])
         clean = clean.replacingOccurrences(of: #"\s*[\(\[](?:Remastered|Deluxe|Live|Acoustic|Radio Edit|Bonus).*?[\)\]]"#, with: "", options: [.regularExpression, .caseInsensitive])
         let trimmed = clean.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -797,13 +806,26 @@ final class MediaManager: ObservableObject {
         fetchLyrics(track: trackTitle, artist: artistName, album: albumName, duration: duration)
     }
 
-    // MARK: - Synced Lyrics Fetching (LRCLIB Multi-Tier Search)
     func fetchLyrics(track: String, artist: String, album: String, duration: TimeInterval) {
         let cleanTrack = sanitizeTrackTitle(track)
         let cleanArtist = sanitizeArtistName(artist)
         let key = "\(cleanTrack.lowercased())--\(cleanArtist.lowercased())"
 
         if key == lastFetchedTrackKey && !syncedLyrics.isEmpty {
+            return
+        }
+
+        if let cached = lyricsCache[key] {
+            DispatchQueue.main.async {
+                self.isLoadingLyrics = false
+                self.isInstrumental = cached.isInstrumental
+                if self.duration == 0 && cached.duration > 0 {
+                    self.duration = cached.duration
+                }
+                self.syncedLyrics = cached.lyrics
+                self.lastFetchedTrackKey = key
+                self.updateCurrentLyric()
+            }
             return
         }
 
@@ -836,7 +858,6 @@ final class MediaManager: ObservableObject {
                 }
             }
         } else {
-            // Generic artist: Search with cleanTrack directly
             searchLRCLIBGeneral(query: cleanTrack) { [weak self] success in
                 guard let self = self else { return }
                 if !success {
@@ -895,7 +916,6 @@ final class MediaManager: ObservableObject {
             var matchedItem: [String: Any]? = nil
 
             if let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                // Prioritaskan item yang memiliki syncedLyrics tidak kosong
                 matchedItem = array.first(where: {
                     if let s = $0["syncedLyrics"] as? String, !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         return true
@@ -934,6 +954,7 @@ final class MediaManager: ObservableObject {
                         NSLog("[Harmonotch:Media] Successfully parsed %ld plain lyric lines for %@ - %@", self.syncedLyrics.count, track, artist)
                     }
                     self.lastFetchedTrackKey = "\(track.lowercased())--\(artist.lowercased())"
+                    self.lyricsCache[self.lastFetchedTrackKey] = (self.syncedLyrics, self.isInstrumental, self.duration)
                     self.updateCurrentLyric()
                 }
                 completion(true)
@@ -949,7 +970,7 @@ final class MediaManager: ObservableObject {
             return
         }
 
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        appleScriptQueue.async { [weak self] in
             let script = """
             tell application "Music"
                 try
@@ -1010,7 +1031,6 @@ final class MediaManager: ObservableObject {
         return result.sorted(by: { $0.time < $1.time })
     }
 
-    // MARK: - AppleScript Helpers
     private func executeAppleScript(_ scriptText: String) -> String? {
         var result: String?
         let work = { [weak self] in
@@ -1033,23 +1053,17 @@ final class MediaManager: ObservableObject {
             }
         }
 
-        if Thread.isMainThread {
+        if DispatchQueue.getSpecific(key: appleScriptQueueKey) != nil {
             work()
         } else {
-            DispatchQueue.main.sync(execute: work)
+            appleScriptQueue.sync(execute: work)
         }
         return result
     }
 
     private func runAppleScriptAsync(_ scriptText: String) {
-        DispatchQueue.main.async {
-            var error: NSDictionary?
-            if let scriptObject = NSAppleScript(source: scriptText) {
-                scriptObject.executeAndReturnError(&error)
-                if let error = error {
-                    NSLog("[Harmonotch:Media] AppleScript command '%@' failed: %@", scriptText, error)
-                }
-            }
+        appleScriptQueue.async { [weak self] in
+            _ = self?.executeAppleScript(scriptText)
         }
     }
 

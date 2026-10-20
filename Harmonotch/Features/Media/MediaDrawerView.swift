@@ -1,9 +1,3 @@
-//
-//  MediaDrawerView.swift
-//  Harmonotch
-//
-//
-
 import SwiftUI
 import AppKit
 
@@ -15,9 +9,7 @@ struct MediaDrawerView: View {
     var body: some View {
         VStack(spacing: 12) {
             if mediaManager.hasActiveTrack {
-                // MARK: - Active Player Card (Artwork, Track Info & Playback Controls)
                 HStack(alignment: .center, spacing: 14) {
-                    // 1. Album Artwork
                     ZStack {
                         if let art = mediaManager.artworkImage {
                             Image(nsImage: art)
@@ -57,7 +49,6 @@ struct MediaDrawerView: View {
                             )
                     )
 
-                    // 2. Track Meta & Progress
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             Text(mediaManager.trackTitle)
@@ -67,7 +58,6 @@ struct MediaDrawerView: View {
 
                             Spacer()
 
-                            // Source App Badge
                             HStack(spacing: 3) {
                                 Image(systemName: mediaManager.mediaSource.iconName)
                                     .font(.system(size: 8))
@@ -86,7 +76,6 @@ struct MediaDrawerView: View {
                             .foregroundColor(AppTheme.textSecondary)
                             .lineLimit(1)
 
-                        // Scrubber Slider
                         VStack(spacing: 2) {
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
@@ -112,7 +101,6 @@ struct MediaDrawerView: View {
                         }
                     }
 
-                    // 3. Playback Controls
                     HStack(spacing: 8) {
                         Button(action: {
                             mediaManager.previousTrack()
@@ -160,7 +148,6 @@ struct MediaDrawerView: View {
                     .background(AppTheme.divider)
                     .padding(.horizontal, 16)
 
-                // MARK: - Floating Synced Lyrics Section
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Image(systemName: "quote.bubble.fill")
@@ -191,13 +178,10 @@ struct MediaDrawerView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    // Lyrics Container
                     ZStack {
-                        // 1. Nested Frosted Blur
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(.ultraThinMaterial)
 
-                        // 2. Optical Tint Sheen
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(
                                 LinearGradient(
@@ -209,7 +193,6 @@ struct MediaDrawerView: View {
                                 )
                             )
 
-                        // 3. Directional Specular Stroke
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .stroke(
                                 LinearGradient(
@@ -305,7 +288,6 @@ struct MediaDrawerView: View {
                     .padding(.horizontal, 16)
                 }
             } else {
-                // MARK: - Empty Idle State
                 VStack(spacing: 16) {
                     Spacer(minLength: 8)
 

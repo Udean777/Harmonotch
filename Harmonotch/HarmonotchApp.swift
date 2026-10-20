@@ -1,8 +1,3 @@
-//
-//  HarmonotchApp.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 @main

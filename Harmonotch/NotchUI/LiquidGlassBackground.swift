@@ -1,14 +1,6 @@
-//
-//  LiquidGlassBackground.swift
-//  Harmonotch
-//
-//  True Liquid Glass & Zen Serenity Optical Architecture for macOS.
-//
-
 import SwiftUI
 import AppKit
 
-// MARK: - Native AppKit Visual Effect View (Behind-Window Hardware Blur)
 struct NativeVisualEffectView: NSViewRepresentable {
     var material: NSVisualEffectView.Material
     var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
@@ -26,14 +18,21 @@ struct NativeVisualEffectView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
-        nsView.state = state
-        nsView.isEmphasized = emphasized
+        if nsView.material != material {
+            nsView.material = material
+        }
+        if nsView.blendingMode != blendingMode {
+            nsView.blendingMode = blendingMode
+        }
+        if nsView.state != state {
+            nsView.state = state
+        }
+        if nsView.isEmphasized != emphasized {
+            nsView.isEmphasized = emphasized
+        }
     }
 }
 
-// MARK: - True Liquid Glass Optical Surface Component
 struct LiquidGlassSurface<ShapeType: Shape>: View {
     let shape: ShapeType
     let isExpanded: Bool
@@ -42,7 +41,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
     var body: some View {
         ZStack {
             if isExpanded {
-                // Layer 1: Hardware-Accelerated Desktop Blur (WindowServer Compositor)
                 NativeVisualEffectView(
                     material: themeManager.isDarkMode ? .hudWindow : .popover,
                     blendingMode: .behindWindow,
@@ -50,7 +48,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                 )
                 .clipShape(shape)
 
-                // Layer 2: Specular Refraction Sheen (Diagonal Optical Gradient Wash)
                 shape
                     .fill(
                         LinearGradient(
@@ -70,7 +67,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                         )
                     )
 
-                // Layer 3: Ambient Color Bloom
                 shape
                     .fill(
                         themeManager.isDarkMode
@@ -78,7 +74,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                             : Color(red: 0.95, green: 0.96, blue: 0.98).opacity(0.22)
                     )
 
-                // Layer 4: Directional Specular Rim Light (Top-Left Specular Reflection)
                 shape
                     .stroke(
                         LinearGradient(
@@ -99,7 +94,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                         lineWidth: 1.0
                     )
 
-                // Layer 5: Delicate Inner Bevel
                 shape
                     .stroke(
                         themeManager.isDarkMode
@@ -109,8 +103,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                     )
                     .padding(0.7)
             } else {
-                // Collapsed Resting State:
-                // Pitch black body matching the physical hardware MacBook camera notch bezel
                 shape
                     .fill(Color.black)
                     .overlay(
@@ -119,7 +111,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                     )
             }
         }
-        // Layer 6: Dual-Stage Floating Shadows
         .shadow(
             color: isExpanded
                 ? (themeManager.isDarkMode ? Color.black.opacity(0.55) : Color(red: 0.1, green: 0.1, blue: 0.2).opacity(0.15))
@@ -139,7 +130,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
     }
 }
 
-// MARK: - Zen Serenity Surface Component (Non-Glass Tactile Matte Paper)
 struct ZenSerenitySurface<ShapeType: Shape>: View {
     let shape: ShapeType
     let isExpanded: Bool
@@ -148,11 +138,9 @@ struct ZenSerenitySurface<ShapeType: Shape>: View {
     var body: some View {
         ZStack {
             if isExpanded {
-                // Layer 1: Solid Tactile Paper Foundation (No Glass Blur)
                 shape
                     .fill(AppTheme.surfaceBackground)
 
-                // Layer 2: Subtle Fiber & Ambient Tone
                 shape
                     .fill(
                         LinearGradient(
@@ -164,16 +152,13 @@ struct ZenSerenitySurface<ShapeType: Shape>: View {
                         )
                     )
 
-                // Layer 3: Warm Tactile Edge Contour
                 shape
                     .stroke(AppTheme.surfaceBorder, lineWidth: 1.0)
 
-                // Layer 4: Delicate Inner Highlight
                 shape
                     .stroke(AppTheme.surfaceInnerHighlight, lineWidth: 0.5)
                     .padding(0.6)
             } else {
-                // Collapsed Resting State: Solid Black matching Hardware Camera Notch
                 shape
                     .fill(Color.black)
                     .overlay(
@@ -190,7 +175,6 @@ struct ZenSerenitySurface<ShapeType: Shape>: View {
     }
 }
 
-// MARK: - Adaptive Surface Router
 struct HarmonotchSurface<ShapeType: Shape>: View {
     let shape: ShapeType
     let isExpanded: Bool

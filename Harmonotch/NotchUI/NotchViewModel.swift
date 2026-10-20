@@ -1,8 +1,3 @@
-//
-//  NotchViewModel.swift
-//  Harmonotch
-//
-
 import SwiftUI
 import Combine
 
@@ -30,18 +25,24 @@ final class NotchViewModel: ObservableObject {
     }
 
     func setHovered(_ hovered: Bool) {
+        if isHovered == hovered && isExpanded == hovered { return }
         isHovered = hovered
         if hovered {
             collapseWorkItem?.cancel()
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
-                isExpanded = true
+            collapseWorkItem = nil
+            if !isExpanded {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+                    isExpanded = true
+                }
             }
         } else {
-            // Delay ultra-responsif (0.14 detik) agar terasa instan namun tidak sengaja tertutup jika kursor bergerak cepat
             collapseWorkItem?.cancel()
             let work = DispatchWorkItem { [weak self] in
-                withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
-                    self?.isExpanded = false
+                guard let self = self, !self.isHovered else { return }
+                if self.isExpanded {
+                    withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                        self.isExpanded = false
+                    }
                 }
             }
             collapseWorkItem = work

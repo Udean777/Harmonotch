@@ -1,9 +1,3 @@
-//
-//  AboutView.swift
-//  Harmonotch
-//
-//
-
 import SwiftUI
 import AppKit
 
@@ -14,7 +8,6 @@ struct AboutView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // MARK: - App Branding Header
             VStack(spacing: 10) {
                 Group {
                     if let nsImage = NSImage(named: "AppLogo") ?? NSImage(named: NSImage.applicationIconName) ?? NSApplication.shared.applicationIconImage {
@@ -57,7 +50,6 @@ struct AboutView: View {
             Divider()
                 .background(AppTheme.divider)
 
-            // MARK: - Open Source Acknowledgements Section
             VStack(alignment: .leading, spacing: 10) {
                 Text(L10n.About.openSourceCredits)
                     .font(.system(size: 11, weight: .bold))
@@ -66,7 +58,6 @@ struct AboutView: View {
 
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: 10) {
-                        // 1. Adhan-Swift
                         AcknowledgementCard(
                             title: L10n.About.adhanTitle,
                             author: "Batoul Apps",
@@ -96,7 +87,6 @@ struct AboutView: View {
                             .transition(.opacity)
                         }
 
-                        // 2. Adzan Audio
                         AcknowledgementCard(
                             title: L10n.About.audioTitle,
                             author: "IslamDownload.net",
@@ -107,7 +97,6 @@ struct AboutView: View {
                             onViewLicense: nil
                         )
 
-                        // 3. Apple Technologies
                         AcknowledgementCard(
                             title: L10n.About.appleTechTitle,
                             author: "Apple Inc.",
@@ -126,7 +115,6 @@ struct AboutView: View {
 
             Spacer(minLength: 0)
 
-            // MARK: - Footer Actions
             HStack {
                 Text("MIT License © 2026 Sajudin")
                     .font(.system(size: 9))
@@ -154,7 +142,6 @@ struct AboutView: View {
     }
 }
 
-// MARK: - Subview: Acknowledgement Card
 private struct AcknowledgementCard: View {
     let title: String
     let author: String

@@ -1,8 +1,3 @@
-//
-//  NotchPillView.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 struct NotchPillView: View {
@@ -17,16 +12,13 @@ struct NotchPillView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Ruang setinggi notch hardware
             if geometry.hasHardwareNotch {
                 Color.clear
                     .frame(width: geometry.physicalNotchWidth, height: geometry.physicalNotchHeight)
             }
 
-            // Konten Ekstensi Notch (Dinamis sesuai Tab / Capsule yang dipilih)
             Group {
                 if adzanPlayer.isPlaying {
-                    // 1. Banner Adzan Aktif (Prioritas Tertinggi)
                     HStack(spacing: 6) {
                         Image(systemName: "speaker.wave.2.fill")
                             .font(.system(size: 10, weight: .bold))
@@ -38,7 +30,6 @@ struct NotchPillView: View {
                             .foregroundColor(.green)
                     }
                 } else if notchVM.selectedTab == .prayer {
-                    // 2. Konten Jadwal Sholat
                     HStack(spacing: 6) {
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 10, weight: .semibold))
@@ -65,7 +56,6 @@ struct NotchPillView: View {
                         }
                     }
                 } else if notchVM.selectedTab == .battery {
-                    // 3. Konten Baterai & Hardware Mac (Menggunakan ikon monitor/macbook)
                     HStack(spacing: 5) {
                         Image(systemName: "macbook")
                             .font(.system(size: 10, weight: .semibold))
@@ -110,7 +100,6 @@ struct NotchPillView: View {
                         .foregroundColor(Color.amberCustom)
                     }
                 } else {
-                    // 4. Konten Media Player / Now Playing & Lirik Berjalan (Hingga 3 Baris)
                     if mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 4) {

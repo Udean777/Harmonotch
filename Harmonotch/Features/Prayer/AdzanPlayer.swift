@@ -1,8 +1,3 @@
-//
-//  AdzanPlayer.swift
-//  Harmonotch
-//
-
 import Foundation
 import AVFoundation
 import Combine
@@ -84,7 +79,6 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
 
-    // MARK: - AVAudioPlayerDelegate
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         DispatchQueue.main.async {
             self.isPlaying = false

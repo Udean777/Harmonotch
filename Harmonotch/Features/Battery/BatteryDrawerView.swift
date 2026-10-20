@@ -1,9 +1,3 @@
-//
-//  BatteryDrawerView.swift
-//  Harmonotch
-//
-//
-
 import SwiftUI
 import AppKit
 
@@ -15,9 +9,7 @@ struct BatteryDrawerView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // MARK: - Hero Battery Status Header
             HStack(alignment: .center, spacing: 14) {
-                // Large Battery Icon
                 ZStack {
                     Circle()
                         .fill(batteryAccentColor.opacity(AppTheme.isDark ? 0.18 : 0.12))
@@ -29,7 +21,6 @@ struct BatteryDrawerView: View {
                         .symbolEffect(.pulse, isActive: batteryMonitor.isCharging)
                 }
 
-                // Battery % & State Text
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(batteryMonitor.currentCapacity)%")
@@ -60,7 +51,6 @@ struct BatteryDrawerView: View {
 
                 Spacer()
 
-                // Power Source Badge
                 HStack(spacing: 5) {
                     Image(systemName: batteryMonitor.isPluggedIn ? "bolt.fill" : "batteryblock.fill")
                         .font(.system(size: 10, weight: .bold))
@@ -94,7 +84,6 @@ struct BatteryDrawerView: View {
             }
             .padding(.horizontal, 16)
 
-            // MARK: - Visual Battery Level Bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
@@ -118,9 +107,7 @@ struct BatteryDrawerView: View {
             .frame(height: 5)
             .padding(.horizontal, 16)
 
-            // MARK: - Metric Stat Cards (Grid of 4)
             HStack(spacing: 8) {
-                // 1. Health
                 BatteryStatCard(
                     icon: "heart.fill",
                     iconColor: AppTheme.accentGreen,
@@ -129,7 +116,6 @@ struct BatteryDrawerView: View {
                     subtext: L10n.Battery.conditionNormal
                 )
 
-                // 2. Cycle Count
                 BatteryStatCard(
                     icon: "arrow.triangle.2.circlepath",
                     iconColor: AppTheme.accentCyan,
@@ -138,7 +124,6 @@ struct BatteryDrawerView: View {
                     subtext: "\(L10n.Battery.maxPrefix)\(batteryMonitor.maxCycleCount)"
                 )
 
-                // 3. Real vs Design Capacity
                 BatteryStatCard(
                     icon: "gauge.with.needle.fill",
                     iconColor: AppTheme.accentAmber,
@@ -147,7 +132,6 @@ struct BatteryDrawerView: View {
                     subtext: batteryMonitor.designCapacity > 0 ? "\(L10n.Battery.designPrefix)\(batteryMonitor.designCapacity)" : "-"
                 )
 
-                // 4. Power Source / State
                 BatteryStatCard(
                     icon: batteryMonitor.isPluggedIn ? "powerplug.fill" : "bolt.batteryblock",
                     iconColor: batteryMonitor.isPluggedIn ? AppTheme.accentGreen : AppTheme.textSecondary,
@@ -162,9 +146,7 @@ struct BatteryDrawerView: View {
                 .background(AppTheme.divider)
                 .padding(.horizontal, 16)
 
-            // MARK: - Footer Controls
             HStack(spacing: 12) {
-                // Refresh Button
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         isRefreshing = true
@@ -196,7 +178,6 @@ struct BatteryDrawerView: View {
 
                 Spacer()
 
-                // Open macOS Battery Settings
                 Button(action: {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.battery") {
                         NSWorkspace.shared.open(url)
@@ -226,7 +207,6 @@ struct BatteryDrawerView: View {
         .frame(width: 540)
     }
 
-    // MARK: - Helpers
     private var powerSourceLabel: String {
         if batteryMonitor.isPluggedIn {
             if let watts = batteryMonitor.adapterWatts {
@@ -268,7 +248,6 @@ struct BatteryDrawerView: View {
     }
 }
 
-// MARK: - Compact Stat Card Component
 struct BatteryStatCard: View {
     let icon: String
     let iconColor: Color
@@ -315,11 +294,9 @@ struct BatteryStatCard: View {
         .padding(.vertical, 8)
         .background(
             ZStack {
-                // Nested Frosted Glass
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(.ultraThinMaterial)
 
-                // Translucent Sheen Wash
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
@@ -331,7 +308,6 @@ struct BatteryStatCard: View {
                         )
                     )
 
-                // Directional Specular Rim Light Border
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(

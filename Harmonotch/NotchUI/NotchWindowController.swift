@@ -1,8 +1,3 @@
-//
-//  NotchWindowController.swift
-//  Harmonotch
-//
-
 import AppKit
 import SwiftUI
 import Combine
@@ -84,7 +79,6 @@ final class NotchWindowController: ObservableObject {
 
         self.panel = notchPanel
 
-        // Dengarkan perubahan monitor / resolusi layar
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

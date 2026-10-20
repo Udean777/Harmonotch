@@ -1,8 +1,3 @@
-//
-//  NotchContainerView.swift
-//  Harmonotch
-//
-
 import SwiftUI
 
 struct NotchContainerView: View {
@@ -22,14 +17,11 @@ struct NotchContainerView: View {
             let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
             switch notchVM.selectedTab {
             case .prayer:
-                // Jadwal sholat normal vs saat adzan aktif (dengan banner pemutar)
                 let contentHeight: CGFloat = adzanPlayer.isPlaying ? 325 : 272
                 return notchHeight + contentHeight
             case .battery:
-                // Status baterai (hero header, bar, 4 stat cards, divider, dan footer buttons)
                 return notchHeight + 288
             case .media:
-                // Media & Lirik (cover art, player controls, progress bar, synced lyrics container)
                 let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 350 : 288
                 return notchHeight + contentHeight
             }
@@ -65,18 +57,15 @@ struct NotchContainerView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // MARK: - 1. The Morphing Adaptive Body (Liquid Glass vs Zen Serenity)
             HarmonotchSurface(
                 shape: notchShape,
                 isExpanded: notchVM.isExpanded
             )
             .frame(width: targetWidth, height: targetHeight)
 
-            // MARK: - 2. Konten
             Group {
                 if notchVM.isExpanded {
                     VStack(spacing: 10) {
-                        // Hardware Notch Clearance Spacer
                         if geometry.hasHardwareNotch {
                             Color.clear
                                 .frame(height: geometry.physicalNotchHeight + 4)
@@ -85,10 +74,8 @@ struct NotchContainerView: View {
                                 .frame(height: 8)
                         }
 
-                        // Segmented Control Switcher
                         NotchTabBar(selectedTab: $notchVM.selectedTab)
 
-                        // Tab Content
                         ZStack {
                             switch notchVM.selectedTab {
                             case .prayer:
@@ -137,7 +124,6 @@ struct NotchContainerView: View {
         .clipped()
         .frame(width: NotchWindowController.canvasWidth, alignment: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // Animasi asimetris: Expand lembut & elastis, Close super snappy & responsif
         .animation(
             notchVM.isExpanded
                 ? .spring(response: 0.34, dampingFraction: 0.76, blendDuration: 0.08)

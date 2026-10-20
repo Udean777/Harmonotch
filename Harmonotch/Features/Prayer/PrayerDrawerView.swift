@@ -1,9 +1,3 @@
-//
-//  PrayerDrawerView.swift
-//  Harmonotch
-//
-//
-
 import SwiftUI
 
 struct PrayerDrawerView: View {
@@ -14,9 +8,7 @@ struct PrayerDrawerView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // MARK: - Header (Wilayah, Language Toggle, & Tanggal)
             HStack(alignment: .center, spacing: 8) {
-                // Lokasi & Picker
                 Menu {
                     Toggle(isOn: $prayerManager.useGPS) {
                         Label(L10n.Prayer.autoGPS, systemImage: "location.fill")
@@ -75,7 +67,6 @@ struct PrayerDrawerView: View {
                 }
                 .menuStyle(.borderlessButton)
 
-                // Qibla Direction Badge
                 if !prayerManager.qiblaString.isEmpty {
                     HStack(spacing: 4) {
                         Image(systemName: "safari.fill")
@@ -110,7 +101,6 @@ struct PrayerDrawerView: View {
                     )
                 }
 
-                // Waktu Imsak Badge
                 if !prayerManager.imsakTimeString.isEmpty {
                     HStack(spacing: 4) {
                         Image(systemName: "moon.haze.fill")
@@ -144,7 +134,6 @@ struct PrayerDrawerView: View {
 
                 Spacer()
 
-                // Tanggal Masehi & Hijriah
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(prayerManager.gregorianDateString)
                         .font(.system(size: 11, weight: .medium))
@@ -157,7 +146,6 @@ struct PrayerDrawerView: View {
             }
             .padding(.horizontal, 16)
 
-            // MARK: - Adzan Active Banner
             if adzanPlayer.isPlaying {
                 HStack(spacing: 12) {
                     Image(systemName: "speaker.wave.3.fill")
@@ -214,7 +202,6 @@ struct PrayerDrawerView: View {
                 .transition(.opacity.combined(with: .scale))
             }
 
-            // MARK: - Daftar Waktu Sholat (HStack Cards)
             HStack(spacing: 8) {
                 ForEach(prayerManager.prayerItems) { item in
                     PrayerCardView(item: item)
@@ -226,23 +213,21 @@ struct PrayerDrawerView: View {
                 .background(AppTheme.divider)
                 .padding(.horizontal, 16)
 
-            // MARK: - Footer Controls
             HStack(spacing: 12) {
-                // Mute / Unmute Toggle
                 Button(action: {
                     adzanPlayer.isMuted.toggle()
                 }) {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 6) {
                         Image(systemName: adzanPlayer.isMuted ? "bell.slash.fill" : "bell.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(adzanPlayer.isMuted ? AppTheme.accentRed : AppTheme.accentGreen)
 
-                        Text(adzanPlayer.isMuted ? L10n.Prayer.adzanMuted : L10n.Prayer.adzanActive)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(AppTheme.textSecondary)
+                        Text(L10n.Prayer.audioAdzanTitle)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(adzanPlayer.isMuted ? AppTheme.textSecondary : AppTheme.textPrimary)
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
                     .background(AppTheme.badgeBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
@@ -252,48 +237,49 @@ struct PrayerDrawerView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Volume slider
-                HStack(spacing: 6) {
-                    Image(systemName: "speaker.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(AppTheme.textTertiary)
+                HStack(spacing: 8) {
+                    Image(systemName: adzanPlayer.volume == 0 ? "speaker.slash.fill" : (adzanPlayer.volume < 0.5 ? "speaker.1.fill" : "speaker.wave.3.fill"))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppTheme.textSecondary)
 
                     Slider(value: Binding(
                         get: { Double(adzanPlayer.volume) },
                         set: { adzanPlayer.volume = Float($0) }
                     ), in: 0...1)
-                    .frame(width: 75)
+                    .frame(width: 130)
 
-                    Image(systemName: "speaker.wave.3.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(AppTheme.textTertiary)
+                    Text("\(Int(adzanPlayer.volume * 100))%")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppTheme.textSecondary)
+                        .frame(width: 32, alignment: .trailing)
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(AppTheme.badgeBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                )
+                .cornerRadius(6)
 
                 Spacer()
 
-                // Theme Quick Toggle Pill
-                ThemeTogglePill()
-
-                // Language Quick Toggle Pill
-                LanguageTogglePill()
-
-                // Test Adzan Button
                 Button(action: {
                     adzanPlayer.testPlay()
                 }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Image(systemName: adzanPlayer.isPlaying ? "stop.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 12))
+                            .font(.system(size: 12, weight: .semibold))
                         Text(adzanPlayer.isPlaying ? L10n.Prayer.stopAudio : L10n.Prayer.testAudio)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundColor(adzanPlayer.isPlaying ? AppTheme.accentRed : AppTheme.accentAmber)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
                     .background(AppTheme.badgeBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                            .stroke(adzanPlayer.isPlaying ? AppTheme.accentRed.opacity(0.4) : AppTheme.cardBorder, lineWidth: 0.5)
                     )
                     .cornerRadius(6)
                 }

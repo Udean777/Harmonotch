@@ -1,8 +1,3 @@
-//
-//  NotchGeometryHelper.swift
-//  Harmonotch
-//
-
 import AppKit
 
 struct NotchGeometry {
