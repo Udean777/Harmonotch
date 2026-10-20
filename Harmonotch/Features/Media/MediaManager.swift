@@ -6,6 +6,7 @@
 import Foundation
 import AppKit
 import Combine
+import SwiftUI
 
 struct LyricLine: Identifiable, Hashable {
     let id = UUID()
@@ -16,7 +17,36 @@ struct LyricLine: Identifiable, Hashable {
 enum MediaSource: String {
     case spotify = "Spotify"
     case appleMusic = "Apple Music"
+    case safari = "YouTube"
+    case web = "Web"
     case none = "None"
+
+    var iconName: String {
+        switch self {
+        case .spotify: return "waveform"
+        case .appleMusic: return "apple.logo"
+        case .safari: return "play.rectangle.fill"
+        case .web: return "globe"
+        case .none: return "music.note"
+        }
+    }
+
+    var brandColor: Color {
+        switch self {
+        case .spotify: return .green
+        case .appleMusic: return .pink
+        case .safari: return .red
+        case .web: return .blue
+        case .none: return .gray
+        }
+    }
+}
+
+struct ParsedWebMedia {
+    let title: String
+    let artist: String
+    let source: MediaSource
+    let videoId: String?
 }
 
 final class MediaManager: ObservableObject {
@@ -58,6 +88,9 @@ final class MediaManager: ObservableObject {
     private var playbackTimer: AnyCancellable?
     private var lastFetchedTrackKey: String = ""
     private var cancellables = Set<AnyCancellable>()
+    private var syncTickCounter: Int = 0
+    private var scriptCache: [String: NSAppleScript] = [:]
+    private var lastDetectedRawWebTitle: String = ""
 
     private init() {
         setupDistributedNotificationObservers()
@@ -114,6 +147,7 @@ final class MediaManager: ObservableObject {
             ?? extractDouble(from: userInfo["Position"])
             ?? 0
 
+        self.lastDetectedRawWebTitle = ""
         updateTrack(
             source: .spotify,
             title: title,
@@ -140,6 +174,7 @@ final class MediaManager: ObservableObject {
             ?? extractDouble(from: userInfo["Position"])
             ?? 0
 
+        self.lastDetectedRawWebTitle = ""
         updateTrack(
             source: .appleMusic,
             title: title,
@@ -158,7 +193,8 @@ final class MediaManager: ObservableObject {
         album: String,
         duration: TimeInterval,
         position: TimeInterval,
-        isPlaying: Bool
+        isPlaying: Bool,
+        artworkURL: URL? = nil
     ) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -177,7 +213,8 @@ final class MediaManager: ObservableObject {
             self.albumName = album
 
             if trackChanged && !title.isEmpty {
-                self.fetchArtworkAsync(source: source)
+                self.artworkImage = nil
+                self.fetchArtworkAsync(source: source, directURL: artworkURL)
                 self.fetchLyrics(track: title, artist: artist, album: album, duration: duration)
             }
 
@@ -191,9 +228,16 @@ final class MediaManager: ObservableObject {
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                if self.isPlaying && self.duration > 0 {
+                self.syncTickCounter += 1
+                if self.syncTickCounter % 4 == 0 {
+                    if (self.mediaSource != .spotify && self.mediaSource != .appleMusic) || !self.isPlaying {
+                        self.pollWebMediaState()
+                    }
+                }
+
+                if self.isPlaying {
                     self.playbackPosition += 0.25
-                    if self.playbackPosition > self.duration {
+                    if self.duration > 0 && self.playbackPosition > self.duration {
                         self.playbackPosition = self.duration
                     }
                     self.updateCurrentLyric()
@@ -223,7 +267,7 @@ final class MediaManager: ObservableObject {
         }
     }
 
-    // MARK: - Polling Fallback (Bila Aplikasi Dibuka Langsung)
+    // MARK: - Polling Fallback & Web Media Integration
     func pollCurrentMediaState() {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             // Cek Spotify via AppleScript
@@ -252,8 +296,10 @@ final class MediaManager: ObservableObject {
                     let album = parts[3]
                     let duration = self?.extractDouble(from: parts[4]) ?? 0
                     let pos = self?.extractDouble(from: parts[5]) ?? 0
-                    self?.updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
-                    return
+                    if !title.isEmpty {
+                        self?.updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+                        return
+                    }
                 }
             }
 
@@ -283,10 +329,299 @@ final class MediaManager: ObservableObject {
                     let album = parts[3]
                     let duration = self?.extractDouble(from: parts[4]) ?? 0
                     let pos = self?.extractDouble(from: parts[5]) ?? 0
-                    self?.updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+                    if !title.isEmpty {
+                        self?.updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+                        return
+                    }
+                }
+            }
+
+            // Web Media Fallback (YouTube, YouTube Music, Spotify Web)
+            self?.pollWebMediaState()
+        }
+    }
+
+    func pollWebMediaState() {
+        // Jangan timpa jika Spotify atau Apple Music native sedang aktif memutar lagu
+        if (mediaSource == .spotify || mediaSource == .appleMusic) && isPlaying {
+            return
+        }
+
+        let isSafariRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").isEmpty
+        let isChromeRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.google.Chrome").isEmpty
+
+        guard isSafariRunning || isChromeRunning else {
+            if mediaSource == .safari || mediaSource == .web {
+                DispatchQueue.main.async {
+                    self.isPlaying = false
+                    self.lastDetectedRawWebTitle = ""
+                }
+            }
+            return
+        }
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+
+            if isSafariRunning {
+                let safariScript = """
+                set out to ""
+                tell application "Safari"
+                    try
+                        repeat with w in windows
+                            repeat with t in tabs of w
+                                set u to URL of t
+                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                                    set n to name of t
+                                    set out to n & "|||" & u & "|||Safari"
+                                    exit repeat
+                                end if
+                            end repeat
+                            if out is not "" then exit repeat
+                        end repeat
+                    on error
+                        set out to ""
+                    end try
+                end tell
+                return out
+                """
+
+                if let res = self.executeAppleScript(safariScript), !res.isEmpty {
+                    self.processWebMediaResult(res)
+                    return
+                }
+            }
+
+            if isChromeRunning {
+                let chromeScript = """
+                set out to ""
+                tell application "Google Chrome"
+                    try
+                        repeat with w in windows
+                            repeat with t in tabs of w
+                                set u to URL of t
+                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                                    set n to title of t
+                                    set out to n & "|||" & u & "|||Chrome"
+                                    exit repeat
+                                end if
+                            end repeat
+                            if out is not "" then exit repeat
+                        end repeat
+                    on error
+                        set out to ""
+                    end try
+                end tell
+                return out
+                """
+
+                if let res = self.executeAppleScript(chromeScript), !res.isEmpty {
+                    self.processWebMediaResult(res)
+                    return
+                }
+            }
+
+            if self.mediaSource == .safari || self.mediaSource == .web {
+                DispatchQueue.main.async {
+                    self.isPlaying = false
+                    self.lastDetectedRawWebTitle = ""
                 }
             }
         }
+    }
+
+    private func processWebMediaResult(_ result: String) {
+        let parts = result.components(separatedBy: "|||")
+        guard parts.count >= 2 else { return }
+
+        let rawTitle = parts[0]
+        let rawURL = parts[1]
+
+        guard let parsed = parseWebMedia(title: rawTitle, url: rawURL) else { return }
+
+        if (mediaSource == .spotify || mediaSource == .appleMusic) && isPlaying {
+            return
+        }
+
+        // Idempotensi: jika rawTitle yang terdeteksi sama persis dan track sudah aktif, jangan re-trigger!
+        if (self.mediaSource == .safari || self.mediaSource == .web) && self.lastDetectedRawWebTitle == rawTitle && self.hasActiveTrack {
+            return
+        }
+        self.lastDetectedRawWebTitle = rawTitle
+
+        resolveWebMetadata(parsedTitle: parsed.title, parsedArtist: parsed.artist, videoId: parsed.videoId) { [weak self] vTitle, vArtist, vDuration, vArtworkURL in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.updateTrack(
+                    source: parsed.source,
+                    title: vTitle,
+                    artist: vArtist,
+                    album: "",
+                    duration: vDuration,
+                    position: 0,
+                    isPlaying: true,
+                    artworkURL: vArtworkURL
+                )
+            }
+        }
+    }
+
+    private func resolveWebMetadata(
+        parsedTitle: String,
+        parsedArtist: String,
+        videoId: String?,
+        completion: @escaping (_ verifiedTitle: String, _ verifiedArtist: String, _ duration: TimeInterval, _ artworkURL: URL?) -> Void
+    ) {
+        var query = parsedTitle
+        let isGenericArtist = (parsedArtist.isEmpty || parsedArtist == "YouTube" || parsedArtist == "YouTube Music" || parsedArtist == "Spotify Web")
+        if !isGenericArtist {
+            query = "\(parsedArtist) \(parsedTitle)"
+        }
+
+        let cleanQuery = query
+            .replacingOccurrences(of: #"[^\w\s\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let encoded = cleanQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let itunesURL = URL(string: "https://itunes.apple.com/search?term=\(encoded)&entity=song&limit=1") else {
+            let fallbackArt = videoId.flatMap { URL(string: "https://img.youtube.com/vi/\($0)/hqdefault.jpg") }
+            completion(parsedTitle, parsedArtist, 0, fallbackArt)
+            return
+        }
+
+        var request = URLRequest(url: itunesURL)
+        request.timeoutInterval = 3.5
+        request.setValue("Harmonotch macOS Island v1.0", forHTTPHeaderField: "User-Agent")
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let results = json["results"] as? [[String: Any]],
+               let first = results.first {
+
+                let trackName = first["trackName"] as? String ?? parsedTitle
+                let artistName = first["artistName"] as? String ?? parsedArtist
+                let durMillis = (first["trackTimeMillis"] as? Double) ?? 0
+                let durSecs = durMillis / 1000.0
+
+                var artURL: URL? = nil
+                if let artStr = first["artworkUrl100"] as? String {
+                    let highRes = artStr.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+                    artURL = URL(string: highRes)
+                }
+
+                if artURL == nil, let vid = videoId {
+                    artURL = URL(string: "https://img.youtube.com/vi/\(vid)/hqdefault.jpg")
+                }
+
+                completion(trackName, artistName, durSecs, artURL)
+                return
+            }
+
+            // Fallback jika iTunes tidak menemukan hasil
+            let fallbackArt = videoId.flatMap { URL(string: "https://img.youtube.com/vi/\($0)/hqdefault.jpg") }
+            completion(parsedTitle, parsedArtist, 0, fallbackArt)
+        }.resume()
+    }
+
+    private func parseWebMedia(title: String, url: String) -> ParsedWebMedia? {
+        var clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return nil }
+
+        // Strip counter prefix seperti "(1) "
+        clean = clean.replacingOccurrences(of: #"^\(\d+\+?\)\s*"#, with: "", options: .regularExpression)
+
+        var videoId: String? = nil
+        if url.contains("youtube.com/watch") {
+            if let match = url.range(of: #"[?&]v=([a-zA-Z0-9_-]{11})"#, options: .regularExpression) {
+                let matched = String(url[match])
+                if let vIndex = matched.range(of: "v=") {
+                    videoId = String(matched[vIndex.upperBound...])
+                }
+            }
+        } else if url.contains("youtu.be/") {
+            if let match = url.range(of: #"youtu\.be/([a-zA-Z0-9_-]{11})"#, options: .regularExpression) {
+                let matched = String(url[match])
+                if let slashIdx = matched.range(of: "/") {
+                    videoId = String(matched[slashIdx.upperBound...])
+                }
+            }
+        }
+
+        // 1. YouTube Music: "Title • Artist - YouTube Music"
+        if url.contains("music.youtube.com") {
+            clean = clean.replacingOccurrences(of: #"\s*-\s*YouTube Music\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
+            if clean.isEmpty || clean.lowercased() == "youtube music" {
+                return nil
+            }
+            let parts = clean.components(separatedBy: "•")
+            if parts.count >= 2 {
+                let track = parts[0].trimmingCharacters(in: .whitespaces)
+                let artist = parts[1].trimmingCharacters(in: .whitespaces)
+                return ParsedWebMedia(title: track, artist: artist, source: .safari, videoId: videoId)
+            }
+            return ParsedWebMedia(title: clean, artist: "", source: .safari, videoId: videoId)
+        }
+
+        // 2. Standard YouTube: "Artist - Title (Official Music Video) - YouTube"
+        if url.contains("youtube.com") || url.contains("youtu.be") {
+            clean = clean.replacingOccurrences(of: #"\s*-\s*YouTube\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
+            if clean.isEmpty || clean.lowercased() == "youtube" {
+                return nil
+            }
+            clean = clean.replacingOccurrences(of: #"\s*[\(\[](?:Official\s*(?:Music\s*)?Video|Official\s*Audio|Official\s*Lyric\s*Video|Lyric\s*Video|Visualizer|Audio|MV|HD|4K|Remastered|Live).*?[\)\]]"#, with: "", options: [.regularExpression, .caseInsensitive])
+            clean = clean.replacingOccurrences(of: #"\s*\|\s*Official\s*.*$"#, with: "", options: [.regularExpression, .caseInsensitive])
+
+            let separators = [" - ", " – ", " — ", " : "]
+            for sep in separators {
+                if clean.contains(sep) {
+                    let parts = clean.components(separatedBy: sep)
+                    if parts.count >= 2 {
+                        let artist = parts[0].trimmingCharacters(in: .whitespaces)
+                        let track = parts[1].trimmingCharacters(in: .whitespaces)
+                        return ParsedWebMedia(title: track, artist: artist, source: .safari, videoId: videoId)
+                    }
+                }
+            }
+            return ParsedWebMedia(title: clean, artist: "", source: .safari, videoId: videoId)
+        }
+
+        // 3. Spotify Web: "Title • Artist | Spotify"
+        if url.contains("open.spotify.com") {
+            clean = clean.replacingOccurrences(of: #"\s*\|\s*Spotify\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
+            clean = clean.replacingOccurrences(of: #"\s*-\s*Spotify\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
+            if clean.isEmpty || clean.lowercased().contains("web player") || clean.lowercased() == "spotify" {
+                return nil
+            }
+
+            let pattern = #"^(.*?)\s*-\s*song and lyrics by\s+(.*)$"#
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                let ns = clean as NSString
+                if let match = regex.firstMatch(in: clean, range: NSRange(location: 0, length: ns.length)) {
+                    let track = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+                    let artist = ns.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespaces)
+                    return ParsedWebMedia(title: track, artist: artist, source: .web, videoId: nil)
+                }
+            }
+
+            if clean.contains("•") {
+                let parts = clean.components(separatedBy: "•")
+                if parts.count >= 2 {
+                    return ParsedWebMedia(title: parts[0].trimmingCharacters(in: .whitespaces), artist: parts[1].trimmingCharacters(in: .whitespaces), source: .web, videoId: nil)
+                }
+            }
+
+            if clean.contains(" - ") {
+                let parts = clean.components(separatedBy: " - ")
+                if parts.count >= 2 {
+                    return ParsedWebMedia(title: parts[0].trimmingCharacters(in: .whitespaces), artist: parts[1].trimmingCharacters(in: .whitespaces), source: .web, videoId: nil)
+                }
+            }
+
+            return ParsedWebMedia(title: clean, artist: "Spotify Web", source: .web, videoId: nil)
+        }
+
+        return nil
     }
 
     private var currentAppTarget: String {
@@ -295,31 +630,115 @@ final class MediaManager: ObservableObject {
 
     // MARK: - Playback Controls
     func playPause() {
-        runAppleScriptAsync("tell application \(currentAppTarget) to playpause")
-        isPlaying.toggle()
+        if mediaSource == .safari || mediaSource == .web {
+            toggleWebPlayback()
+        } else {
+            runAppleScriptAsync("tell application \(currentAppTarget) to playpause")
+            isPlaying.toggle()
+        }
     }
 
     func nextTrack() {
-        runAppleScriptAsync("tell application \(currentAppTarget) to next track")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.pollCurrentMediaState()
+        if mediaSource == .safari || mediaSource == .web {
+            sendSystemMediaKey(key: 17) // NX_KEYTYPE_NEXT
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.pollWebMediaState()
+            }
+        } else {
+            runAppleScriptAsync("tell application \(currentAppTarget) to next track")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.pollCurrentMediaState()
+            }
         }
     }
 
     func previousTrack() {
-        runAppleScriptAsync("tell application \(currentAppTarget) to previous track")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.pollCurrentMediaState()
+        if mediaSource == .safari || mediaSource == .web {
+            sendSystemMediaKey(key: 18) // NX_KEYTYPE_PREVIOUS
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.pollWebMediaState()
+            }
+        } else {
+            runAppleScriptAsync("tell application \(currentAppTarget) to previous track")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.pollCurrentMediaState()
+            }
         }
     }
 
     func seek(to position: TimeInterval) {
         playbackPosition = position
-        runAppleScriptAsync("tell application \(currentAppTarget) to set player position to \(Int(position))")
+        if mediaSource == .safari || mediaSource == .web {
+            let jsSeek = "tell application \"Safari\" to try\nrepeat with w in windows\nrepeat with t in tabs of w\nset u to URL of t\nif u contains \"youtube.com\" or u contains \"spotify.com\" then\ndo JavaScript \"let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.currentTime = \(position); }\" in t\nreturn\nend if\nend repeat\nend repeat\nend try"
+            runAppleScriptAsync(jsSeek)
+        } else {
+            runAppleScriptAsync("tell application \(currentAppTarget) to set player position to \(Int(position))")
+        }
+    }
+
+    private func toggleWebPlayback() {
+        isPlaying.toggle()
+        let safariJSScript = """
+        tell application "Safari"
+            try
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        set u to URL of t
+                        if u contains "youtube.com" or u contains "spotify.com" then
+                            do JavaScript "let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.paused ? v.play() : v.pause(); }" in t
+                            return "ok"
+                        end if
+                    end repeat
+                end repeat
+            on error
+                return "err"
+            end try
+        end tell
+        """
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let res = self?.executeAppleScript(safariJSScript)
+            if res != "ok" {
+                self?.sendSystemMediaKey(key: 16) // NX_KEYTYPE_PLAY
+            }
+        }
+    }
+
+    private func sendSystemMediaKey(key: Int32) {
+        func postKey(down: Bool) {
+            let flags: NSEvent.ModifierFlags = down ? NSEvent.ModifierFlags(rawValue: 0xa00) : NSEvent.ModifierFlags(rawValue: 0xb00)
+            let data1 = Int((key << 16) | (down ? 0xa00 : 0xb00))
+            let event = NSEvent.otherEvent(
+                with: .systemDefined,
+                location: .zero,
+                modifierFlags: flags,
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                subtype: 8,
+                data1: data1,
+                data2: -1
+            )
+            if let cgEvent = event?.cgEvent {
+                cgEvent.post(tap: .cghidEventTap)
+            }
+        }
+        postKey(down: true)
+        postKey(down: false)
     }
 
     // MARK: - Artwork Fetching
-    private func fetchArtworkAsync(source: MediaSource) {
+    private func fetchArtworkAsync(source: MediaSource, directURL: URL? = nil) {
+        if let direct = directURL {
+            URLSession.shared.dataTask(with: direct) { [weak self] data, _, _ in
+                if let data = data, let image = NSImage(data: data) {
+                    DispatchQueue.main.async {
+                        self?.artworkImage = image
+                    }
+                }
+            }.resume()
+            return
+        }
+
         if source == .spotify {
             DispatchQueue.global(qos: .utility).async { [weak self] in
                 let script = "tell application id \"com.spotify.client\" to get artwork url of current track"
@@ -396,16 +815,32 @@ final class MediaManager: ObservableObject {
             self.isInstrumental = false
         }
 
-        // Tier 1: Search by track_name & artist_name
-        searchLRCLIB(track: cleanTrack, artist: cleanArtist) { [weak self] success in
-            guard let self = self else { return }
-            if !success {
-                // Tier 2: Search with query q=artist+track
-                self.searchLRCLIBGeneral(query: "\(cleanArtist) \(cleanTrack)") { success2 in
-                    if !success2 {
-                        // Tier 3: Apple Music local lyrics fallback
-                        self.fetchAppleMusicLocalLyrics()
+        let isGenericArtist = (cleanArtist.isEmpty || cleanArtist == "YouTube" || cleanArtist == "YouTube Music" || cleanArtist == "Spotify Web")
+
+        if !isGenericArtist {
+            // Tier 1: Search by track_name & artist_name
+            searchLRCLIB(track: cleanTrack, artist: cleanArtist) { [weak self] success in
+                guard let self = self else { return }
+                if !success {
+                    // Tier 2: Search with query q=artist+track
+                    self.searchLRCLIBGeneral(query: "\(cleanArtist) \(cleanTrack)") { success2 in
+                        if !success2 {
+                            // Tier 3: Search with cleanTrack alone
+                            self.searchLRCLIBGeneral(query: cleanTrack) { success3 in
+                                if !success3 {
+                                    self.fetchAppleMusicLocalLyrics()
+                                }
+                            }
+                        }
                     }
+                }
+            }
+        } else {
+            // Generic artist: Search with cleanTrack directly
+            searchLRCLIBGeneral(query: cleanTrack) { [weak self] success in
+                guard let self = self else { return }
+                if !success {
+                    self.fetchAppleMusicLocalLyrics()
                 }
             }
         }
@@ -479,11 +914,15 @@ final class MediaManager: ObservableObject {
             let instrumental = item["instrumental"] as? Bool ?? false
             let syncedLRC = item["syncedLyrics"] as? String ?? ""
             let plainLyrics = item["plainLyrics"] as? String ?? ""
+            let trackDuration = self.extractDouble(from: item["duration"]) ?? 0
 
             if !syncedLRC.isEmpty || !plainLyrics.isEmpty || instrumental {
                 DispatchQueue.main.async {
                     self.isLoadingLyrics = false
                     self.isInstrumental = instrumental
+                    if self.duration == 0 && trackDuration > 0 {
+                        self.duration = trackDuration
+                    }
                     if !syncedLRC.isEmpty {
                         self.syncedLyrics = self.parseLRC(syncedLRC)
                         NSLog("[Harmonotch:Media] Successfully parsed %ld synced lyric lines for %@ - %@", self.syncedLyrics.count, track, artist)
@@ -574,15 +1013,23 @@ final class MediaManager: ObservableObject {
     // MARK: - AppleScript Helpers
     private func executeAppleScript(_ scriptText: String) -> String? {
         var result: String?
-        let work = {
+        let work = { [weak self] in
+            guard let self = self else { return }
             var error: NSDictionary?
-            if let scriptObject = NSAppleScript(source: scriptText) {
-                let output = scriptObject.executeAndReturnError(&error)
-                if error == nil {
-                    result = output.stringValue
-                } else if let error = error {
-                    NSLog("[Harmonotch:Media] executeAppleScript error: %@", error)
-                }
+            let scriptObject: NSAppleScript
+            if let cached = self.scriptCache[scriptText] {
+                scriptObject = cached
+            } else {
+                guard let newScript = NSAppleScript(source: scriptText) else { return }
+                self.scriptCache[scriptText] = newScript
+                scriptObject = newScript
+            }
+
+            let output = scriptObject.executeAndReturnError(&error)
+            if error == nil {
+                result = output.stringValue
+            } else if let error = error {
+                NSLog("[Harmonotch:Media] executeAppleScript error: %@", error)
             }
         }
 

@@ -110,9 +110,9 @@ struct NotchPillView: View {
                     if mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 4) {
-                                Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
+                                Image(systemName: mediaManager.isPlaying ? "waveform" : mediaManager.mediaSource.iconName)
                                     .font(.system(size: 8, weight: .bold))
-                                    .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.5))
+                                    .foregroundColor(mediaManager.isPlaying ? mediaManager.mediaSource.brandColor : .white.opacity(0.5))
                                     .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
 
                                 Text("\(mediaManager.trackTitle) • \(mediaManager.artistName)")
@@ -141,9 +141,9 @@ struct NotchPillView: View {
                         .animation(.easeInOut(duration: 0.28), value: mediaManager.currentLyricText)
                     } else {
                         HStack(spacing: 5) {
-                            Image(systemName: mediaManager.isPlaying ? "waveform" : "music.note")
+                            Image(systemName: mediaManager.isPlaying ? "waveform" : mediaManager.mediaSource.iconName)
                                 .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(mediaManager.isPlaying ? .green : .white.opacity(0.6))
+                                .foregroundColor(mediaManager.isPlaying ? mediaManager.mediaSource.brandColor : .white.opacity(0.6))
                                 .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
 
                             if mediaManager.hasActiveTrack {
