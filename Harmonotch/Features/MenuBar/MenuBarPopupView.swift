@@ -66,7 +66,6 @@ struct MenuBarPopupView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    // MARK: - Header
 
     private var headerSection: some View {
         HStack(spacing: 10) {
@@ -122,7 +121,6 @@ struct MenuBarPopupView: View {
         }
     }
 
-    // MARK: - Clamshell Section
 
     private var clamshellSection: some View {
         VStack(spacing: 6) {
@@ -222,7 +220,6 @@ struct MenuBarPopupView: View {
         }
     }
 
-    // MARK: - Prayer & Adzan Section
 
     private var prayerSection: some View {
         VStack(spacing: 6) {
@@ -319,7 +316,6 @@ struct MenuBarPopupView: View {
         )
     }
 
-    // MARK: - Media Glance Section
 
     private var mediaSection: some View {
         HStack(spacing: 8) {
@@ -374,7 +370,6 @@ struct MenuBarPopupView: View {
         )
     }
 
-    // MARK: - Notch Actions Section
 
     private var notchActionsSection: some View {
         HStack(spacing: 8) {
@@ -430,11 +425,9 @@ struct MenuBarPopupView: View {
         }
     }
 
-    // MARK: - Preferences Section
 
     private var preferencesSection: some View {
         VStack(spacing: 6) {
-            // Language Selection
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: "globe")
@@ -472,7 +465,6 @@ struct MenuBarPopupView: View {
                 )
             }
 
-            // Theme Selection
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: "paintpalette.fill")
@@ -523,7 +515,6 @@ struct MenuBarPopupView: View {
                 )
             }
 
-            // Launch at login
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.forward.app")
@@ -555,7 +546,6 @@ struct MenuBarPopupView: View {
         }
     }
 
-    // MARK: - Footer
 
     private var footerSection: some View {
         HStack(spacing: 8) {

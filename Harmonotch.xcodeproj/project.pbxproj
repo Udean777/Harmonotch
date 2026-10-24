@@ -84,6 +84,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				id,
 				Base,
 			);
 			mainGroup = D0BCA8DD3086863B0080715B;
@@ -247,9 +248,9 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch membutuhkan izin untuk mengontrol pemutaran musik di Spotify dan Apple Music.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to control playback in Spotify, Apple Music, Safari, and Google Chrome.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch membutuhkan akses lokasi untuk menentukan jadwal sholat yang akurat.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch needs your location to calculate accurate prayer times.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -281,9 +282,9 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch membutuhkan izin untuk mengontrol pemutaran musik di Spotify dan Apple Music.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to control playback in Spotify, Apple Music, Safari, and Google Chrome.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch membutuhkan akses lokasi untuk menentukan jadwal sholat yang akurat.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch needs your location to calculate accurate prayer times.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

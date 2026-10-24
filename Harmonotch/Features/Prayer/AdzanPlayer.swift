@@ -26,22 +26,24 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     override init() {
         self.isMuted = UserDefaults.standard.bool(forKey: "Harmonotch_AdzanMuted")
-        let savedVol = UserDefaults.standard.float(forKey: "Harmonotch_AdzanVolume")
-        self.volume = savedVol == 0 ? 0.85 : savedVol
+        // float(forKey:) cannot tell "unset" from a saved 0, so check the key explicitly.
+        self.volume = UserDefaults.standard.object(forKey: "Harmonotch_AdzanVolume") == nil
+            ? 0.85
+            : UserDefaults.standard.float(forKey: "Harmonotch_AdzanVolume")
         super.init()
     }
 
     func play(prayerName: String) {
         guard !isMuted else { return }
 
-        // Khusus Subuh gunakan audio adzan_subuh.m4a (dengan lafal As-shalatu khairum minan naum)
+        // Fajr uses its own recording, which includes "As-shalatu khairum minan naum"
         let isSubuh = prayerName.lowercased().contains("subuh") || prayerName.lowercased().contains("fajr")
         let resourceName = isSubuh ? "adzan_subuh" : "adzan"
 
         guard let url = Bundle.main.url(forResource: resourceName, withExtension: "m4a")
             ?? Bundle.main.url(forResource: "adzan", withExtension: "m4a")
             ?? Bundle.main.url(forResource: "adzan", withExtension: "mp3") else {
-            print("[AdzanPlayer] Error: File audio adzan tidak ditemukan di bundle.")
+            print("[AdzanPlayer] Adzan audio file not found in bundle.")
             return
         }
 
@@ -58,7 +60,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 self.playingPrayerName = prayerName
             }
         } catch {
-            print("[AdzanPlayer] Gagal memutar audio adzan: \(error.localizedDescription)")
+            print("[AdzanPlayer] Failed to play adzan audio: \(error.localizedDescription)")
         }
     }
 
@@ -75,7 +77,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if isPlaying {
             stop()
         } else {
-            play(prayerName: "Uji Coba")
+            play(prayerName: L10n.Prayer.testPrayer)
         }
     }
 

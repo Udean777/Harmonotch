@@ -134,12 +134,22 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         if useGPS, let gps = customGPSCoordinates {
             lat = gps.latitude
             lon = gps.longitude
-            locationLabel = currentLocationName.isEmpty ? "Lokasi Saya" : currentLocationName
+            locationLabel = currentLocationName.isEmpty ? L10n.Prayer.myLocation : currentLocationName
         } else {
             lat = selectedCity.latitude
             lon = selectedCity.longitude
             locationLabel = selectedCity.name
         }
+
+        let timeZone: TimeZone
+        if useGPS, customGPSCoordinates != nil {
+            timeZone = .current
+        } else {
+            timeZone = TimeZone(identifier: selectedCity.timeZoneIdentifier) ?? .current
+        }
+        timeFormatter.timeZone = timeZone
+        gregorianFormatter.timeZone = timeZone
+        hijriFormatter.timeZone = timeZone
 
         self.currentLocationName = locationLabel
         self.gregorianDateString = formatGregorianDate(today)
@@ -147,7 +157,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
         let coords = Coordinates(latitude: lat, longitude: lon)
         var params = CalculationMethod.singapore.params
-        // Standar Kemenag RI (Ihtiyat +2 menit pengaman)
         params.methodAdjustments = PrayerAdjustments(fajr: 2, sunrise: -2, dhuhr: 2, asr: 2, maghrib: 2, isha: 2)
 
         guard let prayers = PrayerTimes(coordinates: coords, date: dateComponents, calculationParameters: params) else {
@@ -157,7 +166,10 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let qibla = Qibla(coordinates: coords)
         let heading = (qibla.direction * 10).rounded() / 10
         self.qiblaHeading = heading
-        let cardinal = compassCardinal(for: heading)
+        let cardinal = Compass.cardinal(
+            for: heading,
+            isEnglish: LanguageManager.shared.currentLanguage == .english
+        )
         self.qiblaString = "\(Int(heading.rounded()))° \(cardinal)"
 
         let imsakDate = prayers.fajr.addingTimeInterval(-10 * 60)
@@ -345,8 +357,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
     private func sendUserNotification(prayerName: String, timeString: String) {
         let content = UNMutableNotificationContent()
-        content.title = "Waktu Sholat \(prayerName)"
-        content.body = "Telah masuk waktu sholat \(prayerName) (\(timeString)) untuk wilayah \(currentLocationName)."
+        content.title = L10n.Prayer.notificationTitle(name: prayerName)
+        content.body = L10n.Prayer.notificationBody(
+            name: prayerName,
+            time: timeString,
+            location: currentLocationName
+        )
         content.sound = .default
 
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
@@ -394,12 +410,4 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         print("[PrayerManager] Location error: \(error.localizedDescription)")
     }
 
-    private func compassCardinal(for degrees: Double) -> String {
-        let isEnglish = LanguageManager.shared.currentLanguage == .english
-        let cardinalsEN = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-        let cardinalsID = ["U", "UTL", "TL", "TTL", "T", "TTG", "TG", "STG", "S", "SBD", "BD", "BBD", "B", "BBL", "BL", "UBL"]
-        let list = isEnglish ? cardinalsEN : cardinalsID
-        let index = Int(((degrees + 11.25).truncatingRemainder(dividingBy: 360) / 22.5)) % 16
-        return list[max(0, min(15, index))]
-    }
 }

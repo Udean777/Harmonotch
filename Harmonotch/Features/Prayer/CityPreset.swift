@@ -1,5 +1,4 @@
 import Foundation
-import CoreLocation
 
 struct CityPreset: Identifiable, Hashable {
     let id: String
@@ -8,10 +7,6 @@ struct CityPreset: Identifiable, Hashable {
     let latitude: Double
     let longitude: Double
     let timeZoneIdentifier: String
-
-    var coordinates: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
 
     static let presets: [CityPreset] = [
         CityPreset(id: "jkt", name: "Jakarta", province: "DKI Jakarta", latitude: -6.2088, longitude: 106.8456, timeZoneIdentifier: "Asia/Jakarta"),

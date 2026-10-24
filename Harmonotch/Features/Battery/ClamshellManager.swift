@@ -4,13 +4,6 @@ import Combine
 import UserNotifications
 import IOKit.pwr_mgt
 
-enum ClamshellState: Equatable {
-    case off
-    case active
-    case standby
-    case pausedLowBattery
-}
-
 final class ClamshellManager: ObservableObject {
     static let shared = ClamshellManager()
 
@@ -29,6 +22,7 @@ final class ClamshellManager: ObservableObject {
     @Published var isPerformingSetup: Bool = false
 
     private let userDefaultsKey = "Harmonotch_ClamshellArmed"
+    private let sudoConfiguredKey = "Harmonotch_SudoConfigured"
     private var cancellables = Set<AnyCancellable>()
     private var assertionID: IOPMAssertionID = 0
     private var hasActiveAssertion: Bool = false
@@ -41,10 +35,10 @@ final class ClamshellManager: ObservableObject {
         checkSudoConfiguration()
         setupObservers()
         recalculateState()
+        repairStaleSleepState()
     }
 
     private func setupObservers() {
-        // Monitor screen connect / disconnect events
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -52,7 +46,6 @@ final class ClamshellManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Monitor battery changes
         BatteryMonitor.shared.$currentCapacity
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -68,7 +61,6 @@ final class ClamshellManager: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - Screen Detection
 
     private func inspectScreens() {
         var externalCount = 0
@@ -92,7 +84,6 @@ final class ClamshellManager: ObservableObject {
         self.externalDisplayName = firstExternalName
     }
 
-    // MARK: - State Calculation
 
     func recalculateState() {
         inspectScreens()
@@ -100,41 +91,22 @@ final class ClamshellManager: ObservableObject {
         let capacity = BatteryMonitor.shared.currentCapacity
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
-        // Reset 60% warning flag when plugged in or charged above 62%
         if isPlugged || capacity > 62 {
             hasWarnedAt60 = false
         }
 
-        guard isArmed else {
-            transition(to: .off)
-            return
-        }
-
-        guard hasExternalDisplay else {
-            // Armed, but external display unplugged -> Standby (safe in bag!)
-            transition(to: .standby)
-            return
-        }
-
-        // External display is connected
-        if isPlugged {
-            // Charging: completely safe to stay active
-            transition(to: .active)
-        } else {
-            // On battery: enforce 50% cutoff
-            if capacity <= 50 {
-                transition(to: .pausedLowBattery)
-            } else {
-                transition(to: .active)
-            }
-        }
+        transition(to: ClamshellPolicy.state(
+            isArmed: isArmed,
+            hasExternalDisplay: hasExternalDisplay,
+            isPluggedIn: isPlugged,
+            batteryCapacity: capacity
+        ))
     }
 
     private func handleBatteryUpdate() {
         let capacity = BatteryMonitor.shared.currentCapacity
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
-        // Check for 60% early warning on battery
         if isArmed && currentState == .active && !isPlugged && capacity <= 60 && !hasWarnedAt60 {
             sendLowBatteryWarningNotification()
             hasWarnedAt60 = true
@@ -158,10 +130,8 @@ final class ClamshellManager: ObservableObject {
         }
     }
 
-    // MARK: - Sleep Prevention Execution
 
     private func activateSleepPrevention() {
-        // 1. IOKit Assertion for idle display sleep
         if !hasActiveAssertion {
             let reason = "Harmonotch Clamshell Stay Awake" as CFString
             let result = IOPMAssertionCreateWithName(
@@ -175,7 +145,6 @@ final class ClamshellManager: ObservableObject {
             }
         }
 
-        // 2. Kernel pmset disablesleep 1
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let success = self?.runPmsetCommand(disableSleep: true) ?? false
             DispatchQueue.main.async {
@@ -185,13 +154,11 @@ final class ClamshellManager: ObservableObject {
     }
 
     private func deactivateSleepPrevention() {
-        // 1. Release IOKit Assertion
         if hasActiveAssertion {
             IOPMAssertionRelease(assertionID)
             hasActiveAssertion = false
         }
 
-        // 2. Kernel pmset disablesleep 0
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             _ = self?.runPmsetCommand(disableSleep: false)
             DispatchQueue.main.async {
@@ -200,10 +167,9 @@ final class ClamshellManager: ObservableObject {
         }
     }
 
-    private func runPmsetCommand(disableSleep: Bool) -> Bool {
+    private func runPmsetCommand(disableSleep: Bool, allowPrompt: Bool = true) -> Bool {
         let value = disableSleep ? "1" : "0"
 
-        // First attempt: Non-interactive sudo (fastest if sudoers rule exists)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
         process.arguments = ["-n", "/usr/bin/pmset", "-a", "disablesleep", value]
@@ -219,10 +185,10 @@ final class ClamshellManager: ObservableObject {
                 return true
             }
         } catch {
-            // Process launch failed
         }
 
-        // Fallback: If non-interactive sudo fails, execute via AppleScript with administrator privileges
+        guard allowPrompt else { return false }
+
         let scriptSource = "do shell script \"/usr/bin/pmset -a disablesleep \(value)\" with administrator privileges"
         var errorDict: NSDictionary?
         if let appleScript = NSAppleScript(source: scriptSource) {
@@ -233,26 +199,83 @@ final class ClamshellManager: ObservableObject {
         return false
     }
 
-    // MARK: - Sudoers One-Time Setup
 
     func checkSudoConfiguration() {
+        if UserDefaults.standard.bool(forKey: sudoConfiguredKey) {
+            isSudoConfigured = true
+            return
+        }
+
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-            process.arguments = ["-n", "/usr/bin/pmset", "-g"]
+            // -l checks the exact rule without running it; the previous probe used
+            // "pmset -g", which the installed rule does not cover.
+            process.arguments = ["-n", "-l", "--", "/usr/bin/pmset", "-a", "disablesleep", "1"]
 
+            var configured = false
             do {
                 try process.run()
                 process.waitUntilExit()
-                let isConfigured = (process.terminationStatus == 0)
-                DispatchQueue.main.async {
-                    self?.isSudoConfigured = isConfigured
-                }
+                configured = (process.terminationStatus == 0)
             } catch {
-                DispatchQueue.main.async {
-                    self?.isSudoConfigured = false
-                }
+                configured = false
             }
+
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if configured {
+                    UserDefaults.standard.set(true, forKey: self.sudoConfiguredKey)
+                }
+                self.isSudoConfigured = configured
+            }
+        }
+    }
+
+    func prepareForTermination() {
+        if hasActiveAssertion {
+            IOPMAssertionRelease(assertionID)
+            hasActiveAssertion = false
+        }
+        if isSleepCurrentlyDisabled {
+            _ = runPmsetCommand(disableSleep: false, allowPrompt: false)
+            isSleepCurrentlyDisabled = false
+        }
+    }
+
+    private func repairStaleSleepState() {
+        guard currentState != .active else { return }
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard Self.isSleepDisabled() else { return }
+
+            let restored = self?.runPmsetCommand(disableSleep: false, allowPrompt: false) ?? false
+            if !restored {
+                NSLog("[Harmonotch:Clamshell] Could not clear a stale disablesleep without a password")
+            }
+        }
+    }
+
+    private static func isSleepDisabled() -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        process.arguments = ["-g"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(decoding: data, as: UTF8.self)
+            return output.split(separator: "\n").contains { line in
+                let parts = line.split(whereSeparator: \.isWhitespace)
+                return parts.count >= 2 && parts[0] == "disablesleep" && parts[1] == "1"
+            }
+        } catch {
+            return false
         }
     }
 
@@ -260,7 +283,11 @@ final class ClamshellManager: ObservableObject {
         isPerformingSetup = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let ruleContent = "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep *"
-            let scriptSource = "do shell script \"echo '\(ruleContent)' > /etc/sudoers.d/harmonotch && chmod 440 /etc/sudoers.d/harmonotch\" with administrator privileges"
+            // Write to a temp file and let visudo validate it first: a malformed
+            // /etc/sudoers.d entry breaks all sudo on the machine.
+            let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 440 \"$tmp\" "
+                + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" /etc/sudoers.d/harmonotch"
+            let scriptSource = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
 
             var errorDict: NSDictionary?
             var success = false
@@ -270,17 +297,18 @@ final class ClamshellManager: ObservableObject {
             }
 
             DispatchQueue.main.async {
-                self?.isPerformingSetup = false
-                self?.isSudoConfigured = success
+                guard let self else { return }
+                self.isPerformingSetup = false
+                self.isSudoConfigured = success
+                UserDefaults.standard.set(success, forKey: self.sudoConfiguredKey)
                 if success {
-                    self?.recalculateState()
+                    self.recalculateState()
                 }
                 completion(success)
             }
         }
     }
 
-    // MARK: - Notifications
 
     private func sendLowBatteryWarningNotification() {
         let center = UNUserNotificationCenter.current()

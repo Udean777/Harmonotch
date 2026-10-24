@@ -28,12 +28,13 @@ jobs:
           done
           xcodebuild -version
 
-      - name: Ensure Xcode Project Compatibility
+      - name: Check Web Scripts
         run: |
-          # Ensure project file objectVersion is compatible with Xcode 16 runners
-          sed -i '' 's/objectVersion = 110;/objectVersion = 77;/' Harmonotch.xcodeproj/project.pbxproj || true
-          # Ensure deployment target is set to macOS 14.0
-          sed -i '' 's/MACOSX_DEPLOYMENT_TARGET = [0-9.]*;/MACOSX_DEPLOYMENT_TARGET = 14.0;/' Harmonotch.xcodeproj/project.pbxproj || true
+          node --check web/js/main.js
+          node --check web/api/download.js
+
+      - name: Run Tests
+        run: ./Tests/run-tests.sh
 
       - name: Build Harmonotch (Debug)
         run: |

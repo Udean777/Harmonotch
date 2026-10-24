@@ -17,7 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    private var appLogoStatusBarImage: NSImage? {
+    func applicationWillTerminate(_ notification: Notification) {
+        ClamshellManager.shared.prepareForTermination()
+    }
+
+    private lazy var appLogoStatusBarImage: NSImage? = {
         guard let logo = NSImage(named: "AppLogo") ?? NSImage(named: NSImage.applicationIconName) ?? NSApplication.shared.applicationIconImage else { return nil }
         let targetSize = NSSize(width: 18, height: 18)
         let resized = NSImage(size: targetSize)
@@ -34,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         resized.unlockFocus()
         resized.isTemplate = false
         return resized
-    }
+    }()
 
     private func setupStatusBarItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -71,82 +75,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func observeUpdates() {
-        Publishers.CombineLatest4(
-            PrayerManager.shared.$nextPrayerItem,
-            AdzanPlayer.shared.$isPlaying,
-            NotchWindowController.shared.$isNotchHidden,
-            NotchViewModel.shared.$selectedTab
-        )
-        .receive(on: DispatchQueue.main)
-        .sink { [weak self] _ in
-            self?.updateStatusBarButton()
-        }
-        .store(in: &cancellables)
+        // Every input only exists to refresh the status bar title, so they merge
+        // into one pipeline instead of one subscription each.
+        let inputs: [AnyPublisher<Void, Never>] = [
+            PrayerManager.shared.$nextPrayerItem.map { _ in () }.eraseToAnyPublisher(),
+            AdzanPlayer.shared.$isPlaying.map { _ in () }.eraseToAnyPublisher(),
+            NotchWindowController.shared.$isNotchHidden.map { _ in () }.eraseToAnyPublisher(),
+            NotchViewModel.shared.$selectedTab.map { _ in () }.eraseToAnyPublisher(),
+            BatteryMonitor.shared.$cycleCount.map { _ in () }.eraseToAnyPublisher(),
+            LanguageManager.shared.$currentLanguage.map { _ in () }.eraseToAnyPublisher(),
+            MediaManager.shared.$trackTitle.map { _ in () }.eraseToAnyPublisher(),
+            MediaManager.shared.$isPlaying.map { _ in () }.eraseToAnyPublisher(),
+            ThemeManager.shared.$currentMode.map { _ in () }.eraseToAnyPublisher(),
+            ThemeManager.shared.$currentStyle.map { _ in () }.eraseToAnyPublisher(),
+            UpdateManager.shared.$hasUpdate.map { _ in () }.eraseToAnyPublisher(),
+            UpdateManager.shared.$isChecking.map { _ in () }.eraseToAnyPublisher(),
+            ClamshellManager.shared.$currentState.map { _ in () }.eraseToAnyPublisher(),
+            ClamshellManager.shared.$isArmed.map { _ in () }.eraseToAnyPublisher()
+        ]
 
-        BatteryMonitor.shared.$cycleCount
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        LanguageManager.shared.$currentLanguage
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        MediaManager.shared.$trackTitle
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        MediaManager.shared.$isPlaying
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        ThemeManager.shared.$currentMode
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        ThemeManager.shared.$currentStyle
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        UpdateManager.shared.$hasUpdate
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        UpdateManager.shared.$isChecking
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        ClamshellManager.shared.$currentState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateStatusBarButton()
-            }
-            .store(in: &cancellables)
-
-        ClamshellManager.shared.$isArmed
+        Publishers.MergeMany(inputs)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusBarButton()

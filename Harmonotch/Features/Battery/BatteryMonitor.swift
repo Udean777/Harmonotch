@@ -3,6 +3,29 @@ import IOKit
 import IOKit.ps
 import Combine
 
+private enum TimeRemaining {
+    case toEmpty(hours: Int, mins: Int)
+    case toFull(hours: Int, mins: Int)
+    case fullChargeAC
+    case connectedCharger
+    case onBattery
+
+    var localized: String {
+        switch self {
+        case let .toEmpty(hours, mins):
+            return L10n.Battery.timeRemaining(hours: hours, mins: mins)
+        case let .toFull(hours, mins):
+            return L10n.Battery.timeToFull(hours: hours, mins: mins)
+        case .fullChargeAC:
+            return L10n.Battery.fullChargeAc
+        case .connectedCharger:
+            return L10n.Battery.connectedCharger
+        case .onBattery:
+            return L10n.Battery.onBattery
+        }
+    }
+}
+
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
 
@@ -16,7 +39,6 @@ final class BatteryMonitor: ObservableObject {
     @Published var nominalCapacity: Int = 0
     @Published var designCapacity: Int = 0
     @Published var timeRemainingFormatted: String = ""
-    @Published var conditionString: String = "Normal"
     @Published var adapterWatts: Int? = nil
 
     private var refreshTimer: AnyCancellable?
@@ -49,7 +71,7 @@ final class BatteryMonitor: ObservableObject {
             var newIsCharging: Bool?
             var newIsPluggedIn: Bool?
             var newPowerSourceState: String?
-            var newTimeRemaining: String?
+            var newTimeRemaining: TimeRemaining?
 
             var newCycleCount: Int?
             var newMaxCycleCount: Int?
@@ -79,18 +101,15 @@ final class BatteryMonitor: ObservableObject {
                         let plugged = newIsPluggedIn ?? self.isPluggedIn
                         let charging = newIsCharging ?? self.isCharging
 
+                        // Only capture numbers here; L10n state must be read on the main thread.
                         if let timeToEmpty = desc[kIOPSTimeToEmptyKey] as? Int, timeToEmpty > 0, !plugged {
-                            let hours = timeToEmpty / 60
-                            let mins = timeToEmpty % 60
-                            newTimeRemaining = L10n.Battery.timeRemaining(hours: hours, mins: mins)
+                            newTimeRemaining = .toEmpty(hours: timeToEmpty / 60, mins: timeToEmpty % 60)
                         } else if let timeToFull = desc[kIOPSTimeToFullChargeKey] as? Int, timeToFull > 0, charging {
-                            let hours = timeToFull / 60
-                            let mins = timeToFull % 60
-                            newTimeRemaining = L10n.Battery.timeToFull(hours: hours, mins: mins)
+                            newTimeRemaining = .toFull(hours: timeToFull / 60, mins: timeToFull % 60)
                         } else if plugged && !charging && cap >= 95 {
-                            newTimeRemaining = L10n.Battery.fullChargeAc
+                            newTimeRemaining = .fullChargeAC
                         } else {
-                            newTimeRemaining = plugged ? L10n.Battery.connectedCharger : L10n.Battery.onBattery
+                            newTimeRemaining = plugged ? .connectedCharger : .onBattery
                         }
                     }
                 }
@@ -133,7 +152,7 @@ final class BatteryMonitor: ObservableObject {
                 if let charging = newIsCharging { self.isCharging = charging }
                 if let plugged = newIsPluggedIn { self.isPluggedIn = plugged }
                 if let state = newPowerSourceState { self.powerSourceState = state }
-                if let tr = newTimeRemaining { self.timeRemainingFormatted = tr }
+                if let tr = newTimeRemaining { self.timeRemainingFormatted = tr.localized }
                 if let cycle = newCycleCount { self.cycleCount = cycle }
                 if let maxCycle = newMaxCycleCount { self.maxCycleCount = maxCycle }
                 if let nominal = newNominalCapacity { self.nominalCapacity = nominal }
