@@ -30,6 +30,7 @@ final class UpdateManager: ObservableObject {
     static let shared = UpdateManager()
 
     @Published var isChecking: Bool = false
+    @Published var isDownloading: Bool = false
     @Published var hasUpdate: Bool = false
     @Published var latestVersion: String = ""
     @Published var releaseNotesUrl: URL? = nil
@@ -118,7 +119,43 @@ final class UpdateManager: ObservableObject {
 
     func downloadLatestDMG() {
         guard let url = dmgDownloadUrl ?? releaseNotesUrl else { return }
-        NSWorkspace.shared.open(url)
+
+        // Opening the DMG URL in the browser tags every download with com.apple.quarantine, so
+        // Gatekeeper blocks the app until the user runs `xattr -cr`. Downloading it ourselves
+        // leaves the file unquarantined (this app sets no LSFileQuarantineEnabled).
+        guard url.pathExtension.lowercased() == "dmg" else {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        guard !isDownloading else { return }
+        isDownloading = true
+
+        URLSession.shared.downloadTask(with: url) { [weak self] tempURL, response, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isDownloading = false
+
+                guard let tempURL = tempURL,
+                      let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode) else {
+                    self.showAlert(
+                        title: L10n.Update.downloadFailedTitle,
+                        message: error?.localizedDescription ?? L10n.Update.networkErrorDesc
+                    )
+                    return
+                }
+
+                let destination = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(url.lastPathComponent)
+                do {
+                    try? FileManager.default.removeItem(at: destination)
+                    try FileManager.default.moveItem(at: tempURL, to: destination)
+                    NSWorkspace.shared.open(destination)
+                } catch {
+                    self.showAlert(title: L10n.Update.downloadFailedTitle, message: error.localizedDescription)
+                }
+            }
+        }.resume()
     }
 
     func openReleasePage() {
