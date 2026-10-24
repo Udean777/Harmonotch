@@ -29,6 +29,25 @@ struct PrayerDrawerView: View {
                             }
                         }
                     }
+
+                    Divider()
+
+                    Menu {
+                        ForEach([-15, -10, -5, 0, 5, 10, 15, 20, 25, 30], id: \.self) { offset in
+                            Button(action: {
+                                prayerManager.jumatOffsetMinutes = offset
+                            }) {
+                                HStack {
+                                    Text(L10n.Prayer.jumatOffsetLabel(offset))
+                                    if prayerManager.jumatOffsetMinutes == offset {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Label(L10n.Prayer.jumatOffsetLabel(prayerManager.jumatOffsetMinutes), systemImage: "person.3.fill")
+                    }
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")

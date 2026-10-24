@@ -1,6 +1,6 @@
 import AppKit
 
-struct NotchGeometry {
+struct NotchGeometry: Equatable {
     let hasHardwareNotch: Bool
     let physicalNotchWidth: CGFloat
     let physicalNotchHeight: CGFloat
@@ -13,7 +13,7 @@ struct NotchGeometry {
             return NotchGeometry(
                 hasHardwareNotch: false,
                 physicalNotchWidth: 210,
-                physicalNotchHeight: 32,
+                physicalNotchHeight: 0,
                 leftMargin: 0,
                 rightMargin: 0,
                 screenFrame: .zero
@@ -37,7 +37,7 @@ struct NotchGeometry {
             return NotchGeometry(
                 hasHardwareNotch: false,
                 physicalNotchWidth: 220,
-                physicalNotchHeight: 32,
+                physicalNotchHeight: 0,
                 leftMargin: 0,
                 rightMargin: 0,
                 screenFrame: screen.frame

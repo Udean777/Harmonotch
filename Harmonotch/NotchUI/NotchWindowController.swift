@@ -5,18 +5,18 @@ import Combine
 final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     override func hitTest(_ point: NSPoint) -> NSView? {
         let isExpanded = NotchViewModel.shared.isExpanded
-        let geometry = NotchGeometry.current()
+        let geometry = NotchViewModel.shared.geometry
         let activeNotchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
 
-        // Saat kondisi kuncup (collapsed): Ekstensi persis selebar notch fisik
+        // Saat kondisi kuncup (collapsed): Ekstensi persis selebar notch fisik / virtual pill
         if !isExpanded {
-            // Tinggi dari atas layar: notch fisik (37.5) + ekstensi (26) + buffer (2) = ~66 pt
-            let pillBottomFromTop: CGFloat = activeNotchHeight + 28
+            let collapsedHeight: CGFloat = (NotchViewModel.shared.selectedTab == .media && MediaManager.shared.hasActiveTrack && !MediaManager.shared.currentLyricText.isEmpty) ? 64 : 26
+            let pillBottomFromTop: CGFloat = activeNotchHeight + collapsedHeight + 2
             if point.y < (bounds.height - pillBottomFromTop) {
                 return nil // Di bawah ekstensi notch -> tembus 100%
             }
 
-            // Lebar tepat seukuran notch fisik (208 pt di MacBook Air)
+            // Lebar tepat seukuran notch fisik (208 pt di MacBook Air) atau pill virtual (220 pt)
             let pillWidth: CGFloat = geometry.physicalNotchWidth + 2
             let minX = (bounds.width - pillWidth) / 2
             let maxX = minX + pillWidth
@@ -25,7 +25,7 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
             }
         } else {
             // Saat expanded: jika klik di bawah batas drawer (misal sisa canvas), tembuskan ke desktop
-            let maxDrawerBottomFromTop: CGFloat = activeNotchHeight + 350
+            let maxDrawerBottomFromTop: CGFloat = activeNotchHeight + 450
             if point.y < (bounds.height - maxDrawerBottomFromTop) {
                 return nil
             }
@@ -48,7 +48,7 @@ final class NotchWindowController: ObservableObject {
 
     // Canvas tetap yang stabil untuk mencegah Auto Layout constraint loop
     static let canvasWidth: CGFloat = 560
-    static let canvasHeight: CGFloat = 400
+    static let canvasHeight: CGFloat = 520
 
     init() {
         self.isNotchHidden = UserDefaults.standard.bool(forKey: "Harmonotch_IsNotchHidden")
@@ -56,6 +56,7 @@ final class NotchWindowController: ObservableObject {
 
     func setupAndShowWindow() {
         guard let screen = NSScreen.main else { return }
+        NotchViewModel.shared.updateGeometry(for: screen)
 
         let frame = calculateFixedFrame(for: screen)
 
@@ -82,8 +83,17 @@ final class NotchWindowController: ObservableObject {
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let self = self, let screen = NSScreen.main else { return }
+                guard let self = self, let screen = self.panel?.screen ?? NSScreen.main else { return }
+                NotchViewModel.shared.updateGeometry(for: screen)
                 self.panel?.setFrame(self.calculateFixedFrame(for: screen), display: true)
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: NSWindow.didChangeScreenNotification, object: notchPanel)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self, let panel = self.panel, let screen = panel.screen else { return }
+                NotchViewModel.shared.updateGeometry(for: screen)
             }
             .store(in: &cancellables)
 

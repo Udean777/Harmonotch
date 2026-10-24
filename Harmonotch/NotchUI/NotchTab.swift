@@ -40,7 +40,7 @@ struct NotchTabBar: View {
         HStack(spacing: 6) {
             ForEach(DrawerTab.allCases) { tab in
                 Button(action: {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                    withAnimation(.spring(response: 0.26, dampingFraction: 0.84)) {
                         selectedTab = tab
                     }
                 }) {
@@ -87,23 +87,21 @@ struct NotchTabBar: View {
         }
         .padding(3)
         .background(
-            ZStack {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                Capsule()
-                    .fill(AppTheme.tabBarBackground)
-                Capsule()
-                    .stroke(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.20), Color.white.opacity(0.04)]
-                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.6
-                    )
-            }
+            Capsule()
+                .fill(AppTheme.tabBarBackground)
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: AppTheme.isDark
+                                    ? [Color.white.opacity(0.18), Color.white.opacity(0.04)]
+                                    : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.6
+                        )
+                )
         )
     }
 }

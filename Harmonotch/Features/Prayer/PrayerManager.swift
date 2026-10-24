@@ -38,6 +38,12 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
             }
         }
     }
+    @Published var jumatOffsetMinutes: Int {
+        didSet {
+            UserDefaults.standard.set(jumatOffsetMinutes, forKey: "Harmonotch_JumatOffsetMinutes")
+            recalculatePrayerTimes()
+        }
+    }
     @Published var currentLocationName: String = "Jakarta"
     @Published var prayerItems: [PrayerScheduleItem] = []
     @Published var nextPrayerItem: PrayerScheduleItem?
@@ -80,6 +86,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let initialCity = CityPreset.presets.first(where: { $0.id == savedCityId }) ?? CityPreset.defaultCity
         self.selectedCity = initialCity
         self.useGPS = UserDefaults.standard.bool(forKey: "Harmonotch_UseGPS")
+        self.jumatOffsetMinutes = UserDefaults.standard.integer(forKey: "Harmonotch_JumatOffsetMinutes")
 
         super.init()
 
@@ -156,10 +163,15 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let imsakDate = prayers.fajr.addingTimeInterval(-10 * 60)
         self.imsakTimeString = timeFormatter.string(from: imsakDate)
 
+        let isFriday = cal.component(.weekday, from: today) == 6
+        let jumatDate = prayers.dhuhr.addingTimeInterval(TimeInterval(jumatOffsetMinutes * 60))
+
         let rawList: [(id: String, name: String, ar: String, icon: String, date: Date)] = [
             ("subuh", L10n.Prayer.localizedPrayerName("fajr"), "الفجر", "sunrise.fill", prayers.fajr),
             ("terbit", L10n.Prayer.localizedPrayerName("sunrise"), "الشروق", "sun.horizon.fill", prayers.sunrise),
-            ("dzuhur", L10n.Prayer.localizedPrayerName("dhuhr"), "الظهر", "sun.max.fill", prayers.dhuhr),
+            isFriday
+                ? ("jumat", L10n.Prayer.localizedPrayerName("jumat"), "الجمعة", "person.3.fill", jumatDate)
+                : ("dzuhur", L10n.Prayer.localizedPrayerName("dhuhr"), "الظهر", "sun.max.fill", prayers.dhuhr),
             ("ashar", L10n.Prayer.localizedPrayerName("asr"), "العصر", "sun.haze.fill", prayers.asr),
             ("maghrib", L10n.Prayer.localizedPrayerName("maghrib"), "المغرب", "sunset.fill", prayers.maghrib),
             ("isya", L10n.Prayer.localizedPrayerName("isha"), "العشاء", "moon.stars.fill", prayers.isha)

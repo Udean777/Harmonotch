@@ -41,17 +41,10 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
     var body: some View {
         ZStack {
             if isExpanded {
-                NativeVisualEffectView(
-                    material: material,
-                    blendingMode: .behindWindow,
-                    state: .active
-                )
-                .clipShape(shape)
-
+                shape.fill(.ultraThinMaterial)
                 shape.fill(fillGradient)
                 shape.fill(tintColor)
                 shape.stroke(borderGradient, lineWidth: 1.0)
-                shape.stroke(innerBorderColor, lineWidth: 0.5).padding(0.7)
             } else {
                 shape
                     .fill(Color.black)
@@ -61,18 +54,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
                     )
             }
         }
-        .shadow(
-            color: shadowColor,
-            radius: isExpanded ? 24 : 6,
-            x: 0,
-            y: isExpanded ? 12 : 3
-        )
-        .shadow(
-            color: secondaryShadowColor,
-            radius: 4,
-            x: 0,
-            y: 2
-        )
     }
 
     private var dark: Bool { themeManager.isDarkMode }
@@ -134,22 +115,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
         }
         return Color.white.opacity(0.50)
     }
-
-    private var shadowColor: Color {
-        guard isExpanded else { return Color.black.opacity(0.35) }
-        if dark {
-            return Color.black.opacity(0.55)
-        }
-        return Color(red: 0.1, green: 0.1, blue: 0.2).opacity(0.15)
-    }
-
-    private var secondaryShadowColor: Color {
-        guard isExpanded else { return Color.clear }
-        if dark {
-            return Color.black.opacity(0.30)
-        }
-        return Color.black.opacity(0.06)
-    }
 }
 
 struct ZenSerenitySurface<ShapeType: Shape>: View {
@@ -163,7 +128,6 @@ struct ZenSerenitySurface<ShapeType: Shape>: View {
                 shape.fill(AppTheme.surfaceBackground)
                 shape.fill(overlayGradient)
                 shape.stroke(AppTheme.surfaceBorder, lineWidth: 1.0)
-                shape.stroke(AppTheme.surfaceInnerHighlight, lineWidth: 0.5).padding(0.6)
             } else {
                 shape
                     .fill(Color.black)
@@ -172,12 +136,6 @@ struct ZenSerenitySurface<ShapeType: Shape>: View {
                     )
             }
         }
-        .shadow(
-            color: isExpanded ? AppTheme.surfaceShadowColor : Color.black.opacity(0.35),
-            radius: isExpanded ? AppTheme.surfaceShadowRadius : 6,
-            x: 0,
-            y: isExpanded ? 8 : 3
-        )
     }
 
     private var overlayGradient: LinearGradient {
