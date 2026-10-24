@@ -54,7 +54,7 @@ struct AboutView: View {
                     }
                 }) {
                     HStack(spacing: 4) {
-                        if updateManager.isChecking {
+                        if updateManager.isChecking || updateManager.isDownloading {
                             ProgressView()
                                 .scaleEffect(0.5)
                                 .frame(width: 10, height: 10)
@@ -68,6 +68,7 @@ struct AboutView: View {
                     .foregroundColor(updateManager.hasUpdate ? AppTheme.accentAmber : AppTheme.accentCyan)
                 }
                 .buttonStyle(.plain)
+                .disabled(updateManager.isDownloading)
             }
             .padding(.top, 8)
 

@@ -409,6 +409,9 @@ enum L10n {
         static var downloadDMG: String {
             isEnglish ? "Download DMG" : "Unduh DMG"
         }
+        static var downloadFailedTitle: String {
+            isEnglish ? "Download Failed" : "Gagal Mengunduh"
+        }
         static var viewReleaseNotes: String {
             isEnglish ? "Release Notes" : "Catatan Rilis"
         }
