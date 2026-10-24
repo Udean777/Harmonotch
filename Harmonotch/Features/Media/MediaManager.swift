@@ -3,12 +3,6 @@ import AppKit
 import Combine
 import SwiftUI
 
-struct LyricLine: Identifiable, Hashable {
-    let id = UUID()
-    let time: TimeInterval
-    let text: String
-}
-
 enum MediaSource: String {
     case spotify = "Spotify"
     case appleMusic = "Apple Music"
@@ -446,7 +440,7 @@ final class MediaManager: ObservableObject {
             return
         }
 
-        // Idempotensi: jika rawTitle yang terdeteksi sama persis dan track sudah aktif, jangan re-trigger!
+        // Same raw title while the track is already active: do not re-trigger.
         if (self.mediaSource == .safari || self.mediaSource == .web) && self.lastDetectedRawWebTitle == rawTitle && self.hasActiveTrack {
             return
         }
@@ -521,7 +515,6 @@ final class MediaManager: ObservableObject {
                 return
             }
 
-            // Fallback jika iTunes tidak menemukan hasil
             let fallbackArt = videoId.flatMap { URL(string: "https://img.youtube.com/vi/\($0)/hqdefault.jpg") }
             completion(parsedTitle, parsedArtist, 0, fallbackArt)
         }.resume()
@@ -531,7 +524,6 @@ final class MediaManager: ObservableObject {
         var clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return nil }
 
-        // Strip counter prefix seperti "(1) "
         clean = clean.replacingOccurrences(of: #"^\(\d+\+?\)\s*"#, with: "", options: .regularExpression)
 
         var videoId: String? = nil
@@ -551,7 +543,6 @@ final class MediaManager: ObservableObject {
             }
         }
 
-        // 1. YouTube Music: "Title • Artist - YouTube Music"
         if url.contains("music.youtube.com") {
             clean = clean.replacingOccurrences(of: #"\s*-\s*YouTube Music\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
             if clean.isEmpty || clean.lowercased() == "youtube music" {
@@ -566,7 +557,6 @@ final class MediaManager: ObservableObject {
             return ParsedWebMedia(title: clean, artist: "", source: .safari, videoId: videoId)
         }
 
-        // 2. Standard YouTube: "Artist - Title (Official Music Video) - YouTube"
         if url.contains("youtube.com") || url.contains("youtu.be") {
             clean = clean.replacingOccurrences(of: #"\s*-\s*YouTube\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
             if clean.isEmpty || clean.lowercased() == "youtube" {
@@ -589,7 +579,6 @@ final class MediaManager: ObservableObject {
             return ParsedWebMedia(title: clean, artist: "", source: .safari, videoId: videoId)
         }
 
-        // 3. Spotify Web: "Title • Artist | Spotify"
         if url.contains("open.spotify.com") {
             clean = clean.replacingOccurrences(of: #"\s*\|\s*Spotify\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
             clean = clean.replacingOccurrences(of: #"\s*-\s*Spotify\s*$"#, with: "", options: [.regularExpression, .caseInsensitive])
@@ -638,6 +627,9 @@ final class MediaManager: ObservableObject {
             runAppleScriptAsync("tell application \(currentAppTarget) to playpause")
             isPlaying.toggle()
             updatePlaybackTimerState()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.pollCurrentMediaState()
+            }
         }
     }
 
@@ -672,8 +664,7 @@ final class MediaManager: ObservableObject {
     func seek(to position: TimeInterval) {
         playbackPosition = position
         if mediaSource == .safari || mediaSource == .web {
-            let jsSeek = "tell application \"Safari\" to try\nrepeat with w in windows\nrepeat with t in tabs of w\nset u to URL of t\nif u contains \"youtube.com\" or u contains \"spotify.com\" then\ndo JavaScript \"let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.currentTime = \(position); }\" in t\nreturn\nend if\nend repeat\nend repeat\nend try"
-            runAppleScriptAsync(jsSeek)
+            runWebJavaScriptAsync("let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.currentTime = \(position); }")
         } else {
             runAppleScriptAsync("tell application \(currentAppTarget) to set player position to \(Int(position))")
         }
@@ -682,29 +673,62 @@ final class MediaManager: ObservableObject {
     private func toggleWebPlayback() {
         isPlaying.toggle()
         updatePlaybackTimerState()
-        let safariJSScript = """
+        let js = "let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.paused ? v.play() : v.pause(); }"
+        appleScriptQueue.async { [weak self] in
+            guard let self else { return }
+            if !self.runWebJavaScript(js) {
+                self.sendSystemMediaKey(key: 16) // NX_KEYTYPE_PLAY
+            }
+        }
+    }
+
+    private func runWebJavaScriptAsync(_ js: String) {
+        appleScriptQueue.async { [weak self] in
+            guard let self else { return }
+            _ = self.runWebJavaScript(js)
+        }
+    }
+
+    private func runWebJavaScript(_ js: String) -> Bool {
+        let escaped = js
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+
+        let safariScript = """
         tell application "Safari"
             try
                 repeat with w in windows
                     repeat with t in tabs of w
                         set u to URL of t
-                        if u contains "youtube.com" or u contains "spotify.com" then
-                            do JavaScript "let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.paused ? v.play() : v.pause(); }" in t
+                        if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                            do JavaScript "\(escaped)" in t
                             return "ok"
                         end if
                     end repeat
                 end repeat
-            on error
-                return "err"
             end try
         end tell
+        return ""
         """
-        appleScriptQueue.async { [weak self] in
-            let res = self?.executeAppleScript(safariJSScript)
-            if res != "ok" {
-                self?.sendSystemMediaKey(key: 16) // NX_KEYTYPE_PLAY
-            }
-        }
+        if executeAppleScript(safariScript) == "ok" { return true }
+
+        let chromeScript = """
+        tell application "Google Chrome"
+            try
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        set u to URL of t
+                        if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                            execute t javascript "\(escaped)"
+                            return "ok"
+                        end if
+                    end repeat
+                end repeat
+            end try
+        end tell
+        return ""
+        """
+        return executeAppleScript(chromeScript) == "ok"
     }
 
     private func sendSystemMediaKey(key: Int32) {
@@ -767,17 +791,21 @@ final class MediaManager: ObservableObject {
             }
         } else if source == .appleMusic {
             appleScriptQueue.async { [weak self] in
+                guard let self else { return }
                 let script = """
                 tell application id "com.apple.Music"
                     try
-                        set artData to raw data of artwork 1 of current track
-                        return artData
+                        return raw data of artwork 1 of current track
                     on error
                         return ""
                     end try
                 end tell
                 """
-                if let raw = self?.executeAppleScript(script), !raw.isEmpty {
+                guard let data = self.executeAppleScriptData(script),
+                      let image = NSImage(data: data) else { return }
+                self.artworkCache.setObject(image, forKey: cacheKey)
+                DispatchQueue.main.async {
+                    self.artworkImage = image
                 }
             }
         }
@@ -840,14 +868,11 @@ final class MediaManager: ObservableObject {
         let isGenericArtist = (cleanArtist.isEmpty || cleanArtist == "YouTube" || cleanArtist == "YouTube Music" || cleanArtist == "Spotify Web")
 
         if !isGenericArtist {
-            // Tier 1: Search by track_name & artist_name
             searchLRCLIB(track: cleanTrack, artist: cleanArtist) { [weak self] success in
                 guard let self = self else { return }
                 if !success {
-                    // Tier 2: Search with query q=artist+track
                     self.searchLRCLIBGeneral(query: "\(cleanArtist) \(cleanTrack)") { success2 in
                         if !success2 {
-                            // Tier 3: Search with cleanTrack alone
                             self.searchLRCLIBGeneral(query: cleanTrack) { success3 in
                                 if !success3 {
                                     self.fetchAppleMusicLocalLyrics()
@@ -944,7 +969,7 @@ final class MediaManager: ObservableObject {
                         self.duration = trackDuration
                     }
                     if !syncedLRC.isEmpty {
-                        self.syncedLyrics = self.parseLRC(syncedLRC)
+                        self.syncedLyrics = LRCParser.parse(syncedLRC)
                         NSLog("[Harmonotch:Media] Successfully parsed %ld synced lyric lines for %@ - %@", self.syncedLyrics.count, track, artist)
                     } else if !plainLyrics.isEmpty {
                         let lines = plainLyrics.components(separatedBy: "\n")
@@ -997,54 +1022,19 @@ final class MediaManager: ObservableObject {
         }
     }
 
-    private func parseLRC(_ lrc: String) -> [LyricLine] {
-        var result: [LyricLine] = []
-        let lines = lrc.components(separatedBy: "\n")
 
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix("[") else { continue }
-
-            var remaining = trimmed
-            var timestamps: [TimeInterval] = []
-
-            while remaining.hasPrefix("["), let closeIdx = remaining.firstIndex(of: "]") {
-                let tag = String(remaining[remaining.index(after: remaining.startIndex)..<closeIdx])
-                remaining = String(remaining[remaining.index(after: closeIdx)...]).trimmingCharacters(in: .whitespaces)
-
-                let parts = tag.components(separatedBy: ":")
-                if parts.count == 2,
-                   let mins = Double(parts[0]),
-                   let secs = Double(parts[1]) {
-                    timestamps.append(mins * 60.0 + secs)
-                }
-            }
-
-            let text = remaining.trimmingCharacters(in: .whitespaces)
-            if !text.isEmpty {
-                for ts in timestamps {
-                    result.append(LyricLine(time: ts, text: text))
-                }
-            }
-        }
-
-        return result.sorted(by: { $0.time < $1.time })
+    private func cachedScript(_ scriptText: String) -> NSAppleScript? {
+        if let cached = scriptCache[scriptText] { return cached }
+        guard let newScript = NSAppleScript(source: scriptText) else { return nil }
+        scriptCache[scriptText] = newScript
+        return newScript
     }
 
     private func executeAppleScript(_ scriptText: String) -> String? {
         var result: String?
         let work = { [weak self] in
-            guard let self = self else { return }
+            guard let self = self, let scriptObject = self.cachedScript(scriptText) else { return }
             var error: NSDictionary?
-            let scriptObject: NSAppleScript
-            if let cached = self.scriptCache[scriptText] {
-                scriptObject = cached
-            } else {
-                guard let newScript = NSAppleScript(source: scriptText) else { return }
-                self.scriptCache[scriptText] = newScript
-                scriptObject = newScript
-            }
-
             let output = scriptObject.executeAndReturnError(&error)
             if error == nil {
                 result = output.stringValue
@@ -1059,6 +1049,26 @@ final class MediaManager: ObservableObject {
             appleScriptQueue.sync(execute: work)
         }
         return result
+    }
+
+    private func executeAppleScriptData(_ scriptText: String) -> Data? {
+        let work = { [weak self] () -> Data? in
+            guard let self = self, let scriptObject = self.cachedScript(scriptText) else { return nil }
+            var error: NSDictionary?
+            let output = scriptObject.executeAndReturnError(&error)
+            guard error == nil else {
+                if let error = error {
+                    NSLog("[Harmonotch:Media] executeAppleScriptData error: %@", error)
+                }
+                return nil
+            }
+            return output.data
+        }
+
+        if DispatchQueue.getSpecific(key: appleScriptQueueKey) != nil {
+            return work()
+        }
+        return appleScriptQueue.sync(execute: work)
     }
 
     private func runAppleScriptAsync(_ scriptText: String) {

@@ -131,7 +131,6 @@ struct BatteryDrawerView: View {
             }
             .padding(.horizontal, 16)
 
-            // Clamshell Mode Card
             ClamshellCardView()
                 .padding(.horizontal, 16)
 

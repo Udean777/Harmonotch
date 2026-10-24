@@ -76,6 +76,12 @@ enum L10n {
         static var qibla: String {
             isEnglish ? "Qibla" : "Kiblat"
         }
+        static var myLocation: String {
+            isEnglish ? "My Location" : "Lokasi Saya"
+        }
+        static var testPrayer: String {
+            isEnglish ? "Test" : "Uji Coba"
+        }
         static var imsak: String {
             "Imsak"
         }
@@ -87,8 +93,15 @@ enum L10n {
             let sign = minutes > 0 ? "+" : "−"
             return isEnglish ? "\(name): \(sign)\(abs(minutes)) min" : "\(name): \(sign)\(abs(minutes)) mnt"
         }
-        static var imsakDetail: String {
-            isEnglish ? "10m before Fajr" : "10m sebelum Subuh"
+        static func notificationTitle(name: String) -> String {
+            let prayer = localizedPrayerName(name)
+            return isEnglish ? "\(prayer) Prayer Time" : "Waktu Sholat \(prayer)"
+        }
+        static func notificationBody(name: String, time: String, location: String) -> String {
+            let prayer = localizedPrayerName(name)
+            return isEnglish
+                ? "It is now \(prayer) (\(time)) in \(location)."
+                : "Telah masuk waktu sholat \(prayer) (\(time)) untuk wilayah \(location)."
         }
     }
 
@@ -234,9 +247,6 @@ enum L10n {
     }
 
     enum Menu {
-        static var appTitle: String {
-            "Harmonotch — Islamic Notch"
-        }
         static var openDrawer: String {
             isEnglish ? "Open Notch Drawer" : "Buka Drawer Notch"
         }
@@ -291,17 +301,11 @@ enum L10n {
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
         }
-        static var cyclesSuffix: String {
-            isEnglish ? "Cycles" : "Siklus"
-        }
         static var notchActive: String {
             isEnglish ? "Notch Active" : "Notch Aktif"
         }
         static var notchHidden: String {
             isEnglish ? "Notch Hidden" : "Notch Tersembunyi"
-        }
-        static var quickPreferences: String {
-            isEnglish ? "Quick Preferences" : "Preferensi Cepat"
         }
         static var nextPrayer: String {
             isEnglish ? "Next Prayer" : "Sholat Berikutnya"

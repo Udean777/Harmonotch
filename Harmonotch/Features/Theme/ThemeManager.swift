@@ -125,7 +125,7 @@ final class ThemeManager: ObservableObject {
     }
 
     private func observeSystemThemeChanges() {
-        // macOS notification saat user mengganti Dark / Light mode di System Settings
+        // System Settings posts this when the user changes Dark / Light mode
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
             object: nil,

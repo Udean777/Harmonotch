@@ -1,14 +1,12 @@
 import SwiftUI
 
 struct AppTheme {
-    @ObservedObject private static var themeManager = ThemeManager.shared
-
     static var isDark: Bool {
-        themeManager.isDarkMode
+        ThemeManager.shared.isDarkMode
     }
 
     static var isZen: Bool {
-        themeManager.currentStyle == .zenSerenity
+        ThemeManager.shared.currentStyle == .zenSerenity
     }
 
     static var surfaceBackground: Color {
@@ -33,32 +31,6 @@ struct AppTheme {
         }
     }
 
-    static var surfaceInnerHighlight: Color {
-        if isZen {
-            return isDark ? Color.white.opacity(0.04) : Color.white.opacity(0.60)
-        } else {
-            return isDark ? Color.white.opacity(0.10) : Color.white.opacity(0.70)
-        }
-    }
-
-    static var surfaceShadowColor: Color {
-        if isZen {
-            return isDark
-                ? Color.black.opacity(0.55)
-                : Color(red: 0.25, green: 0.20, blue: 0.15).opacity(0.10)
-        } else {
-            return isDark ? Color.black.opacity(0.40) : Color.black.opacity(0.10)
-        }
-    }
-
-    static var surfaceShadowRadius: CGFloat {
-        if isZen {
-            return isDark ? 16 : 12
-        } else {
-            return isDark ? 16 : 14
-        }
-    }
-
     static var cardBackground: Color {
         if isZen {
             return isDark
@@ -68,16 +40,6 @@ struct AppTheme {
             return isDark
                 ? Color.white.opacity(0.06)
                 : Color.white.opacity(0.75)
-        }
-    }
-
-    static var cardHoverBackground: Color {
-        if isZen {
-            return isDark
-                ? Color(red: 0.20, green: 0.19, blue: 0.18)
-                : Color(red: 0.94, green: 0.93, blue: 0.90)
-        } else {
-            return isDark ? Color.white.opacity(0.10) : Color.white.opacity(0.92)
         }
     }
 
@@ -199,16 +161,6 @@ struct AppTheme {
         }
     }
 
-    static var tabBarBorder: Color {
-        if isZen {
-            return isDark
-                ? Color(red: 0.20, green: 0.19, blue: 0.18)
-                : Color(red: 0.85, green: 0.83, blue: 0.78)
-        } else {
-            return isDark ? Color.white.opacity(0.10) : Color.black.opacity(0.07)
-        }
-    }
-
     static var tabActiveBackground: Color {
         if isZen {
             return isDark
@@ -216,16 +168,6 @@ struct AppTheme {
                 : Color.white
         } else {
             return isDark ? Color.white.opacity(0.20) : Color.white.opacity(0.92)
-        }
-    }
-
-    static var tabActiveBorder: Color {
-        if isZen {
-            return isDark
-                ? Color(red: 0.30, green: 0.28, blue: 0.27)
-                : Color(red: 0.83, green: 0.80, blue: 0.75)
-        } else {
-            return isDark ? Color.white.opacity(0.25) : Color.black.opacity(0.08)
         }
     }
 

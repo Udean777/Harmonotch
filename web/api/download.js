@@ -114,6 +114,10 @@ export default async function handler(req, res) {
     res.end();
   } catch (err) {
     console.error("Stream error in /api/download:", err);
+    // Headers are already sent once streaming starts; redirecting now throws.
+    if (res.headersSent) {
+      return res.end();
+    }
     return res.redirect(302, downloadUrl || RELEASES_PAGE_URL);
   }
 }

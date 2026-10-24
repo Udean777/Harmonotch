@@ -49,106 +49,51 @@ struct PrayerDrawerView: View {
                         Label(L10n.Prayer.jumatOffsetLabel(prayerManager.jumatOffsetMinutes), systemImage: "person.3.fill")
                     }
                 } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(AppTheme.accentGreen)
+                    NotchChip(cornerRadius: 8, horizontalPadding: 9, verticalPadding: 5) {
+                        HStack(spacing: 5) {
+                            Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(AppTheme.accentGreen)
 
-                        Text(prayerManager.currentLocationName)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(AppTheme.textPrimary)
+                            Text(prayerManager.currentLocationName)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(AppTheme.textPrimary)
 
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(AppTheme.textTertiary)
-                    }
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(AppTheme.badgeBackground)
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: AppTheme.isDark
-                                            ? [Color.white.opacity(0.25), Color.white.opacity(0.05)]
-                                            : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 0.6
-                                )
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppTheme.textTertiary)
                         }
-                    )
+                    }
                 }
                 .menuStyle(.borderlessButton)
 
                 if !prayerManager.qiblaString.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "safari.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(AppTheme.accentAmber)
-                            .rotationEffect(.degrees(prayerManager.qiblaHeading))
+                    NotchChip {
+                        HStack(spacing: 4) {
+                            Image(systemName: "safari.fill")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(AppTheme.accentAmber)
+                                .rotationEffect(.degrees(prayerManager.qiblaHeading))
 
-                        Text("\(L10n.Prayer.qibla) \(prayerManager.qiblaString)")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppTheme.textSecondary)
-                    }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .background(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(AppTheme.badgeBackground)
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: AppTheme.isDark
-                                            ? [Color.white.opacity(0.22), Color.white.opacity(0.04)]
-                                            : [Color.white.opacity(0.80), Color.black.opacity(0.05)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 0.5
-                                )
+                            Text("\(L10n.Prayer.qibla) \(prayerManager.qiblaString)")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(AppTheme.textSecondary)
                         }
-                    )
+                    }
                 }
 
                 if !prayerManager.imsakTimeString.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "moon.haze.fill")
-                            .font(.system(size: 9))
-                            .foregroundColor(AppTheme.accentCyan)
+                    NotchChip(tint: AppTheme.accentCyan.opacity(AppTheme.isDark ? 0.12 : 0.08)) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "moon.haze.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppTheme.accentCyan)
 
-                        Text("\(L10n.Prayer.imsak) \(prayerManager.imsakTimeString)")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppTheme.accentCyan)
-                    }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .background(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(AppTheme.accentCyan.opacity(AppTheme.isDark ? 0.12 : 0.08))
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [AppTheme.accentCyan.opacity(0.4), AppTheme.accentCyan.opacity(0.1)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 0.5
-                                )
+                            Text("\(L10n.Prayer.imsak) \(prayerManager.imsakTimeString)")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(AppTheme.accentCyan)
                         }
-                    )
+                    }
                 }
 
                 Spacer()
@@ -265,7 +210,7 @@ struct PrayerDrawerView: View {
                         get: { Double(adzanPlayer.volume) },
                         set: { adzanPlayer.volume = Float($0) }
                     ), in: 0...1)
-                    .frame(width: 130)
+                    .frame(maxWidth: .infinity)
 
                     Text("\(Int(adzanPlayer.volume * 100))%")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
@@ -274,14 +219,13 @@ struct PrayerDrawerView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
+                .frame(maxWidth: .infinity)
                 .background(AppTheme.badgeBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(AppTheme.cardBorder, lineWidth: 0.5)
                 )
                 .cornerRadius(6)
-
-                Spacer()
 
                 Button(action: {
                     adzanPlayer.testPlay()

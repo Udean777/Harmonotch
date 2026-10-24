@@ -2,7 +2,6 @@
 
 const dict = {
   id: {
-    // Navigation
     "nav.skip": "Lewati ke konten",
     "nav.features": "Fitur",
     "nav.showcase": "Showcase Notch",
@@ -12,12 +11,7 @@ const dict = {
     "aria.primary": "Navigasi utama",
     "aria.language": "Pilihan Bahasa",
     "aria.menu": "Menu navigasi",
-
-    // Hero
-    "hero.badge": "Rilis Perdana Harmonotch untuk macOS",
     "hero.notch.prayerLabel": "Sholat Berikutnya",
-    "hero.notch.batteryLabel": "MagSafe Tersambung",
-    "hero.notch.mediaLabel": "Sedang Diputar",
     "hero.title": "Ubah Notch MacBook Jadi <em>Pusat Harmoni</em> & Produktivitas",
     "hero.desc": "Aplikasi pendamping notch paling anggun di macOS. Menghadirkan <strong>Jadwal Sholat & Adzan akurat</strong>, <strong>Telemetri Baterai real-time</strong>, serta <strong>Kontrol Media dengan lirik sinkron</strong> dalam balutan antarmuka <em>Liquid Glass</em> yang memukau.",
     "hero.downloadBtn": "Unduh Installer (DMG)",
@@ -27,21 +21,10 @@ const dict = {
     "hero.tag1": "100% Native Swift",
     "hero.tag2": "Privasi Penuh & Offline",
     "hero.tag3": "Hemat Daya & Ringan",
-
-    // Trust strip
-    "trust.adhan": "Perhitungan Astronomis Akurat (Kemenag & Global)",
-    "trust.battery": "Indikator Status Baterai & Siklus Daya",
-    "trust.lyrics": "Visualizer Audio & Lirik Berjalan",
-    "trust.privacy": "Zero Tracking & Tanpa Iklan",
-
-    // Interactive Showcase
-    "showcase.kicker": "Eksplorasi Interaktif",
     "showcase.title": "Sentuh & Rasakan Pengalaman Notch yang Hidup",
     "showcase.desc": "Pilih tab di bawah untuk melihat keanggunan animasi notch serta kemudahan akses via menu bar macOS.",
     "tab.video": "Animasi Live Notch",
     "tab.menubar": "Menu Bar Companion",
-
-    // Showcase Drawer Descriptions
     "showcase.video.title": "Animasi Pegas Organik & Responsif",
     "showcase.video.desc": "Harmonotch melebur secara alami dengan bezel kamera MacBook Anda menggunakan kurva pegas (spring dynamics) asli Apple. Notch mengembang seketika saat kursor didekatkan, dan menutup kembali dengan halus tanpa mengganggu fokus kerja.",
     "showcase.video.f1": "60 FPS Native SwiftUI Spring Animation",
@@ -53,9 +36,6 @@ const dict = {
     "showcase.menubar.f1": "Dropdown status sholat dan baterai cepat",
     "showcase.menubar.f2": "In-app update checker otomatis",
     "showcase.menubar.f3": "Shortcut dan pengaturan fleksibel",
-
-    // Features Section
-    "features.kicker": "Keunggulan Utama",
     "features.title": "Didesain Eksklusif untuk Pengguna macOS",
     "features.desc": "Harmonotch dibangun dari nol menggunakan Swift dan SwiftUI murni untuk menjamin performa secepat kilat dan efisiensi memori maksimal.",
     "features.c1t": "Presisi Waktu Sholat",
@@ -70,9 +50,6 @@ const dict = {
     "features.c5d": "Memiliki MacBook Pro lama, MacBook Air M1, Mac mini, iMac, atau Mac Studio? Harmonotch tetap berfungsi sempurna melalui floating drawer & menu bar.",
     "features.c6t": "Pembaruan Aplikasi Terintegrasi",
     "features.c6d": "Harmonotch secara berkala memeriksa rilis terbaru langsung dari repositori GitHub sehingga Anda selalu mendapatkan fitur dan perbaikan terkini.",
-
-    // Installation Guide
-    "install.kicker": "Panduan Cepat",
     "install.title": "Cara Pasang di Mac Anda",
     "install.desc": "Hanya butuh waktu kurang dari satu menit untuk mulai menikmati Harmonotch.",
     "install.step1Title": "1. Unduh File Installer",
@@ -83,9 +60,6 @@ const dict = {
     "install.step3Desc": "Karena Harmonotch dirilis secara independen (ad-hoc signed), jika macOS memunculkan notifikasi keamanan 'Harmonotch cannot be opened', cukup jalankan perintah berikut di Terminal:",
     "install.copyBtn": "Salin Perintah",
     "install.copied": "Tersalin!",
-
-    // FAQ
-    "faq.kicker": "Pertanyaan Umum",
     "faq.title": "Ada Pertanyaan? Kami Punya Jawabannya",
     "faq.q1": "Apakah Harmonotch memerlukan koneksi internet untuk menghitung sholat?",
     "faq.a1": "Tidak. Perhitungan waktu sholat dihitung secara offline secara matematis berdasarkan koordinat astronomi kota Anda. Koneksi internet hanya dibutuhkan jika Anda menyalakan fitur cek pembaruan otomatis atau streaming lirik.",
@@ -97,15 +71,10 @@ const dict = {
     "faq.a4": "Sama sekali tidak. Harmonotch dibuat dengan Swift murni dan AppKit/SwiftUI native. Penggunaan CPU saat idle adalah 0.0% dan penggunaan RAM kurang dari 35MB.",
     "faq.q5": "Metode perhitungan sholat apa saja yang didukung?",
     "faq.a5": "Harmonotch mendukung Kemenag (Kementerian Agama RI), Muslim World League (MWL), ISNA (North America), Umm Al-Qura (Makkah), Egyptian General Authority, University of Islamic Sciences Karachi, Dubai, Qatar, Kuwait, Singapore, dan Turki.",
-
-    // CTA
-    "cta.kicker": "Mulai Sekarang",
     "cta.title": "Harmoniskan Pengalaman MacBook Anda Hari Ini",
     "cta.desc": "Gratis, open-source, dan dibangun dengan penuh perhatian untuk detail.",
     "cta.downloadBtn": "Unduh Harmonotch untuk Mac",
     "cta.githubBtn": "Lihat di GitHub",
-
-    // Footer
     "footer.desc": "Pusat harmoni, waktu sholat, telemetri daya, dan pemutar musik untuk notch macOS Anda. Dibuat dengan cinta untuk komunitas Mac.",
     "footer.linksTitle": "Tautan",
     "footer.features": "Fitur",
@@ -120,7 +89,6 @@ const dict = {
   },
 
   en: {
-    // Navigation
     "nav.skip": "Skip to content",
     "nav.features": "Features",
     "nav.showcase": "Notch Showcase",
@@ -130,12 +98,7 @@ const dict = {
     "aria.primary": "Primary navigation",
     "aria.language": "Language Selector",
     "aria.menu": "Navigation menu",
-
-    // Hero
-    "hero.badge": "Harmonotch Inaugural Release for macOS",
     "hero.notch.prayerLabel": "Next Prayer",
-    "hero.notch.batteryLabel": "MagSafe Connected",
-    "hero.notch.mediaLabel": "Now Playing",
     "hero.title": "Turn Your MacBook Notch into a <em>Center of Harmony</em> & Productivity",
     "hero.desc": "The most exquisite notch companion for macOS. Featuring <strong>accurate Prayer Times & Adhan</strong>, <strong>real-time Battery Telemetry</strong>, and <strong>Media Controls with synced lyrics</strong> wrapped in an enchanting <em>Liquid Glass</em> design.",
     "hero.downloadBtn": "Download Installer (DMG)",
@@ -145,21 +108,10 @@ const dict = {
     "hero.tag1": "100% Native Swift",
     "hero.tag2": "Fully Private & Offline",
     "hero.tag3": "Ultra Lightweight & Battery Friendly",
-
-    // Trust strip
-    "trust.adhan": "Accurate Astronomical Calculation (Kemenag & Global)",
-    "trust.battery": "Live Battery Health & Cycle Telemetry",
-    "trust.lyrics": "Audio Waveform & Synced Lyrics",
-    "trust.privacy": "Zero Tracking & No Ads",
-
-    // Interactive Showcase
-    "showcase.kicker": "Interactive Showcase",
     "showcase.title": "Touch & Experience the Living Notch",
     "showcase.desc": "Select a tab below to experience the organic notch animation and the effortless macOS menu bar companion.",
     "tab.video": "Live Notch Animation",
     "tab.menubar": "Menu Bar Companion",
-
-    // Showcase Drawer Descriptions
     "showcase.video.title": "Organic & Responsive Spring Dynamics",
     "showcase.video.desc": "Harmonotch seamlessly expands from your MacBook hardware notch using Apple's fluid spring dynamics. Hovering expands the drawer instantly with zero lag, snapping shut when your cursor moves away.",
     "showcase.video.f1": "60 FPS Native SwiftUI Spring Animation",
@@ -171,9 +123,6 @@ const dict = {
     "showcase.menubar.f1": "Quick status popover for prayer and battery",
     "showcase.menubar.f2": "Automatic in-app update checker",
     "showcase.menubar.f3": "Customizable shortcuts and drawer hotkeys",
-
-    // Features Section
-    "features.kicker": "Key Highlights",
     "features.title": "Engineered Exclusively for macOS",
     "features.desc": "Built from scratch with pure Swift and AppKit/SwiftUI to ensure peak performance and minimal memory usage.",
     "features.c1t": "Astronomical Prayer Precision",
@@ -188,9 +137,6 @@ const dict = {
     "features.c5d": "Own an older MacBook Pro, M1 MacBook Air, Mac mini, or iMac? Harmonotch adapts into a top floating pill and menu bar tray.",
     "features.c6t": "Built-in Update Checker",
     "features.c6d": "Harmonotch seamlessly verifies GitHub Releases so you always stay up to date with new features and improvements.",
-
-    // Installation Guide
-    "install.kicker": "Quick Setup",
     "install.title": "How to Install on Your Mac",
     "install.desc": "Takes less than sixty seconds to get up and running.",
     "install.step1Title": "1. Download Installer",
@@ -201,9 +147,6 @@ const dict = {
     "install.step3Desc": "Because Harmonotch is independently ad-hoc signed, if macOS shows 'Harmonotch cannot be opened', simply run this quick command in Terminal:",
     "install.copyBtn": "Copy Command",
     "install.copied": "Copied!",
-
-    // FAQ
-    "faq.kicker": "Common Questions",
     "faq.title": "Frequently Asked Questions",
     "faq.q1": "Does Harmonotch require an internet connection to compute prayer times?",
     "faq.a1": "No. All prayer calculations are solved mathematically on your local CPU based on astronomical solar coordinates. Internet is only used for lyrics lookup and checking new GitHub releases.",
@@ -215,15 +158,10 @@ const dict = {
     "faq.a4": "Not at all. Harmonotch is written in pure native Swift with AppKit & SwiftUI. Idle CPU consumption stays at 0.0%, and RAM footprint is below 35MB.",
     "faq.q5": "Which prayer calculation methods are supported?",
     "faq.a5": "Supports Kemenag (Indonesia), Muslim World League (MWL), ISNA (North America), Umm Al-Qura (Makkah), Egyptian General Authority, University of Islamic Sciences Karachi, Dubai, Qatar, Kuwait, Singapore, and Turkey.",
-
-    // CTA
-    "cta.kicker": "Get Started",
     "cta.title": "Harmonize Your MacBook Experience Today",
     "cta.desc": "Free, open-source, and crafted with meticulous attention to detail.",
     "cta.downloadBtn": "Download Harmonotch for Mac",
     "cta.githubBtn": "View on GitHub",
-
-    // Footer
     "footer.desc": "The living notch companion for prayer times, power telemetry, and music on macOS. Crafted with passion for the Mac community.",
     "footer.linksTitle": "Links",
     "footer.features": "Features",

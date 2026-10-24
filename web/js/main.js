@@ -1,10 +1,8 @@
 "use strict";
 
-// Year
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-// Mobile nav
 const hamburger = document.getElementById("hamburger");
 const navLinks = document.getElementById("navLinks");
 if (hamburger && navLinks) {
@@ -32,7 +30,6 @@ if (hamburger && navLinks) {
     .forEach((a) => a.addEventListener("click", () => setMenuOpen(false)));
 }
 
-// Nav shadow on scroll
 const nav = document.querySelector(".nav");
 if (nav) {
   const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 12);
@@ -40,7 +37,6 @@ if (nav) {
   onScroll();
 }
 
-// Toast helper
 const toastEl = document.getElementById("toast");
 let toastTimer;
 function showToast(msg) {
@@ -54,7 +50,6 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3500);
 }
 
-// Dynamic Release Fetcher from GitHub API
 const REPO_OWNER = "Udean777";
 const REPO_NAME = "Harmonotch";
 const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
@@ -102,19 +97,14 @@ async function fetchLatestRelease() {
       const dynamicDlUrl = `${DL_ENDPOINT}?file=${encodeURIComponent(exactDmgName)}&tag=${encodeURIComponent(tagName)}`;
       latestReleaseInfo.downloadUrl = dynamicDlUrl;
 
-      // Update all download buttons with exact release file name & query params
       document.querySelectorAll("a.js-download").forEach(a => {
         a.setAttribute("href", dynamicDlUrl);
         a.setAttribute("download", exactDmgName);
       });
 
       if (versionBadge) {
+        versionBadge.hidden = false;
         versionBadge.textContent = `${tagName} ${dmgSize ? "· " + dmgSize : ""}`;
-      }
-
-      const showcaseVersion = document.getElementById("showcaseVersion");
-      if (showcaseVersion) {
-        showcaseVersion.textContent = `${tagName} (Up to date)`;
       }
 
       downloadLabels.forEach(el => {
@@ -122,40 +112,40 @@ async function fetchLatestRelease() {
         const prefix = lang === "en" ? "Download for macOS" : "Unduh untuk macOS";
         el.textContent = `${prefix} (${exactDmgName}${dmgSize ? " · " + dmgSize : ""})`;
       });
-    } else {
-      // Fallback
-      if (versionBadge) versionBadge.textContent = "v1.0.0 (Latest)";
     }
   } catch (err) {
     console.warn("Could not query GitHub releases API, using default values:", err);
-    if (versionBadge) versionBadge.textContent = "v1.0.0 (Latest)";
   }
 }
 
-// Wire download links
 for (const a of document.querySelectorAll("a.js-download")) {
   a.setAttribute("href", DL_ENDPOINT);
   a.setAttribute("download", "Harmonotch.dmg");
-  a.addEventListener("click", () => {
+  a.addEventListener("click", (event) => {
+    // Take over the navigation so a failed probe does not start a download
+    // and open GitHub at the same time.
+    event.preventDefault();
     const targetUrl = a.getAttribute("href") || DL_ENDPOINT;
-    // Non-blocking availability check
     fetch(targetUrl, { method: "HEAD" })
       .then((r) => {
-        if (!r.ok) {
-          const lang = document.documentElement.lang === "en" ? "en" : "id";
-          showToast(
-            lang === "en"
-              ? "Direct download unavailable, opening GitHub Releases..."
-              : "Unduhan langsung belum tersedia, membuka GitHub Releases..."
-          );
-          setTimeout(() => window.open(GITHUB_FALLBACK_URL, "_blank", "noopener"), 1000);
+        if (r.ok) {
+          window.location.href = targetUrl;
+          return;
         }
+        const lang = document.documentElement.lang === "en" ? "en" : "id";
+        showToast(
+          lang === "en"
+            ? "Direct download unavailable, opening GitHub Releases..."
+            : "Unduhan langsung belum tersedia, membuka GitHub Releases..."
+        );
+        setTimeout(() => window.open(GITHUB_FALLBACK_URL, "_blank", "noopener"), 1000);
       })
-      .catch(() => {});
+      .catch(() => {
+        window.location.href = targetUrl;
+      });
   });
 }
 
-// Copy Command Button
 const copyCommandBtn = document.getElementById("copyCommandBtn");
 if (copyCommandBtn) {
   copyCommandBtn.addEventListener("click", () => {
@@ -176,12 +166,10 @@ if (copyCommandBtn) {
   });
 }
 
-// Interactive Showcase Drawer Tabs
 const showcaseTabs = document.querySelectorAll(".showcase-tab");
 const mockupDrawers = document.querySelectorAll(".mockup-drawer");
 const showcaseInfos = document.querySelectorAll(".showcase-info-pane");
 
-// Video Controller for Live Showcase
 const showcaseVideoWrapper = document.getElementById("showcaseVideoWrapper");
 const showcaseVideo = document.getElementById("showcaseVideo");
 const videoCenterPlayBtn = document.getElementById("videoCenterPlayBtn");
@@ -225,7 +213,6 @@ function toggleVideoPlayback() {
 }
 
 if (showcaseVideo) {
-  // Autoplay attempt
   const playPromise = showcaseVideo.play();
   if (playPromise !== undefined) {
     playPromise.then(() => {
@@ -318,7 +305,6 @@ showcaseTabs.forEach(tab => {
   });
 });
 
-// FAQ Accordion
 const faqItems = document.querySelectorAll(".faq-item");
 faqItems.forEach(item => {
   const trigger = item.querySelector(".faq-question");
@@ -326,7 +312,6 @@ faqItems.forEach(item => {
 
   trigger.addEventListener("click", () => {
     const isOpen = item.classList.contains("open");
-    // Close other items
     faqItems.forEach(other => {
       if (other !== item) {
         other.classList.remove("open");
@@ -340,12 +325,10 @@ faqItems.forEach(item => {
   });
 });
 
-// i18n Logic
 function applyLang(lang) {
   const d = (window.dict && (window.dict[lang] || window.dict.id)) || {};
   document.documentElement.lang = lang;
 
-  // Text translations
   for (const el of document.querySelectorAll("[data-i18n]")) {
     const key = el.getAttribute("data-i18n");
     const val = d[key];
@@ -364,7 +347,6 @@ function applyLang(lang) {
     }
   }
 
-  // Attribute translations
   for (const attribute of ["alt", "aria-label", "placeholder"]) {
     for (const el of document.querySelectorAll(`[data-i18n-${attribute}]`)) {
       const key = el.getAttribute(`data-i18n-${attribute}`);
@@ -373,7 +355,6 @@ function applyLang(lang) {
     }
   }
 
-  // Update language switcher buttons
   for (const b of document.querySelectorAll(".lang-switch button")) {
     const active = b.dataset.lang === lang;
     b.classList.toggle("active", active);
@@ -397,7 +378,6 @@ function applyLang(lang) {
         : "Jadwal Sholat & Adzan akurat, Telemetri Baterai real-time, dan Kontrol Media dengan Lirik Sinkron di dalam notch MacBook Anda.";
   }
 
-  // Re-run dynamic label update
   const downloadLabels = document.querySelectorAll(".js-download-label");
   const prefix = lang === "en" ? "Download for macOS" : "Unduh untuk macOS";
   downloadLabels.forEach(el => {
@@ -407,7 +387,6 @@ function applyLang(lang) {
   });
 }
 
-// Language init from URL or localStorage
 const urlParams = new URLSearchParams(window.location.search);
 const urlLang = urlParams.get("lang");
 const savedLang = (() => {
@@ -433,18 +412,12 @@ for (const b of document.querySelectorAll(".lang-switch button")) {
   b.addEventListener("click", () => applyLang(b.dataset.lang));
 }
 
-// Initial fetch
 fetchLatestRelease();
-
-/* ------------------------------------------------------------------
-   Motion layer
-   ------------------------------------------------------------------ */
 
 const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)"
 ).matches;
 
-// Reading progress
 const progressBar = document.getElementById("scrollProgress");
 if (progressBar) {
   const updateProgress = () => {
@@ -458,50 +431,8 @@ if (progressBar) {
   updateProgress();
 }
 
-// Living notch teaser
-const heroNotch = document.getElementById("heroNotch");
-if (heroNotch) {
-  const notchStates = ["prayer", "battery", "media"];
-  const faces = heroNotch.querySelectorAll(".hn-face");
-  let stateIndex = 0;
-  let notchPaused = false;
-
-  const setNotchState = (state) => {
-    heroNotch.dataset.state = state;
-    faces.forEach((face) =>
-      face.classList.toggle("is-on", face.dataset.face === state)
-    );
-  };
-
-  heroNotch.addEventListener("mouseenter", () => (notchPaused = true));
-  heroNotch.addEventListener("mouseleave", () => (notchPaused = false));
-
-  if (!prefersReducedMotion) {
-    setInterval(() => {
-      if (notchPaused || document.hidden) return;
-      stateIndex = (stateIndex + 1) % notchStates.length;
-      setNotchState(notchStates[stateIndex]);
-    }, 4200);
-  }
-
-  // Countdown ticks so the demo reads as alive
-  const countdown = document.getElementById("hnCountdown");
-  if (countdown) {
-    let seconds = 1 * 3600 + 14 * 60 + 20;
-    const pad = (n) => String(n).padStart(2, "0");
-    setInterval(() => {
-      seconds = seconds > 0 ? seconds - 1 : 1 * 3600 + 14 * 60 + 20;
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = seconds % 60;
-      countdown.textContent = `-${pad(h)}:${pad(m)}:${pad(s)}`;
-    }, 1000);
-  }
-}
-
-// Scroll reveal with stagger inside each group
 const revealTargets = document.querySelectorAll(
-  ".section-header, .trust-grid, .trust-item, .showcase-tabs, .mockup-wrapper, " +
+  ".section-header, .showcase-tabs, .mockup-wrapper, " +
     ".showcase-info-container, .feature-card, .install-container, " +
     ".step-card, .terminal-box, .faq-item, .cta-banner"
 );
@@ -529,7 +460,6 @@ if (!prefersReducedMotion && "IntersectionObserver" in window) {
   });
 }
 
-// Gentle tilt & depth on the MacBook mockup
 const mockup = document.querySelector(".mockup-wrapper");
 const mockupScreen = document.querySelector(".macbook-screen");
 if (
@@ -549,7 +479,6 @@ if (
   });
 }
 
-// Highlight the section currently in view
 const sectionLinks = Array.from(
   document.querySelectorAll('.nav-links a[href^="#"]')
 );

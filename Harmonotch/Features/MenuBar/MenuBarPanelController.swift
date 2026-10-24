@@ -101,10 +101,8 @@ final class MenuBarPanelController: NSObject {
         let fittingSize = panel.contentView?.fittingSize ?? NSSize(width: panelWidth, height: 480)
         let panelHeight = max(fittingSize.height, 350)
 
-        // Center panel horizontally on status button
         var x = buttonScreenRect.midX - (panelWidth / 2)
 
-        // Clamp within current screen boundaries
         if let screen = window.screen ?? NSScreen.main {
             let screenFrame = screen.visibleFrame
             if x + panelWidth > screenFrame.maxX - 10 {
@@ -115,7 +113,6 @@ final class MenuBarPanelController: NSObject {
             }
         }
 
-        // Place below the status bar button with 6pt padding
         let y = buttonScreenRect.minY - panelHeight - 6
 
         panel.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
@@ -124,14 +121,12 @@ final class MenuBarPanelController: NSObject {
     private func setupDismissMonitors() {
         removeDismissMonitors()
 
-        // Global monitor for clicks anywhere on screen outside the app
         globalEventMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         ) { [weak self] _ in
             self?.close()
         }
 
-        // Local monitor for clicks outside the panel inside the app
         localEventMonitor = NSEvent.addLocalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         ) { [weak self] event in
@@ -145,7 +140,6 @@ final class MenuBarPanelController: NSObject {
                 clickScreenPoint = NSEvent.mouseLocation
             }
 
-            // If click was on status button itself, let button action handle it
             if let button = self.currentStatusButton, let btnWin = button.window {
                 let btnRect = btnWin.convertToScreen(button.convert(button.bounds, to: nil))
                 if NSPointInRect(clickScreenPoint, btnRect) {
@@ -153,7 +147,6 @@ final class MenuBarPanelController: NSObject {
                 }
             }
 
-            // If click was outside panel, close
             if !NSPointInRect(clickScreenPoint, panel.frame) {
                 self.close()
             }

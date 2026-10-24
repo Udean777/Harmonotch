@@ -1,37 +1,4 @@
 import SwiftUI
-import AppKit
-
-struct NativeVisualEffectView: NSViewRepresentable {
-    var material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
-    var state: NSVisualEffectView.State = .active
-    var emphasized: Bool = true
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = state
-        view.isEmphasized = emphasized
-        view.wantsLayer = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        if nsView.material != material {
-            nsView.material = material
-        }
-        if nsView.blendingMode != blendingMode {
-            nsView.blendingMode = blendingMode
-        }
-        if nsView.state != state {
-            nsView.state = state
-        }
-        if nsView.isEmphasized != emphasized {
-            nsView.isEmphasized = emphasized
-        }
-    }
-}
 
 struct LiquidGlassSurface<ShapeType: Shape>: View {
     let shape: ShapeType
@@ -57,10 +24,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
     }
 
     private var dark: Bool { themeManager.isDarkMode }
-
-    private var material: NSVisualEffectView.Material {
-        dark ? .hudWindow : .popover
-    }
 
     private var fillGradient: LinearGradient {
         let stops: [Gradient.Stop]
@@ -107,13 +70,6 @@ struct LiquidGlassSurface<ShapeType: Shape>: View {
             ]
         }
         return LinearGradient(stops: stops, startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
-    private var innerBorderColor: Color {
-        if dark {
-            return Color.white.opacity(0.06)
-        }
-        return Color.white.opacity(0.50)
     }
 }
 

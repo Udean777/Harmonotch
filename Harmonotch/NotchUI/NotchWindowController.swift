@@ -8,24 +8,23 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
         let geometry = NotchViewModel.shared.geometry
         let activeNotchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
 
-        // Saat kondisi kuncup (collapsed): Ekstensi persis selebar notch fisik / virtual pill
         if !isExpanded {
-            let collapsedHeight: CGFloat = (NotchViewModel.shared.selectedTab == .media && MediaManager.shared.hasActiveTrack && !MediaManager.shared.currentLyricText.isEmpty) ? 64 : 26
+            let collapsedHeight = (NotchViewModel.shared.selectedTab == .media && MediaManager.shared.hasActiveTrack && !MediaManager.shared.currentLyricText.isEmpty)
+                ? NotchLayout.collapsedLyricHeight
+                : NotchLayout.collapsedPillHeight
             let pillBottomFromTop: CGFloat = activeNotchHeight + collapsedHeight + 2
             if point.y < (bounds.height - pillBottomFromTop) {
-                return nil // Di bawah ekstensi notch -> tembus 100%
+                return nil
             }
 
-            // Lebar tepat seukuran notch fisik (208 pt di MacBook Air) atau pill virtual (220 pt)
             let pillWidth: CGFloat = geometry.physicalNotchWidth + 2
             let minX = (bounds.width - pillWidth) / 2
             let maxX = minX + pillWidth
             if point.x < minX || point.x > maxX {
-                return nil // Menu kiri & status bar kanan tembus 100%
+                return nil
             }
         } else {
-            // Saat expanded: jika klik di bawah batas drawer (misal sisa canvas), tembuskan ke desktop
-            let maxDrawerBottomFromTop: CGFloat = activeNotchHeight + 450
+            let maxDrawerBottomFromTop = activeNotchHeight + NotchLayout.expandedHitAreaHeight
             if point.y < (bounds.height - maxDrawerBottomFromTop) {
                 return nil
             }
@@ -46,7 +45,7 @@ final class NotchWindowController: ObservableObject {
     private var panel: NSPanel?
     private var cancellables = Set<AnyCancellable>()
 
-    // Canvas tetap yang stabil untuk mencegah Auto Layout constraint loop
+    // Fixed canvas size; a resizing canvas triggers an Auto Layout constraint loop
     static let canvasWidth: CGFloat = 560
     static let canvasHeight: CGFloat = 520
 
@@ -121,15 +120,4 @@ final class NotchWindowController: ObservableObject {
         }
     }
 
-    func toggleVisibility() {
-        guard let panel = panel else {
-            setupAndShowWindow()
-            return
-        }
-        if panel.isVisible {
-            panel.orderOut(nil)
-        } else {
-            panel.orderFrontRegardless()
-        }
-    }
 }

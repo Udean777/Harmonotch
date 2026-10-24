@@ -16,15 +16,6 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
-    var shortCode: String {
-        switch self {
-        case .english:
-            return "EN"
-        case .indonesian:
-            return "ID"
-        }
-    }
-
     var localeIdentifier: String {
         switch self {
         case .english:

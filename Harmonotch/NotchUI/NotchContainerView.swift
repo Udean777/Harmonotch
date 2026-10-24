@@ -19,19 +19,23 @@ struct NotchContainerView: View {
         if notchVM.isExpanded {
             switch notchVM.selectedTab {
             case .prayer:
-                let contentHeight: CGFloat = adzanPlayer.isPlaying ? 325 : 272
+                let contentHeight = adzanPlayer.isPlaying
+                    ? NotchLayout.expandedAdzanHeight
+                    : NotchLayout.expandedPrayerHeight
                 return notchHeight + contentHeight
             case .battery:
-                return notchHeight + 395
+                return notchHeight + NotchLayout.expandedBatteryHeight
             case .media:
-                let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 350 : 288
+                let contentHeight = mediaManager.hasActiveTrack
+                    ? NotchLayout.expandedMediaTrackHeight
+                    : NotchLayout.expandedMediaHeight
                 return notchHeight + contentHeight
             }
         } else {
             if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
-                return notchHeight + 64
+                return notchHeight + NotchLayout.collapsedLyricHeight
             } else {
-                return notchHeight + 26
+                return notchHeight + NotchLayout.collapsedPillHeight
             }
         }
     }

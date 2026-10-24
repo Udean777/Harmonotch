@@ -1,5 +1,16 @@
 import AppKit
 
+enum NotchLayout {
+    static let collapsedPillHeight: CGFloat = 26
+    static let collapsedLyricHeight: CGFloat = 64
+    static let expandedPrayerHeight: CGFloat = 272
+    static let expandedAdzanHeight: CGFloat = 325
+    static let expandedBatteryHeight: CGFloat = 395
+    static let expandedMediaHeight: CGFloat = 288
+    static let expandedMediaTrackHeight: CGFloat = 350
+    static let expandedHitAreaHeight: CGFloat = 450
+}
+
 struct NotchGeometry: Equatable {
     let hasHardwareNotch: Bool
     let physicalNotchWidth: CGFloat
@@ -33,7 +44,6 @@ struct NotchGeometry: Equatable {
                 screenFrame: screen.frame
             )
         } else {
-            // Monitor eksternal atau Mac tanpa notch fisik
             return NotchGeometry(
                 hasHardwareNotch: false,
                 physicalNotchWidth: 220,

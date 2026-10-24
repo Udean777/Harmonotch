@@ -84,7 +84,7 @@ final class UpdateManager: ObservableObject {
                     let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
                     let cleanRemote = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV "))
 
-                    if self.isVersion(cleanRemote, higherThan: self.currentVersion) {
+                    if Version.isNewer(cleanRemote, than: self.currentVersion) {
                         self.hasUpdate = true
                         self.latestVersion = cleanRemote
                         self.releaseNotesUrl = URL(string: release.htmlUrl)
@@ -101,6 +101,9 @@ final class UpdateManager: ObservableObject {
                         }
                     } else {
                         self.hasUpdate = false
+                        self.latestVersion = ""
+                        self.releaseNotesUrl = nil
+                        self.dmgDownloadUrl = nil
                         if isUserInitiated {
                             self.showAlert(
                                 title: L10n.Update.upToDateTitle,
@@ -161,20 +164,6 @@ final class UpdateManager: ObservableObject {
     func openReleasePage() {
         guard let url = releaseNotesUrl ?? URL(string: "https://github.com/\(repoOwner)/\(repoName)/releases/latest") else { return }
         NSWorkspace.shared.open(url)
-    }
-
-    private func isVersion(_ remote: String, higherThan current: String) -> Bool {
-        let remoteParts = remote.split(separator: ".").compactMap { Int($0) }
-        let currentParts = current.split(separator: ".").compactMap { Int($0) }
-
-        let count = max(remoteParts.count, currentParts.count)
-        for i in 0..<count {
-            let r = i < remoteParts.count ? remoteParts[i] : 0
-            let c = i < currentParts.count ? currentParts[i] : 0
-            if r > c { return true }
-            if r < c { return false }
-        }
-        return false
     }
 
     private func showAlert(title: String, message: String) {
