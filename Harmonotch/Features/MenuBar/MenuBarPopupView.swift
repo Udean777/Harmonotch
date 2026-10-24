@@ -61,26 +61,9 @@ struct MenuBarPopupView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.32), Color.white.opacity(0.08)]
-                                : [Color.white.opacity(0.90), Color.black.opacity(0.08)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.8
-                    )
             }
         )
-        .shadow(
-            color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.15),
-            radius: 14,
-            x: 0,
-            y: 8
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - Header

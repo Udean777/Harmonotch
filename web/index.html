@@ -10,20 +10,20 @@
     />
     <meta name="author" content="Harmonotch" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#080C14" />
-    <link rel="canonical" href="https://harmonotch.app/" />
-    <link rel="alternate" hreflang="id" href="https://harmonotch.app/" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="canonical" href="https://harmonotch-web.vercel.app/" />
+    <link rel="alternate" hreflang="id" href="https://harmonotch-web.vercel.app/" />
     <link
       rel="alternate"
       hreflang="en"
-      href="https://harmonotch.app/?lang=en"
+      href="https://harmonotch-web.vercel.app/?lang=en"
     />
-    <link rel="alternate" hreflang="x-default" href="https://harmonotch.app/" />
+    <link rel="alternate" hreflang="x-default" href="https://harmonotch-web.vercel.app/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Harmonotch" />
-    <meta property="og:url" content="https://harmonotch.app/" />
+    <meta property="og:url" content="https://harmonotch-web.vercel.app/" />
     <meta
       property="og:title"
       content="Harmonotch - Pusat Harmoni Notch macOS"
@@ -34,7 +34,7 @@
     />
     <meta
       property="og:image"
-      content="https://harmonotch.app/assets/icon_512.png"
+      content="https://harmonotch-web.vercel.app/assets/icon_512.png"
     />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="512" />
@@ -54,20 +54,18 @@
     />
     <meta
       name="twitter:image"
-      content="https://harmonotch.app/assets/icon_512.png"
+      content="https://harmonotch-web.vercel.app/assets/icon_512.png"
     />
 
     <!-- Favicons -->
-    <link rel="icon" href="/assets/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
+    <link rel="icon" href="/assets/favicon.png" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
 
-    <!-- Fonts & CSS -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="/css/style.css" />
 
     <!-- Schema.org SoftwareApplication -->
@@ -80,8 +78,8 @@
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "macOS 14.0 or later",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "url": "https://harmonotch.app",
-        "image": "https://harmonotch.app/assets/icon_512.png",
+        "url": "https://harmonotch-web.vercel.app",
+        "image": "https://harmonotch-web.vercel.app/assets/icon_512.png",
         "inLanguage": ["id", "en"]
       }
     </script>
@@ -144,10 +142,10 @@
         <div class="nav-menu" id="navLinks">
           <nav role="navigation" aria-label="Navigasi Utama">
             <ul class="nav-links">
-              <li><a href="#features" data-i18n="nav.features">Fitur</a></li>
               <li>
                 <a href="#showcase" data-i18n="nav.showcase">Showcase Notch</a>
               </li>
+              <li><a href="#features" data-i18n="nav.features">Fitur</a></li>
               <li><a href="#install" data-i18n="nav.install">Instalasi</a></li>
               <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
             </ul>
@@ -444,39 +442,12 @@
           <div class="showcase-tabs" role="tablist">
             <button
               class="showcase-tab active"
-              data-tab="prayer"
+              data-tab="video"
               role="tab"
               aria-selected="true"
-              data-i18n="tab.prayer"
+              data-i18n="tab.video"
             >
-              Jadwal Sholat & Adzan
-            </button>
-            <button
-              class="showcase-tab"
-              data-tab="battery"
-              role="tab"
-              aria-selected="false"
-              data-i18n="tab.battery"
-            >
-              Telemetri Baterai
-            </button>
-            <button
-              class="showcase-tab"
-              data-tab="media"
-              role="tab"
-              aria-selected="false"
-              data-i18n="tab.media"
-            >
-              Media & Lirik
-            </button>
-            <button
-              class="showcase-tab"
-              data-tab="themes"
-              role="tab"
-              aria-selected="false"
-              data-i18n="tab.themes"
-            >
-              Dua Tema Estetik
+              Animasi Live
             </button>
             <button
               class="showcase-tab"
@@ -532,249 +503,85 @@
                 <div class="camera-led"></div>
               </div>
 
-              <!-- Dynamic Notch Drawers -->
+              <!-- Dynamic Notch Drawers with Real Application Captures -->
               <div class="mockup-drawers-container">
-                <!-- 1. Drawer: Prayer Times -->
-                <div class="mockup-drawer active" data-drawer="prayer">
-                  <div class="prayer-card-header">
-                    <div class="prayer-current">
-                      <div class="prayer-icon-glow">
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
+                <!-- 1. Drawer: Live Video Animation (Active Default) -->
+                <div class="mockup-drawer active" data-drawer="video">
+                  <div class="showcase-video-wrapper" id="showcaseVideoWrapper">
+                    <video
+                      id="showcaseVideo"
+                      autoplay
+                      loop
+                      muted
+                      playsinline
+                      preload="auto"
+                      class="showcase-video-player"
+                    >
+                      <source src="/assets/showcase-demo.webm" type="video/webm" />
+                      <source src="/assets/showcase-demo.mp4" type="video/mp4" />
+                    </video>
+
+                    <!-- Center Big Play Button (shown when paused) -->
+                    <button
+                      type="button"
+                      class="video-center-play-btn"
+                      id="videoCenterPlayBtn"
+                      aria-label="Putar Demo Video"
+                    >
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    </button>
+
+                    <!-- Bottom Floating Video Controller Bar -->
+                    <div class="video-controls-bar" id="videoControlsBar">
+                      <button
+                        type="button"
+                        class="video-ctrl-btn"
+                        id="videoPlayToggleBtn"
+                        aria-label="Putar / Jeda Video"
+                      >
+                        <span class="video-ctrl-icon" id="videoPlayIcon">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                          </svg>
+                        </span>
+                        <span class="video-ctrl-label" id="videoPlayLabel">Jeda</span>
+                      </button>
+
+                      <div class="video-progress-track" id="videoProgressTrack" role="slider" aria-label="Progress Video" tabindex="0">
+                        <div class="video-progress-fill" id="videoProgressFill"></div>
+                      </div>
+
+                      <div class="video-ctrl-actions">
+                        <button
+                          type="button"
+                          class="video-ctrl-btn video-ctrl-icon-only"
+                          id="videoRestartBtn"
+                          aria-label="Ulangi dari awal"
+                          title="Ulangi Video"
                         >
-                          <circle cx="12" cy="12" r="5"></circle>
-                          <line x1="12" y1="1" x2="12" y2="3"></line>
-                          <line x1="12" y1="21" x2="12" y2="23"></line>
-                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                          <line
-                            x1="18.36"
-                            y1="18.36"
-                            x2="19.78"
-                            y2="19.78"
-                          ></line>
-                          <line x1="1" y1="12" x2="3" y2="12"></line>
-                          <line x1="21" y1="12" x2="23" y2="12"></line>
-                          <line
-                            x1="4.22"
-                            y1="19.78"
-                            x2="5.64"
-                            y2="18.36"
-                          ></line>
-                          <line
-                            x1="18.36"
-                            y1="5.64"
-                            x2="19.78"
-                            y2="4.22"
-                          ></line>
-                        </svg>
-                      </div>
-                      <div>
-                        <div class="prayer-next-label">Sholat Berikutnya</div>
-                        <div class="prayer-next-time">Dzuhur · 12:08</div>
-                      </div>
-                    </div>
-                    <div class="prayer-countdown-badge">-01:14:20</div>
-                  </div>
-
-                  <div class="prayer-timeline">
-                    <div class="prayer-time-item">
-                      <div class="prayer-name">Subuh</div>
-                      <div class="prayer-val">04:32</div>
-                    </div>
-                    <div class="prayer-time-item">
-                      <div class="prayer-name">Terbit</div>
-                      <div class="prayer-val">05:48</div>
-                    </div>
-                    <div class="prayer-time-item active">
-                      <div class="prayer-name">Dzuhur</div>
-                      <div class="prayer-val">12:08</div>
-                    </div>
-                    <div class="prayer-time-item">
-                      <div class="prayer-name">Ashar</div>
-                      <div class="prayer-val">15:19</div>
-                    </div>
-                    <div class="prayer-time-item">
-                      <div class="prayer-name">Maghrib</div>
-                      <div class="prayer-val">18:12</div>
-                    </div>
-                    <div class="prayer-time-item">
-                      <div class="prayer-name">Isya</div>
-                      <div class="prayer-val">19:24</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2. Drawer: Battery Telemetry -->
-                <div class="mockup-drawer" data-drawer="battery">
-                  <div class="battery-drawer-content">
-                    <div class="battery-visual">
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          font-size: 0.85rem;
-                          margin-bottom: 4px;
-                        "
-                      >
-                        <span style="color: var(--text-muted)"
-                          >Status Pengisian Daya</span
-                        >
-                        <strong style="color: var(--accent-emerald)"
-                          >Tersambung (MagSafe 67W)</strong
-                        >
-                      </div>
-                      <div class="battery-level-bar">
-                        <div class="battery-fill"></div>
-                      </div>
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          font-size: 0.8rem;
-                          color: var(--text-body);
-                        "
-                      >
-                        <span>88% Terisi</span>
-                        <span>Estimasi Penuh: 22 Menit</span>
-                      </div>
-
-                      <div class="battery-metrics-grid">
-                        <div class="metric-box">
-                          <div
-                            class="metric-val"
-                            style="color: var(--accent-emerald)"
-                          >
-                            98%
-                          </div>
-                          <div class="metric-lbl">Kesehatan Baterai</div>
-                        </div>
-                        <div class="metric-box">
-                          <div class="metric-val">142</div>
-                          <div class="metric-lbl">Total Siklus</div>
-                        </div>
-                        <div class="metric-box">
-                          <div
-                            class="metric-val"
-                            style="color: var(--accent-amber)"
-                          >
-                            2.4W
-                          </div>
-                          <div class="metric-lbl">Daya Masuk</div>
-                        </div>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- 3. Drawer: Media & Lyrics -->
-                <div class="mockup-drawer" data-drawer="media">
-                  <div class="media-drawer-content">
-                    <div class="vinyl-album">
-                      <div class="vinyl-center"></div>
-                    </div>
-                    <div class="media-info">
-                      <div class="media-title">Starboy</div>
-                      <div class="media-artist">
-                        The Weeknd, Daft Punk · Spotify
-                      </div>
-                      <div class="visualizer-bars">
-                        <div class="v-bar"></div>
-                        <div class="v-bar"></div>
-                        <div class="v-bar"></div>
-                        <div class="v-bar"></div>
-                        <div class="v-bar"></div>
-                        <div class="v-bar"></div>
-                      </div>
-                      <div class="synced-lyric-box">
-                        "I'm tryna put you in the worst mood, ah..."
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 4. Drawer: Dual Themes -->
-                <div class="mockup-drawer" data-drawer="themes">
-                  <div class="themes-drawer-content">
-                    <div class="theme-preview-card theme-card-liquid">
-                      <div
-                        style="
-                          font-size: 0.85rem;
-                          font-weight: 700;
-                          color: var(--accent-amber);
-                          margin-bottom: 6px;
-                        "
-                      >
-                        Liquid Glass
-                      </div>
-                      <div
-                        style="
-                          font-size: 0.78rem;
-                          color: var(--text-body);
-                          line-height: 1.4;
-                        "
-                      >
-                        Material frosted transparan dengan aksen amber dan
-                        specular highlight elegan.
-                      </div>
-                    </div>
-                    <div class="theme-preview-card theme-card-zen">
-                      <div
-                        style="
-                          font-size: 0.85rem;
-                          font-weight: 700;
-                          color: #f59e0b;
-                          margin-bottom: 6px;
-                        "
-                      >
-                        Zen Serenity
-                      </div>
-                      <div
-                        style="
-                          font-size: 0.78rem;
-                          color: var(--text-body);
-                          line-height: 1.4;
-                        "
-                      >
-                        Nuansa earth tone yang menenangkan dan ramah mata untuk
-                        fokus kerja berjam-jam.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 5. Drawer: Menu Bar Companion -->
+                <!-- 2. Drawer: Menu Bar Companion Real Screenshot -->
                 <div class="mockup-drawer" data-drawer="menubar">
-                  <div class="menubar-drawer-content">
-                    <div class="mockup-popover-item">
-                      <span style="font-size: 0.85rem; color: #fff"
-                        >Waktu Sholat Berikutnya</span
-                      >
-                      <strong style="color: var(--accent-amber)"
-                        >Dzuhur · 12:08</strong
-                      >
-                    </div>
-                    <div class="mockup-popover-item">
-                      <span style="font-size: 0.85rem; color: #fff"
-                        >Kapasitas Baterai</span
-                      >
-                      <span
-                        style="color: var(--accent-emerald); font-weight: 700"
-                        >88% Normal</span
-                      >
-                    </div>
-                    <div class="mockup-popover-item">
-                      <span style="font-size: 0.85rem; color: #fff"
-                        >Check for Updates...</span
-                      >
-                      <span
-                        style="color: var(--accent-cyan); font-size: 0.78rem"
-                        >v1.0.0 (Up to date)</span
-                      >
+                  <div class="menubar-showcase-container">
+                    <div class="menubar-shot-frame">
+                      <img
+                        src="/assets/showcase-menubar.png"
+                        alt="Harmonotch Menu Bar Companion"
+                        class="menubar-shot-img"
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                 </div>
@@ -783,15 +590,13 @@
 
             <!-- Showcase Description Underneath Mockup -->
             <div class="showcase-info-container">
-              <!-- Prayer Info -->
-              <div class="showcase-info-pane active" data-info="prayer">
-                <h3 data-i18n="showcase.prayer.title">
-                  Waktu Sholat Presisi & Pengingat Adzan
+              <!-- Live Video Animation Info (Active Default) -->
+              <div class="showcase-info-pane active" data-info="video">
+                <h3 data-i18n="showcase.video.title">
+                  Animasi Pegas Organik & Responsif
                 </h3>
-                <p data-i18n="showcase.prayer.desc">
-                  Menghitung waktu Imsak, Subuh, Terbit, Dzuhur, Ashar, Maghrib,
-                  dan Isya berdasarkan koordinat lokasi Anda menggunakan rumus
-                  astronomi presisi tinggi.
+                <p data-i18n="showcase.video.desc">
+                  Harmonotch melebur secara alami dengan bezel kamera MacBook Anda menggunakan kurva pegas (spring dynamics) asli Apple. Notch mengembang seketika saat kursor didekatkan, dan menutup kembali dengan halus tanpa mengganggu fokus kerja.
                 </p>
                 <div class="showcase-features-list">
                   <div class="showcase-feat">
@@ -805,8 +610,8 @@
                     >
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="showcase.prayer.f1"
-                      >Notifikasi & Audio Adzan otomatis</span
+                    <span data-i18n="showcase.video.f1"
+                      >60 FPS Native SwiftUI Spring Animation</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -820,8 +625,8 @@
                     >
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="showcase.prayer.f2"
-                      >Hitung mundur (countdown) sholat berikutnya</span
+                    <span data-i18n="showcase.video.f2"
+                      >Snappy 0.14 detik dismiss debounce</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -835,185 +640,8 @@
                     >
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="showcase.prayer.f3"
-                      >Arah kiblat dan penyesuaian manual</span
-                    >
-                  </div>
-                </div>
-              </div>
-
-              <!-- Battery Info -->
-              <div class="showcase-info-pane" data-info="battery">
-                <h3 data-i18n="showcase.battery.title">
-                  Pantau Kesehatan & Aliran Daya Baterai
-                </h3>
-                <p data-i18n="showcase.battery.desc">
-                  Animasi cahaya notch dinamis yang menginformasikan status
-                  pengisian daya, persentase kapasitas riil, dan total siklus
-                  baterai Mac Anda.
-                </p>
-                <div class="showcase-features-list">
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.battery.f1"
-                      >Glow border notch saat tersambung charger</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.battery.f2"
-                      >Informasi kesehatan baterai & cycle count</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.battery.f3"
-                      >Peringatan daya rendah sebelum kehabisan baterai</span
-                    >
-                  </div>
-                </div>
-              </div>
-
-              <!-- Media Info -->
-              <div class="showcase-info-pane" data-info="media">
-                <h3 data-i18n="showcase.media.title">
-                  Kontrol Pemutar Musik & Lirik Sinkron
-                </h3>
-                <p data-i18n="showcase.media.desc">
-                  Nikmati lagu favorit dari Spotify atau Apple Music langsung
-                  dari balik notch. Dilengkapi cover album vinyl, waveform
-                  animasi, dan lirik berjalan.
-                </p>
-                <div class="showcase-features-list">
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.media.f1"
-                      >Integrasi native Spotify & Apple Music</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.media.f2"
-                      >Visualizer spektrum audio dinamis</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.media.f3"
-                      >Tampilan lirik baris-per-baris real-time</span
-                    >
-                  </div>
-                </div>
-              </div>
-
-              <!-- Themes Info -->
-              <div class="showcase-info-pane" data-info="themes">
-                <h3 data-i18n="showcase.themes.title">
-                  Liquid Glass & Zen Serenity
-                </h3>
-                <p data-i18n="showcase.themes.desc">
-                  Pilih tampilan yang paling pas dengan mood Anda: Liquid Glass
-                  dengan material transparan frosted gelap bernuansa futuristik,
-                  atau Zen Serenity yang hangat dan menenangkan.
-                </p>
-                <div class="showcase-features-list">
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.themes.f1"
-                      >Material ultra-thin frosted glass macOS</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.themes.f2"
-                      >Specular highlight dan bayangan lembut</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.themes.f3"
-                      >Pergantian tema 1-klik tanpa restart</span
+                    <span data-i18n="showcase.video.f3"
+                      >Navigasi kapsul instan antar fitur</span
                     >
                   </div>
                 </div>
@@ -1568,10 +1196,10 @@
               Navigasi
             </h4>
             <ul class="footer-links">
-              <li><a href="#features" data-i18n="footer.features">Fitur</a></li>
               <li>
                 <a href="#showcase" data-i18n="footer.showcase">Showcase</a>
               </li>
+              <li><a href="#features" data-i18n="footer.features">Fitur</a></li>
               <li>
                 <a href="#install" data-i18n="footer.install">Instalasi</a>
               </li>

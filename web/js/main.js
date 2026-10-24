@@ -112,6 +112,11 @@ async function fetchLatestRelease() {
         versionBadge.textContent = `${tagName} ${dmgSize ? "· " + dmgSize : ""}`;
       }
 
+      const showcaseVersion = document.getElementById("showcaseVersion");
+      if (showcaseVersion) {
+        showcaseVersion.textContent = `${tagName} (Up to date)`;
+      }
+
       downloadLabels.forEach(el => {
         const lang = document.documentElement.lang || "id";
         const prefix = lang === "en" ? "Download for macOS" : "Unduh untuk macOS";
@@ -176,6 +181,111 @@ const showcaseTabs = document.querySelectorAll(".showcase-tab");
 const mockupDrawers = document.querySelectorAll(".mockup-drawer");
 const showcaseInfos = document.querySelectorAll(".showcase-info-pane");
 
+// Video Controller for Live Showcase
+const showcaseVideoWrapper = document.getElementById("showcaseVideoWrapper");
+const showcaseVideo = document.getElementById("showcaseVideo");
+const videoCenterPlayBtn = document.getElementById("videoCenterPlayBtn");
+const videoPlayToggleBtn = document.getElementById("videoPlayToggleBtn");
+const videoPlayIcon = document.getElementById("videoPlayIcon");
+const videoPlayLabel = document.getElementById("videoPlayLabel");
+const videoProgressTrack = document.getElementById("videoProgressTrack");
+const videoProgressFill = document.getElementById("videoProgressFill");
+const videoRestartBtn = document.getElementById("videoRestartBtn");
+
+const PAUSE_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+const PLAY_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+
+function updateVideoUI(isPlaying) {
+  if (!showcaseVideoWrapper) return;
+  showcaseVideoWrapper.classList.toggle("is-paused", !isPlaying);
+  if (videoPlayIcon) {
+    videoPlayIcon.innerHTML = isPlaying ? PAUSE_ICON_SVG : PLAY_ICON_SVG;
+  }
+  if (videoPlayLabel) {
+    const lang = document.documentElement.lang === "en" ? "en" : "id";
+    videoPlayLabel.textContent = isPlaying
+      ? (lang === "en" ? "Pause" : "Jeda")
+      : (lang === "en" ? "Play" : "Putar");
+  }
+}
+
+function toggleVideoPlayback() {
+  if (!showcaseVideo) return;
+  if (showcaseVideo.paused || showcaseVideo.ended) {
+    showcaseVideo.play().then(() => {
+      updateVideoUI(true);
+    }).catch(err => {
+      console.warn("Video play failed:", err);
+      updateVideoUI(false);
+    });
+  } else {
+    showcaseVideo.pause();
+    updateVideoUI(false);
+  }
+}
+
+if (showcaseVideo) {
+  // Autoplay attempt
+  const playPromise = showcaseVideo.play();
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      updateVideoUI(true);
+    }).catch(() => {
+      updateVideoUI(false);
+    });
+  }
+
+  showcaseVideo.addEventListener("play", () => updateVideoUI(true));
+  showcaseVideo.addEventListener("pause", () => updateVideoUI(false));
+  showcaseVideo.addEventListener("ended", () => updateVideoUI(false));
+
+  showcaseVideo.addEventListener("timeupdate", () => {
+    if (!videoProgressFill || !showcaseVideo.duration) return;
+    const pct = (showcaseVideo.currentTime / showcaseVideo.duration) * 100;
+    videoProgressFill.style.width = `${pct}%`;
+  });
+
+  if (videoCenterPlayBtn) {
+    videoCenterPlayBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => {});
+    });
+  }
+
+  if (videoPlayToggleBtn) {
+    videoPlayToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleVideoPlayback();
+    });
+  }
+
+  if (videoRestartBtn) {
+    videoRestartBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showcaseVideo.currentTime = 0;
+      showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => {});
+    });
+  }
+
+  if (videoProgressTrack) {
+    videoProgressTrack.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const rect = videoProgressTrack.getBoundingClientRect();
+      const clickPos = (e.clientX - rect.left) / rect.width;
+      if (showcaseVideo.duration) {
+        showcaseVideo.currentTime = clickPos * showcaseVideo.duration;
+      }
+    });
+  }
+
+  if (showcaseVideoWrapper) {
+    showcaseVideoWrapper.addEventListener("click", (e) => {
+      if (e.target.closest(".video-controls-bar") || e.target.closest(".video-center-play-btn")) return;
+      toggleVideoPlayback();
+    });
+  }
+}
+
 function selectShowcaseTab(targetTabId) {
   showcaseTabs.forEach(tab => {
     const isActive = tab.getAttribute("data-tab") === targetTabId;
@@ -192,6 +302,13 @@ function selectShowcaseTab(targetTabId) {
     const isTarget = info.getAttribute("data-info") === targetTabId;
     info.classList.toggle("active", isTarget);
   });
+
+  if (targetTabId === "video" && showcaseVideo) {
+    showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => updateVideoUI(false));
+  } else if (targetTabId !== "video" && showcaseVideo) {
+    showcaseVideo.pause();
+    updateVideoUI(false);
+  }
 }
 
 showcaseTabs.forEach(tab => {
@@ -384,9 +501,9 @@ if (heroNotch) {
 
 // Scroll reveal with stagger inside each group
 const revealTargets = document.querySelectorAll(
-  ".section-header, .trust-item, .showcase-tabs, .mockup-wrapper, " +
+  ".section-header, .trust-grid, .trust-item, .showcase-tabs, .mockup-wrapper, " +
     ".showcase-info-container, .feature-card, .install-container, " +
-    ".step-card, .faq-item, .cta-banner"
+    ".step-card, .terminal-box, .faq-item, .cta-banner"
 );
 
 if (!prefersReducedMotion && "IntersectionObserver" in window) {
@@ -399,30 +516,20 @@ if (!prefersReducedMotion && "IntersectionObserver" in window) {
         observer.unobserve(entry.target);
       });
     },
-    { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
+    { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
   );
 
   revealTargets.forEach((el) => {
-    const next = groupIndex.get(el.parentElement) || 0;
-    el.style.setProperty("--i", Math.min(next, 8));
-    groupIndex.set(el.parentElement, next + 1);
+    const parent = el.parentElement;
+    const next = groupIndex.get(parent) || 0;
+    el.style.setProperty("--i", Math.min(next, 6));
+    groupIndex.set(parent, next + 1);
     el.classList.add("reveal");
     observer.observe(el);
   });
 }
 
-// Cursor spotlight on feature cards
-if (!prefersReducedMotion && window.matchMedia("(pointer: fine)").matches) {
-  document.querySelectorAll(".feature-card").forEach((card) => {
-    card.addEventListener("pointermove", (event) => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-      card.style.setProperty("--my", `${event.clientY - rect.top}px`);
-    });
-  });
-}
-
-// Gentle tilt on the MacBook mockup
+// Gentle tilt & depth on the MacBook mockup
 const mockup = document.querySelector(".mockup-wrapper");
 const mockupScreen = document.querySelector(".macbook-screen");
 if (
@@ -435,12 +542,10 @@ if (
     const rect = mockup.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width - 0.5;
     const y = (event.clientY - rect.top) / rect.height - 0.5;
-    mockupScreen.style.setProperty("--ry", `${x * 4}deg`);
-    mockupScreen.style.setProperty("--rx", `${-y * 3}deg`);
+    mockupScreen.style.transform = `perspective(1000px) rotateY(${x * 3}deg) rotateX(${-y * 2.5}deg)`;
   });
   mockup.addEventListener("pointerleave", () => {
-    mockupScreen.style.setProperty("--ry", "0deg");
-    mockupScreen.style.setProperty("--rx", "0deg");
+    mockupScreen.style.transform = "perspective(1000px) rotateY(0deg) rotateX(0deg)";
   });
 }
 
