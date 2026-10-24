@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       bump_type:
-        description: 'Tipe kenaikan versi (otomatis deteksi dari rilis terakhir)'
+        description: 'Version bump type (automatically calculated from latest tag)'
         required: true
-        default: 'patch'
+        default: 'minor'
         type: choice
         options:
           - patch
@@ -14,7 +14,7 @@ on:
           - major
           - custom
       custom_version:
-        description: 'Versi custom (hanya jika memilih bump_type: custom, contoh: 1.2.0)'
+        description: 'Custom version string (only if bump_type is custom, e.g., 1.2.0)'
         required: false
         default: ''
         type: string
@@ -68,7 +68,7 @@ jobs:
           if [ "$BUMP_TYPE" = "custom" ] && [ -n "$CUSTOM_INPUT" ]; then
             CLEAN_VERSION="${CUSTOM_INPUT#v}"
           elif [ -z "$LATEST_TAG" ]; then
-            # Rilis perdana jika belum ada tag di repositori
+            # Initial release if no tag found in repository
             CLEAN_VERSION="1.0.0"
           else
             CLEAN="${LATEST_TAG#v}"
@@ -163,13 +163,13 @@ jobs:
           Harmonotch Installation Guide (macOS)
           =========================================================
 
-          1. Buka file installer DMG yang telah diunduh.
-          2. Drag & drop "Harmonotch.app" ke dalam folder "Applications".
-          3. Jika macOS menampilkan pesan Gatekeeper ("Harmonotch cannot be opened because Apple cannot check it for malicious software" / "damaged"):
-             - Buka Terminal (Cmd + Space, ketik "Terminal")
-             - Jalankan perintah berikut:
+          1. Open the downloaded DMG installer file.
+          2. Drag & drop "Harmonotch.app" into your "Applications" folder.
+          3. If macOS displays a Gatekeeper alert ("Harmonotch cannot be opened because Apple cannot check it for malicious software" or "damaged"):
+             - Open Terminal (Cmd + Space, type "Terminal")
+             - Run the following command:
                  xattr -cr /Applications/Harmonotch.app
-          4. Buka kembali Harmonotch dari Launchpad atau Applications.
+          4. Launch Harmonotch from Launchpad or Applications.
           =========================================================
           EOF
 

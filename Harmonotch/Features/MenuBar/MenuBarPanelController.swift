@@ -83,7 +83,7 @@ final class MenuBarPanelController: NSObject {
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         newPanel.backgroundColor = .clear
         newPanel.isOpaque = false
-        newPanel.hasShadow = true
+        newPanel.hasShadow = false
         newPanel.isMovableByWindowBackground = false
         newPanel.contentView = hostingView
 
@@ -97,9 +97,8 @@ final class MenuBarPanelController: NSObject {
         let buttonBounds = button.bounds
         let buttonScreenRect = window.convertToScreen(button.convert(buttonBounds, to: nil))
 
-        // Get fitting size of the content
-        let fittingSize = panel.contentView?.fittingSize ?? NSSize(width: 320, height: 480)
         let panelWidth: CGFloat = 320
+        let fittingSize = panel.contentView?.fittingSize ?? NSSize(width: panelWidth, height: 480)
         let panelHeight = max(fittingSize.height, 350)
 
         // Center panel horizontally on status button

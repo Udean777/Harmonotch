@@ -6,6 +6,7 @@
 [![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple&style=flat-square)](https://apple.com/macos)
 [![Swift 6](https://img.shields.io/badge/Swift-6.0%2B-F05138?logo=swift&logoColor=white&style=flat-square)](https://swift.org)
 [![SwiftUI & AppKit](https://img.shields.io/badge/UI-SwiftUI%20%2B%20AppKit-blue?style=flat-square)](https://developer.apple.com/swiftui/)
+[![Website](https://img.shields.io/badge/Website-harmonotch--web.vercel.app-black?logo=vercel&style=flat-square)](https://harmonotch-web.vercel.app)
 [![Offline First](https://img.shields.io/badge/Offline--First-100%25-brightgreen?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
@@ -65,10 +66,10 @@
 * **Snappy Dismiss:** The moment your cursor leaves the drawer, the notch immediately snaps back into its compact shape with an intentional 0.14-second debounce to ensure an effortless, lag-free user experience.
 
 ### 🍎 macOS Menu Bar Companion & Quick Controls
+* **Dedicated Menu Bar Popup Panel:** Built with native SwiftUI and a borderless `NSPanel` featuring smooth continuous corner radii, providing instant access to upcoming prayer times, battery telemetry, theme toggle, and GitHub release update checks.
 * **App Logo Status Item:** Features the official Harmonotch app logo in the menu bar, keeping the menu bar clutter-free without distracting text or emojis.
-* **Polished Dropdown Menu:** Displays an integrated header card with live app status, quick drawer toggles, and direct tab navigation (`Cmd+1`, `Cmd+2`, `Cmd+3`).
 * **Instant Adzan Controls:** Mute/unmute Adzan audio (`Cmd+M`) and test audio playback directly from the menu bar.
-* **Complete Notch Hide Option:** Toggle **"Hide Notch on Screen"** (`Cmd+H`) to dismiss the floating notch overlay entirely while continuing to run in the background.
+* **Complete Notch Hide Option:** Toggle **"Hide Notch on Screen"** (`Cmd+H`) to dismiss the floating notch overlay entirely while continuing to run in the background. Perfect for notchless Macs (M1 MacBook Air, Mac mini, iMac, Mac Studio).
 
 ---
 
@@ -100,6 +101,9 @@ Harmonotch/
 │   ├── NotchPillView.swift           // Direct hardware notch extension (Lyrics & Status)
 │   └── LiquidGlassBackground.swift   // Liquid glass and paper theme background layers
 ├── Features/
+│   ├── MenuBar/
+│   │   ├── MenuBarPanelController.swift // Floating custom NSPanel popup for menu bar
+│   │   └── MenuBarPopupView.swift       // SwiftUI companion panel (Prayer, Battery, Updates)
 │   ├── Theme/
 │   │   ├── ThemeManager.swift        // Style and appearance mode reactive state engine
 │   │   └── AppTheme.swift            // Dynamic color tokens and theme styling palettes
@@ -122,6 +126,13 @@ Harmonotch/
 │   └── About/
 │       ├── AboutView.swift           // Clean app branding & open-source credits view
 │       └── AboutWindowController.swift // Floating dedicated about window controller
+├── web/
+│   ├── index.html                    // Official landing page with interactive Apple-style showcase
+│   ├── css/style.css                 // Minimalist Space Black stylesheet with fluid scroll motion
+│   ├── js/
+│   │   ├── main.js                   // Interactive video controller, release fetcher & scroll reveal
+│   │   └── i18n.js                   // Bilingual dictionary (ID / EN)
+│   └── vercel.json                   // Production edge headers, media CSP & cache configuration
 ├── Assets.xcassets/
 │   ├── AppIcon.appiconset/           // Production macOS AppIcon assets (16x16 to 1024x1024 px)
 │   ├── AppLogo.imageset/             // High-resolution app branding logo & status item icon
