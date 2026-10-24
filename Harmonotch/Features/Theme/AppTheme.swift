@@ -14,20 +14,22 @@ struct AppTheme {
     static var surfaceBackground: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.10, green: 0.09, blue: 0.09) // #191817 Roasted Charcoal
-                : Color(red: 0.97, green: 0.96, blue: 0.93) // #F7F5EE Warm Alabaster Paper
+                ? Color(red: 0.11, green: 0.10, blue: 0.10) // Roasted Charcoal
+                : Color(red: 0.96, green: 0.95, blue: 0.92) // Warm Alabaster Paper
         } else {
-            return isDark ? Color.black.opacity(0.72) : Color.white.opacity(0.68)
+            return isDark
+                ? Color(red: 0.08, green: 0.09, blue: 0.11).opacity(0.88) // Deep Obsidian Glass
+                : Color(red: 0.98, green: 0.98, blue: 0.99).opacity(0.85) // Pure Alabaster Glass
         }
     }
 
     static var surfaceBorder: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.24, green: 0.22, blue: 0.21)
-                : Color(red: 0.88, green: 0.86, blue: 0.81)
+                ? Color(red: 0.22, green: 0.20, blue: 0.19)
+                : Color(red: 0.86, green: 0.84, blue: 0.79)
         } else {
-            return isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.10)
+            return isDark ? Color.white.opacity(0.16) : Color.black.opacity(0.08)
         }
     }
 
@@ -35,53 +37,55 @@ struct AppTheme {
         if isZen {
             return isDark ? Color.white.opacity(0.04) : Color.white.opacity(0.60)
         } else {
-            return isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.75)
+            return isDark ? Color.white.opacity(0.10) : Color.white.opacity(0.70)
         }
     }
 
     static var surfaceShadowColor: Color {
         if isZen {
             return isDark
-                ? Color.black.opacity(0.60)
-                : Color(red: 0.25, green: 0.20, blue: 0.15).opacity(0.12)
+                ? Color.black.opacity(0.55)
+                : Color(red: 0.25, green: 0.20, blue: 0.15).opacity(0.10)
         } else {
-            return isDark ? Color.black.opacity(0.50) : Color.black.opacity(0.14)
+            return isDark ? Color.black.opacity(0.40) : Color.black.opacity(0.10)
         }
     }
 
     static var surfaceShadowRadius: CGFloat {
         if isZen {
-            return isDark ? 16 : 14
+            return isDark ? 16 : 12
         } else {
-            return isDark ? 14 : 18
+            return isDark ? 16 : 14
         }
     }
 
     static var cardBackground: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.15, green: 0.14, blue: 0.13) // #262422
+                ? Color(red: 0.16, green: 0.15, blue: 0.14)
                 : Color.white
         } else {
-            return isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.04)
+            return isDark
+                ? Color.white.opacity(0.06)
+                : Color.white.opacity(0.75)
         }
     }
 
     static var cardHoverBackground: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.19, green: 0.18, blue: 0.17)
-                : Color(red: 0.95, green: 0.94, blue: 0.91)
+                ? Color(red: 0.20, green: 0.19, blue: 0.18)
+                : Color(red: 0.94, green: 0.93, blue: 0.90)
         } else {
-            return isDark ? Color.white.opacity(0.12) : Color.black.opacity(0.07)
+            return isDark ? Color.white.opacity(0.10) : Color.white.opacity(0.92)
         }
     }
 
     static var cardBorder: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.22, green: 0.20, blue: 0.19)
-                : Color(red: 0.89, green: 0.87, blue: 0.83)
+                ? Color(red: 0.24, green: 0.22, blue: 0.21)
+                : Color(red: 0.88, green: 0.86, blue: 0.82)
         } else {
             return isDark ? Color.white.opacity(0.10) : Color.black.opacity(0.06)
         }
@@ -90,10 +94,10 @@ struct AppTheme {
     static var badgeBackground: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.18, green: 0.17, blue: 0.16)
-                : Color(red: 0.92, green: 0.90, blue: 0.86)
+                ? Color(red: 0.19, green: 0.18, blue: 0.17)
+                : Color(red: 0.91, green: 0.89, blue: 0.85)
         } else {
-            return isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.05)
+            return isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.04)
         }
     }
 
@@ -140,40 +144,48 @@ struct AppTheme {
     static var accentAmber: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.90, green: 0.63, blue: 0.22) // Luminous Brass Gold
-                : Color(red: 0.78, green: 0.42, blue: 0.10) // Warm Terracotta Amber
+                ? Color(red: 0.92, green: 0.65, blue: 0.25) // Luminous Brass Gold
+                : Color(red: 0.78, green: 0.44, blue: 0.12) // Warm Terracotta Amber
         } else {
-            return isDark ? Color(red: 1.0, green: 0.75, blue: 0.20) : Color(red: 0.85, green: 0.48, blue: 0.04)
+            return isDark
+                ? Color(red: 0.96, green: 0.68, blue: 0.24) // Honey Amber (#F5AD3D)
+                : Color(red: 0.82, green: 0.46, blue: 0.08) // Terracotta Gold (#D17614)
         }
     }
 
     static var accentGreen: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.36, green: 0.70, blue: 0.48) // Warm Sage
-                : Color(red: 0.24, green: 0.49, blue: 0.33) // Deep Forest Sage
+                ? Color(red: 0.38, green: 0.72, blue: 0.50) // Warm Sage
+                : Color(red: 0.22, green: 0.50, blue: 0.32) // Deep Forest Sage
         } else {
-            return isDark ? Color(red: 0.22, green: 0.84, blue: 0.44) : Color(red: 0.10, green: 0.58, blue: 0.24)
+            return isDark
+                ? Color(red: 0.20, green: 0.82, blue: 0.48) // Nordic Mint (#33D17A)
+                : Color(red: 0.10, green: 0.62, blue: 0.32) // Forest Emerald (#15803D)
         }
     }
 
     static var accentCyan: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.32, green: 0.68, blue: 0.80)
-                : Color(red: 0.18, green: 0.45, blue: 0.56)
+                ? Color(red: 0.35, green: 0.70, blue: 0.82)
+                : Color(red: 0.18, green: 0.46, blue: 0.58)
         } else {
-            return isDark ? Color.cyan : Color(red: 0.05, green: 0.52, blue: 0.75)
+            return isDark
+                ? Color(red: 0.36, green: 0.72, blue: 0.94) // Sky Slate (#5CB8F0)
+                : Color(red: 0.08, green: 0.50, blue: 0.74) // Ocean Blue (#0284C7)
         }
     }
 
     static var accentRed: Color {
         if isZen {
             return isDark
-                ? Color(red: 0.92, green: 0.38, blue: 0.38)
+                ? Color(red: 0.92, green: 0.40, blue: 0.40)
                 : Color(red: 0.78, green: 0.22, blue: 0.22)
         } else {
-            return isDark ? Color(red: 1.0, green: 0.35, blue: 0.35) : Color(red: 0.85, green: 0.20, blue: 0.20)
+            return isDark
+                ? Color(red: 0.95, green: 0.40, blue: 0.40) // Coral Crimson (#F26666)
+                : Color(red: 0.85, green: 0.22, blue: 0.22) // Crimson (#DC2626)
         }
     }
 

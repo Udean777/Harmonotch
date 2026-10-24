@@ -63,23 +63,12 @@ struct BatteryDrawerView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(AppTheme.badgeBackground)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: AppTheme.isDark
-                                        ? [Color.white.opacity(0.25), Color.white.opacity(0.05)]
-                                        : [Color.white.opacity(0.8), Color.black.opacity(0.05)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.6
-                            )
-                    }
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(AppTheme.badgeBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+                        )
                 )
             }
             .padding(.horizontal, 16)
@@ -142,6 +131,10 @@ struct BatteryDrawerView: View {
             }
             .padding(.horizontal, 16)
 
+            // Clamshell Mode Card
+            ClamshellCardView()
+                .padding(.horizontal, 16)
+
             Divider()
                 .background(AppTheme.divider)
                 .padding(.horizontal, 16)
@@ -202,7 +195,7 @@ struct BatteryDrawerView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            .padding(.bottom, 20)
         }
         .frame(width: 540)
     }
@@ -293,39 +286,165 @@ struct BatteryStatCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(AppTheme.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+                )
+        )
+    }
+}
+
+struct ClamshellCardView: View {
+    @ObservedObject var clamshell = ClamshellManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(accentColor.opacity(AppTheme.isDark ? 0.20 : 0.12))
+                        .frame(width: 34, height: 34)
+
+                    Image(systemName: "display.2")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(accentColor)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(L10n.Clamshell.title)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(AppTheme.textPrimary)
+
+                        statusBadge
+                    }
+
+                    Text(L10n.Clamshell.subtitle)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: $clamshell.isArmed)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .scaleEffect(0.85)
+            }
+
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: clamshell.hasExternalDisplay ? "display" : "display.trianglebadge.exclamationmark")
+                        .font(.system(size: 10))
+                        .foregroundColor(clamshell.hasExternalDisplay ? AppTheme.accentCyan : AppTheme.textTertiary)
+
+                    Text(clamshell.hasExternalDisplay ? (clamshell.externalDisplayName.isEmpty ? L10n.Clamshell.externalDisplayLabel : clamshell.externalDisplayName) : L10n.Clamshell.noExternalDisplay)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppTheme.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if !clamshell.isSudoConfigured {
+                    Button(action: {
+                        clamshell.setupPasswordlessSudo { _ in }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "key.fill")
+                                .font(.system(size: 9))
+                            Text(clamshell.isPerformingSetup ? L10n.Clamshell.authorizing : L10n.Clamshell.setupPermission)
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(AppTheme.accentAmber)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(AppTheme.accentAmber.opacity(0.14))
+                        .cornerRadius(5)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(clamshell.isPerformingSetup)
+                } else {
+                    HStack(spacing: 3) {
+                        Image(systemName: "shield.checkmark.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(AppTheme.accentGreen)
+                        Text(L10n.Clamshell.batteryProtectionNote)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppTheme.textTertiary)
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(.ultraThinMaterial)
-
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.08), Color.white.opacity(0.03)]
-                                : [Color.white.opacity(0.60), Color.white.opacity(0.25)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: AppTheme.isDark
-                                ? [Color.white.opacity(0.28), Color.white.opacity(0.06)]
-                                : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.7
-                    )
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(AppTheme.cardBackground)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(AppTheme.cardBorder, lineWidth: 0.5)
             }
         )
-        .shadow(
-            color: AppTheme.isDark ? Color.clear : Color.black.opacity(0.04),
-            radius: 2,
-            x: 0,
-            y: 1
+    }
+
+    private var accentColor: Color {
+        switch clamshell.currentState {
+        case .active:
+            return AppTheme.accentGreen
+        case .standby:
+            return AppTheme.accentAmber
+        case .pausedLowBattery:
+            return AppTheme.accentAmber
+        case .off:
+            return AppTheme.textTertiary
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: statusIconName)
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(accentColor)
+
+            Text(statusTitle)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(accentColor)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(
+            Capsule()
+                .fill(accentColor.opacity(0.15))
         )
+    }
+
+    private var statusIconName: String {
+        switch clamshell.currentState {
+        case .active:
+            return "checkmark.circle.fill"
+        case .standby:
+            return "clock.badge.fill"
+        case .pausedLowBattery:
+            return "exclamationmark.triangle.fill"
+        case .off:
+            return "circle"
+        }
+    }
+
+    private var statusTitle: String {
+        switch clamshell.currentState {
+        case .active:
+            return L10n.Clamshell.active
+        case .standby:
+            return L10n.Clamshell.standby
+        case .pausedLowBattery:
+            return L10n.Clamshell.pausedLowBattery
+        case .off:
+            return L10n.Clamshell.off
+        }
     }
 }

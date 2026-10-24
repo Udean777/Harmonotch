@@ -8,7 +8,9 @@ struct NotchPillView: View {
     @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var mediaManager = MediaManager.shared
 
-    let geometry = NotchGeometry.current()
+    private var geometry: NotchGeometry {
+        notchVM.geometry
+    }
 
     var body: some View {
         VStack(spacing: 0) {

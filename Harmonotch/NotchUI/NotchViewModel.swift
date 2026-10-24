@@ -7,9 +7,17 @@ final class NotchViewModel: ObservableObject {
     @Published var isExpanded: Bool = false
     @Published var isHovered: Bool = false
     @Published var selectedTab: DrawerTab = .prayer
+    @Published var geometry: NotchGeometry = NotchGeometry.current()
 
     private var collapseWorkItem: DispatchWorkItem?
     private var cancellables = Set<AnyCancellable>()
+
+    func updateGeometry(for screen: NSScreen?) {
+        let newGeometry = NotchGeometry.current(for: screen)
+        if geometry != newGeometry {
+            geometry = newGeometry
+        }
+    }
 
     init() {
         AdzanPlayer.shared.$isPlaying
@@ -17,7 +25,7 @@ final class NotchViewModel: ObservableObject {
             .filter { $0 }
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                     self.selectedTab = .prayer
                 }
             }
@@ -31,7 +39,7 @@ final class NotchViewModel: ObservableObject {
             collapseWorkItem?.cancel()
             collapseWorkItem = nil
             if !isExpanded {
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                     isExpanded = true
                 }
             }
@@ -40,7 +48,7 @@ final class NotchViewModel: ObservableObject {
             let work = DispatchWorkItem { [weak self] in
                 guard let self = self, !self.isHovered else { return }
                 if self.isExpanded {
-                    withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
                         self.isExpanded = false
                     }
                 }
@@ -52,7 +60,7 @@ final class NotchViewModel: ObservableObject {
 
     func toggleExpanded() {
         collapseWorkItem?.cancel()
-        withAnimation(.spring(response: 0.30, dampingFraction: 0.80)) {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
             isExpanded.toggle()
         }
     }

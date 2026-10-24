@@ -6,31 +6,32 @@ struct NotchContainerView: View {
     @ObservedObject var mediaManager = MediaManager.shared
     @ObservedObject var themeManager = ThemeManager.shared
 
-    let geometry = NotchGeometry.current()
+    private var geometry: NotchGeometry {
+        notchVM.geometry
+    }
 
     private var targetWidth: CGFloat {
         notchVM.isExpanded ? 540 : geometry.physicalNotchWidth
     }
 
     private var targetHeight: CGFloat {
+        let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
         if notchVM.isExpanded {
-            let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
             switch notchVM.selectedTab {
             case .prayer:
                 let contentHeight: CGFloat = adzanPlayer.isPlaying ? 325 : 272
                 return notchHeight + contentHeight
             case .battery:
-                return notchHeight + 288
+                return notchHeight + 395
             case .media:
                 let contentHeight: CGFloat = mediaManager.hasActiveTrack ? 350 : 288
                 return notchHeight + contentHeight
             }
         } else {
-            let notchHeight = geometry.hasHardwareNotch ? geometry.physicalNotchHeight : 0
             if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
                 return notchHeight + 64
             } else {
-                return geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 26) : 32
+                return notchHeight + 26
             }
         }
     }
@@ -41,7 +42,7 @@ struct NotchContainerView: View {
         } else if notchVM.selectedTab == .media && mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty {
             return 16
         } else {
-            return 12
+            return geometry.hasHardwareNotch ? 12 : 13
         }
     }
 
@@ -80,24 +81,16 @@ struct NotchContainerView: View {
                             switch notchVM.selectedTab {
                             case .prayer:
                                 PrayerDrawerView()
-                                    .transition(.asymmetric(
-                                        insertion: .opacity.combined(with: .offset(x: -8)),
-                                        removal: .opacity.combined(with: .offset(x: -8))
-                                    ))
+                                    .transition(.opacity)
                             case .battery:
                                 BatteryDrawerView()
-                                    .transition(.asymmetric(
-                                        insertion: .opacity.combined(with: .offset(x: 8)),
-                                        removal: .opacity.combined(with: .offset(x: 8))
-                                    ))
+                                    .transition(.opacity)
                             case .media:
                                 MediaDrawerView()
-                                    .transition(.asymmetric(
-                                        insertion: .opacity.combined(with: .offset(x: 8)),
-                                        removal: .opacity.combined(with: .offset(x: 8))
-                                    ))
+                                    .transition(.opacity)
                             }
                         }
+                        .animation(.spring(response: 0.26, dampingFraction: 0.84), value: notchVM.selectedTab)
                     }
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(y: -6)),
@@ -119,9 +112,10 @@ struct NotchContainerView: View {
                         }
                 }
             }
+            .frame(width: targetWidth, height: targetHeight, alignment: .top)
+            .clipShape(notchShape)
         }
         .frame(width: targetWidth, height: targetHeight, alignment: .top)
-        .clipped()
         .frame(width: NotchWindowController.canvasWidth, alignment: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(

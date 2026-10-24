@@ -32,6 +32,8 @@ enum L10n {
                 return "Maghrib"
             case "isha", "isya":
                 return isEnglish ? "Isha" : "Isya"
+            case "jumat", "jumuah", "jummah":
+                return isEnglish ? "Jumu'ah" : "Jumat"
             default:
                 return key
             }
@@ -76,6 +78,14 @@ enum L10n {
         }
         static var imsak: String {
             "Imsak"
+        }
+        static func jumatOffsetLabel(_ minutes: Int) -> String {
+            let name = localizedPrayerName("jumat")
+            if minutes == 0 {
+                return isEnglish ? "\(name): Dhuhr" : "\(name): Dzuhur"
+            }
+            let sign = minutes > 0 ? "+" : "−"
+            return isEnglish ? "\(name): \(sign)\(abs(minutes)) min" : "\(name): \(sign)\(abs(minutes)) mnt"
         }
         static var imsakDetail: String {
             isEnglish ? "10m before Fajr" : "10m sebelum Subuh"
@@ -148,6 +158,51 @@ enum L10n {
         }
         static var healthSuffix: String {
             isEnglish ? "Health" : "Sehat"
+        }
+    }
+
+    enum Clamshell {
+        static var title: String {
+            isEnglish ? "Clamshell Mode" : "Mode Clamshell"
+        }
+        static var subtitle: String {
+            isEnglish ? "Keep awake with lid closed" : "Tetap hidup saat layar ditutup"
+        }
+        static var active: String {
+            isEnglish ? "Active" : "Aktif"
+        }
+        static var standby: String {
+            isEnglish ? "Standby (No Display)" : "Siaga (Menunggu Monitor)"
+        }
+        static var pausedLowBattery: String {
+            isEnglish ? "Paused (Battery ≤ 50%)" : "Dijeda (Baterai ≤ 50%)"
+        }
+        static var off: String {
+            isEnglish ? "Off" : "Nonaktif"
+        }
+        static var externalDisplayLabel: String {
+            isEnglish ? "External Display" : "Monitor Eksternal"
+        }
+        static var noExternalDisplay: String {
+            isEnglish ? "No external display detected" : "Tidak ada monitor eksternal terhubung"
+        }
+        static var setupPermission: String {
+            isEnglish ? "Authorize Sudo" : "Otorisasi Akses Cepat"
+        }
+        static var authorized: String {
+            isEnglish ? "Authorized" : "Terotorisasi"
+        }
+        static var authorizing: String {
+            isEnglish ? "Authorizing..." : "Mengotorisasi..."
+        }
+        static var batteryProtectionNote: String {
+            isEnglish ? "Auto-pauses at ≤ 50% on battery" : "Otomatis dijeda jika baterai ≤ 50%"
+        }
+        static var warningNotificationTitle: String {
+            isEnglish ? "Harmonotch — Stay Awake Alert" : "Harmonotch — Peringatan Stay Awake"
+        }
+        static var warningNotificationBody: String {
+            isEnglish ? "Battery is at 60%. Connect charger to maintain Stay Awake (auto-pauses at 50%)." : "Baterai tersisa 60%. Segera charge MacBook Anda untuk tetap menggunakan mode Stay Awake (fitur akan otomatis dijeda di 50%)."
         }
     }
 
@@ -230,11 +285,26 @@ enum L10n {
         static var launchAtLogin: String {
             isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
         }
+        static var clamshellToggle: String {
+            isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
+        }
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
         }
         static var cyclesSuffix: String {
             isEnglish ? "Cycles" : "Siklus"
+        }
+        static var notchActive: String {
+            isEnglish ? "Notch Active" : "Notch Aktif"
+        }
+        static var notchHidden: String {
+            isEnglish ? "Notch Hidden" : "Notch Tersembunyi"
+        }
+        static var quickPreferences: String {
+            isEnglish ? "Quick Preferences" : "Preferensi Cepat"
+        }
+        static var nextPrayer: String {
+            isEnglish ? "Next Prayer" : "Sholat Berikutnya"
         }
     }
 

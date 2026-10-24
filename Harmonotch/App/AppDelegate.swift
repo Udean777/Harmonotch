@@ -42,13 +42,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let button = statusItem?.button {
             button.image = appLogoStatusBarImage
             button.imagePosition = .imageLeading
+            button.target = self
+            button.action = #selector(statusBarButtonClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
+        updateStatusBarButton()
+    }
+
+    @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
+        guard let event = NSApp.currentEvent else {
+            MenuBarPanelController.shared.toggle(relativeTo: sender)
+            return
+        }
+
+        if event.type == .rightMouseUp || event.modifierFlags.contains(.control) {
+            showContextMenu(for: sender)
+        } else {
+            MenuBarPanelController.shared.toggle(relativeTo: sender)
+        }
+    }
+
+    private func showContextMenu(for button: NSStatusBarButton) {
         let menu = NSMenu()
         menu.delegate = self
-        statusItem?.menu = menu
-
-        updateStatusBarButton()
+        menuNeedsUpdate(menu)
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
 
     private func observeUpdates() {
@@ -114,6 +133,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .store(in: &cancellables)
 
         UpdateManager.shared.$isChecking
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        ClamshellManager.shared.$currentState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusBarButton()
+            }
+            .store(in: &cancellables)
+
+        ClamshellManager.shared.$isArmed
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusBarButton()
@@ -301,11 +334,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         launchItem.state = isLaunchAtLogin ? .on : .off
         menu.addItem(launchItem)
 
+        let clamshellState = ClamshellManager.shared.currentState
+        let clamshellTitle: String
+        let clamshellIcon: String
+        switch clamshellState {
+        case .active:
+            clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.active))"
+            clamshellIcon = "display.2"
+        case .standby:
+            clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.standby))"
+            clamshellIcon = "display.trianglebadge.exclamationmark"
+        case .pausedLowBattery:
+            clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.pausedLowBattery))"
+            clamshellIcon = "bolt.slash"
+        case .off:
+            clamshellTitle = L10n.Menu.clamshellToggle
+            clamshellIcon = "display"
+        }
+
+        let clamshellItem = NSMenuItem(
+            title: clamshellTitle,
+            action: #selector(toggleClamshellStayAwake),
+            keyEquivalent: ""
+        )
+        clamshellItem.target = self
+        clamshellItem.image = NSImage(systemSymbolName: clamshellIcon, accessibilityDescription: nil)
+        clamshellItem.state = ClamshellManager.shared.isArmed ? .on : .off
+        menu.addItem(clamshellItem)
+
         menu.addItem(NSMenuItem.separator())
 
         if UpdateManager.shared.hasUpdate {
             let updateItem = NSMenuItem(
-                title: "✦ " + L10n.Menu.updateAvailable(version: UpdateManager.shared.latestVersion),
+                title: L10n.Menu.updateAvailable(version: UpdateManager.shared.latestVersion),
                 action: nil,
                 keyEquivalent: ""
             )
@@ -433,6 +494,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openReleaseNotes() {
         UpdateManager.shared.openReleasePage()
+    }
+
+    @objc private func toggleClamshellStayAwake() {
+        ClamshellManager.shared.isArmed.toggle()
     }
 
     @objc private func quitApp() {
