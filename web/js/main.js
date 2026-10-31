@@ -56,16 +56,8 @@ const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/
 const GITHUB_FALLBACK_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases`;
 const DL_ENDPOINT = "/api/download";
 
-let latestReleaseInfo = {
-  version: "v1.0.0",
-  fileName: "Harmonotch-1.0.0.dmg",
-  sizeFormatted: "",
-  downloadUrl: DL_ENDPOINT
-};
-
 async function fetchLatestRelease() {
   const versionBadge = document.getElementById("versionBadge");
-  const downloadLabels = document.querySelectorAll(".js-download-label");
 
   try {
     const res = await fetch(GITHUB_API_URL, {
@@ -90,12 +82,7 @@ async function fetchLatestRelease() {
         }
       }
 
-      latestReleaseInfo.version = tagName;
-      latestReleaseInfo.fileName = exactDmgName;
-      latestReleaseInfo.sizeFormatted = dmgSize;
-
       const dynamicDlUrl = `${DL_ENDPOINT}?file=${encodeURIComponent(exactDmgName)}&tag=${encodeURIComponent(tagName)}`;
-      latestReleaseInfo.downloadUrl = dynamicDlUrl;
 
       document.querySelectorAll("a.js-download").forEach(a => {
         a.setAttribute("href", dynamicDlUrl);
@@ -106,12 +93,6 @@ async function fetchLatestRelease() {
         versionBadge.hidden = false;
         versionBadge.textContent = `${tagName} ${dmgSize ? "· " + dmgSize : ""}`;
       }
-
-      downloadLabels.forEach(el => {
-        const lang = document.documentElement.lang || "id";
-        const prefix = lang === "en" ? "Download for macOS" : "Unduh untuk macOS";
-        el.textContent = `${prefix} (${exactDmgName}${dmgSize ? " · " + dmgSize : ""})`;
-      });
     }
   } catch (err) {
     console.warn("Could not query GitHub releases API, using default values:", err);
@@ -135,8 +116,8 @@ for (const a of document.querySelectorAll("a.js-download")) {
         const lang = document.documentElement.lang === "en" ? "en" : "id";
         showToast(
           lang === "en"
-            ? "Direct download unavailable, opening GitHub Releases..."
-            : "Unduhan langsung belum tersedia, membuka GitHub Releases..."
+            ? "Direct download unavailable. Opening the GitHub Releases page."
+            : "Unduhan langsung tidak tersedia. Membuka halaman rilis GitHub."
         );
         setTimeout(() => window.open(GITHUB_FALLBACK_URL, "_blank", "noopener"), 1000);
       })
@@ -230,6 +211,9 @@ if (showcaseVideo) {
     if (!videoProgressFill || !showcaseVideo.duration) return;
     const pct = (showcaseVideo.currentTime / showcaseVideo.duration) * 100;
     videoProgressFill.style.width = `${pct}%`;
+    if (videoProgressTrack) {
+      videoProgressTrack.setAttribute("aria-valuenow", String(Math.round(pct)));
+    }
   });
 
   if (videoCenterPlayBtn) {
@@ -367,24 +351,18 @@ function applyLang(lang) {
 
   document.title =
     lang === "en"
-      ? "Harmonotch - The Living Notch for macOS"
-      : "Harmonotch - Pusat Harmoni Notch macOS";
+      ? "Harmonotch: prayer times, battery, and music in your MacBook notch"
+      : "Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook";
 
   const metaDesc = document.querySelector('meta[name="description"]');
   if (metaDesc) {
     metaDesc.content =
       lang === "en"
-        ? "Accurate Prayer Times & Adhan, Real-time Battery Telemetry, and Media Controls with Synced Lyrics inside your MacBook notch."
-        : "Jadwal Sholat & Adzan akurat, Telemetri Baterai real-time, dan Kontrol Media dengan Lirik Sinkron di dalam notch MacBook Anda.";
+        ? "Prayer times, battery status, and media controls with synced lyrics in your MacBook notch. Free and open source for macOS 14 and later."
+        : "Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas.";
   }
 
-  const downloadLabels = document.querySelectorAll(".js-download-label");
-  const prefix = lang === "en" ? "Download for macOS" : "Unduh untuk macOS";
-  downloadLabels.forEach(el => {
-    const fn = latestReleaseInfo.fileName || latestReleaseInfo.version;
-    const s = latestReleaseInfo.sizeFormatted;
-    el.textContent = `${prefix} (${fn}${s ? " · " + s : ""})`;
-  });
+  if (showcaseVideo) updateVideoUI(!showcaseVideo.paused);
 }
 
 const urlParams = new URLSearchParams(window.location.search);

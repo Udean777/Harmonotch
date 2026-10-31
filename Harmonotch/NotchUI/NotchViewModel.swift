@@ -6,10 +6,9 @@ final class NotchViewModel: ObservableObject {
 
     @Published var isExpanded: Bool = false
     @Published var isHovered: Bool = false
-    @Published var selectedTab: DrawerTab = .prayer
+    @Published var selectedTab: DrawerTab = .battery // Default / main view is Battery
     @Published var geometry: NotchGeometry = NotchGeometry.current()
 
-    private var collapseWorkItem: DispatchWorkItem?
     private var cancellables = Set<AnyCancellable>()
 
     func updateGeometry(for screen: NSScreen?) {
@@ -20,47 +19,59 @@ final class NotchViewModel: ObservableObject {
     }
 
     init() {
+        // Switch to Audio mode whenever Adzan starts playing
         AdzanPlayer.shared.$isPlaying
             .receive(on: DispatchQueue.main)
-            .filter { $0 }
-            .sink { [weak self] _ in
+            .sink { [weak self] isAdzanPlaying in
                 guard let self = self else { return }
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                    self.selectedTab = .prayer
+                if isAdzanPlaying {
+                    withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
+                        self.selectedTab = .media
+                    }
+                } else if !MediaManager.shared.hasActiveTrack {
+                    if self.selectedTab == .media {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+                            self.selectedTab = .battery
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
+        // Switch to Audio mode whenever Music / Video / YouTube starts playing
+        Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$trackTitle)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isPlaying, trackTitle in
+                guard let self = self else { return }
+                let hasTrack = !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                if isPlaying && hasTrack {
+                    withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
+                        self.selectedTab = .media
+                    }
+                } else if !hasTrack && !AdzanPlayer.shared.isPlaying {
+                    if self.selectedTab == .media {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+                            self.selectedTab = .battery
+                        }
+                    }
                 }
             }
             .store(in: &cancellables)
     }
 
     func setHovered(_ hovered: Bool) {
-        if isHovered == hovered && isExpanded == hovered { return }
         isHovered = hovered
-        if hovered {
-            collapseWorkItem?.cancel()
-            collapseWorkItem = nil
-            if !isExpanded {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                    isExpanded = true
-                }
-            }
-        } else {
-            collapseWorkItem?.cancel()
-            let work = DispatchWorkItem { [weak self] in
-                guard let self = self, !self.isHovered else { return }
-                if self.isExpanded {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
-                        self.isExpanded = false
-                    }
-                }
-            }
-            collapseWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14, execute: work)
+    }
+
+    func collapse() {
+        guard isExpanded else { return }
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+            isExpanded = false
         }
     }
 
     func toggleExpanded() {
-        collapseWorkItem?.cancel()
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
             isExpanded.toggle()
         }
     }

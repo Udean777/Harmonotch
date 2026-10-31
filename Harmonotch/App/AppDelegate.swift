@@ -213,64 +213,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         langItem.submenu = langSubmenu
         menu.addItem(langItem)
 
-        let themeItem = NSMenuItem(title: L10n.Theme.themeMenu, action: nil, keyEquivalent: "")
-        themeItem.image = NSImage(systemSymbolName: "paintpalette.fill", accessibilityDescription: nil)
-        let themeSubmenu = NSMenu()
-
-        let styleHeader = NSMenuItem(title: L10n.Theme.designStyleSection, action: nil, keyEquivalent: "")
-        styleHeader.isEnabled = false
-        themeSubmenu.addItem(styleHeader)
-
-        for style in ThemeStyle.allCases {
-            let title: String
-            switch style {
-            case .liquidGlass:
-                title = L10n.Theme.liquidGlass
-            case .zenSerenity:
-                title = L10n.Theme.zenSerenity
-            }
-            let item = NSMenuItem(
-                title: title,
-                action: #selector(AppDelegate.switchThemeStyle(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = style
-            item.image = NSImage(systemSymbolName: style.icon, accessibilityDescription: nil)
-            item.state = (ThemeManager.shared.currentStyle == style) ? NSControl.StateValue.on : NSControl.StateValue.off
-            themeSubmenu.addItem(item)
-        }
-
-        themeSubmenu.addItem(NSMenuItem.separator())
-
-        let appearanceHeader = NSMenuItem(title: L10n.Theme.appearanceSection, action: nil, keyEquivalent: "")
-        appearanceHeader.isEnabled = false
-        themeSubmenu.addItem(appearanceHeader)
-
-        for mode in AppThemeMode.allCases {
-            let title: String
-            switch mode {
-            case .system:
-                title = L10n.Theme.system
-            case .dark:
-                title = L10n.Theme.dark
-            case .light:
-                title = L10n.Theme.light
-            }
-            let item = NSMenuItem(
-                title: title,
-                action: #selector(AppDelegate.switchTheme(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = mode
-            item.image = NSImage(systemSymbolName: mode.icon, accessibilityDescription: nil)
-            item.state = (ThemeManager.shared.currentMode == mode) ? NSControl.StateValue.on : NSControl.StateValue.off
-            themeSubmenu.addItem(item)
-        }
-        themeItem.submenu = themeSubmenu
-        menu.addItem(themeItem)
-
         let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
         let launchItem = NSMenuItem(
             title: L10n.Menu.launchAtLogin,
@@ -475,7 +417,7 @@ private struct MenuBarHeaderView: View {
             .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(AppTheme.accentAmber.opacity(0.3), lineWidth: 0.8)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
             )
 
             VStack(alignment: .leading, spacing: 2) {
@@ -487,10 +429,10 @@ private struct MenuBarHeaderView: View {
                     if updateManager.hasUpdate {
                         Text("v\(updateManager.latestVersion)")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(AppTheme.accentAmber)
+                            .foregroundColor(.white)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
-                            .background(AppTheme.accentAmber.opacity(0.15))
+                            .background(Color.white.opacity(0.15))
                             .clipShape(Capsule())
                     }
                 }
@@ -502,7 +444,7 @@ private struct MenuBarHeaderView: View {
                         Text(L10n.Prayer.adzanActive)
                             .font(.system(size: 10, weight: .medium))
                     }
-                    .foregroundColor(AppTheme.accentGreen)
+                    .foregroundColor(.white)
                 } else if mediaManager.isPlaying && !mediaManager.trackTitle.isEmpty {
                     HStack(spacing: 4) {
                         Image(systemName: "waveform")
@@ -511,13 +453,13 @@ private struct MenuBarHeaderView: View {
                             .font(.system(size: 10, weight: .medium))
                             .lineLimit(1)
                     }
-                    .foregroundColor(AppTheme.accentAmber)
+                    .foregroundColor(.white)
                 } else if updateManager.hasUpdate {
                     Text(L10n.Update.available)
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(AppTheme.accentAmber)
+                        .foregroundColor(.white)
                 } else {
-                    Text(themeManager.currentStyle == .liquidGlass ? "Liquid Glass" : "Zen Serenity")
+                    Text("Battery & Audio Notch")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(AppTheme.textTertiary)
                 }
