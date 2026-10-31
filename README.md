@@ -35,13 +35,14 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 ### Media and lyrics
 
 - Real-time system-wide playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) across Safari, WebKit, Chrome, YouTube, YouTube Music, Spotify, and Apple Music via macOS `MediaRemote` and the NowPlaying architecture from [vorssaint-utils](https://github.com/vorssaint/vorssaint-utils), with AppleScript and iTunes Search API metadata fallbacks.
-- Collapsed notch displays the active track's artwork thumbnail on the left wing and a live equalizer waveform on the right wing while playing, smoothly transitioning back to the battery indicator when paused.
+- Collapsed notch narrows toward the hardware notch while playing, showing the interactive companion and artwork thumbnail on the expanded left wing with a live equalizer waveform on the right, then restores the battery layout when playback ends.
 - Expanded 560pt notch drawer displays high-resolution 64×64 artwork, track metadata, interactive progress scrubber, playback transport controls, and time-synchronized karaoke lyrics from [LRCLIB](https://lrclib.net/).
 - Lets you click any lyric line to seek directly to its timestamp.
 
 ### Interface
 
 - Pure monochrome black-and-white (`#000000` / `#FFFFFF`) aesthetic engineered to blend invisibly into the physical MacBook camera housing.
+- Interactive battery-aware notch companion (`PrayerCompanionView`) that appears on left-wing hover or active playback/adhan states with expressive mood animations.
 - Fluid spring shrink/expand geometry (`NotchMotion`) with selective cursor hit-testing so the macOS menu bar only activates outside the notch radius.
 - English and Indonesian, switched from the menu bar without a restart.
 - Streamlined monochrome menu bar panel with the next prayer, battery telemetry, language switcher, clamshell mode, and update checks.
@@ -88,13 +89,14 @@ Harmonotch/
 │   ├── NotchViewModel.swift          // Hover and dismiss state
 │   ├── NotchContainerView.swift      // Drawer and tab container
 │   ├── NotchTab.swift                // Tab enum and segmented control
+│   ├── NotchChip.swift               // Shared chip and motion tokens
 │   ├── NotchPillView.swift           // Collapsed notch content
 │   └── PureBlackSurface.swift        // Pure solid black notch silhouette
 ├── Features/
 │   ├── MenuBar/                      // Monochrome menu bar panel
-│   ├── Theme/                        // Monochrome black-and-white color tokens
+│   ├── Theme/                        // Monochrome and palette color tokens
 │   ├── Localization/                 // Language state and strings
-│   ├── Prayer/                       // Prayer engine, adhan audio, city presets
+│   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
 │   ├── Battery/                      // IOKit monitor and clamshell mode
 │   ├── Media/                        // MediaRemote, NowPlaying, lyrics, and metadata
 │   ├── Update/                       // GitHub release checks

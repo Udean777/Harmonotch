@@ -4,9 +4,11 @@ import SwiftUI
 enum NotchLayout {
   static let collapsedPillHeight: CGFloat = 28
   static let collapsedWingWidth: CGFloat = 68
+  static let mediaWingWidth: CGFloat = 42
   static let noNotchPillWidth: CGFloat = 154
   static let hoverWingExpansion: CGFloat = 2
   static let companionExpansion: CGFloat = 28
+  static let mediaLeftExpansion: CGFloat = 28
   static let maxShoulder: CGFloat = 10
   static let wingInnerInset: CGFloat = 3
   static let expandedWidth: CGFloat = 560
@@ -156,12 +158,18 @@ struct NotchGeometry: Equatable {
       ? physicalNotchHeight : max(NotchLayout.collapsedPillHeight, physicalNotchHeight)
   }
 
-  func collapsedWidth(isHovered: Bool) -> CGFloat {
+  func collapsedWidth(isHovered: Bool, isMediaPlaying: Bool = false) -> CGFloat {
     let hoverExtra = isHovered ? NotchLayout.hoverWingExpansion : 0
+    let wingWidth = isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
     if hasHardwareNotch {
-      return physicalNotchWidth + 2 * (NotchLayout.collapsedWingWidth + hoverExtra)
+      return physicalNotchWidth + 2 * (wingWidth + hoverExtra)
     } else {
-      return NotchLayout.noNotchPillWidth + 2 * hoverExtra
+      let baseWidth =
+        isMediaPlaying
+        ? NotchLayout.noNotchPillWidth - 2
+          * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
+        : NotchLayout.noNotchPillWidth
+      return baseWidth + 2 * hoverExtra
     }
   }
 

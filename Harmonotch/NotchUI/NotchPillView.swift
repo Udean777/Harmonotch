@@ -17,18 +17,35 @@ struct NotchPillView: View {
     geometry.collapsedHeight
   }
 
+  private var isMediaPlaying: Bool {
+    mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
+  }
+
   private var wingWidth: CGFloat {
-    NotchLayout.collapsedWingWidth + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
+    (isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth)
+      + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
+  }
+
+  private var leftContentExpansion: CGFloat {
+    if isMediaPlaying {
+      return NotchLayout.mediaLeftExpansion
+    }
+    return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
   }
 
   private var leftWingWidth: CGFloat {
-    wingWidth + (notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0)
+    wingWidth + leftContentExpansion
   }
 
   private var noNotchWidth: CGFloat {
-    NotchLayout.noNotchPillWidth
+    let baseWidth =
+      isMediaPlaying
+      ? NotchLayout.noNotchPillWidth - 2
+        * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
+      : NotchLayout.noNotchPillWidth
+    return baseWidth
       + 2 * (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
-      + (notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0)
+      + leftContentExpansion
   }
 
   private var outerInset: CGFloat {
@@ -37,10 +54,6 @@ struct NotchPillView: View {
 
   private var innerInset: CGFloat {
     NotchLayout.wingInnerInset
-  }
-
-  private var isAudioActive: Bool {
-    adzanPlayer.isPlaying || (mediaManager.isPlaying && mediaManager.hasActiveTrack)
   }
 
   /// 0 = battery, 1 = media session, 2 = adzan. Drives swap transitions.
@@ -125,6 +138,8 @@ struct NotchPillView: View {
         }
         batteryLeft
       }
+    } else if isMediaPlaying {
+      mediaLeft
     } else {
       PrayerCompanionView()
     }
@@ -218,6 +233,7 @@ struct NotchPillView: View {
 
   private var mediaLeft: some View {
     HStack(spacing: 5) {
+      PrayerCompanionView()
       thumbnail
     }
     .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)

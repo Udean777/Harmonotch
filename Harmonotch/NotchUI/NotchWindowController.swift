@@ -33,6 +33,16 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     let notchVM = NotchViewModel.shared
     let isExpanded = notchVM.isExpanded
     let geometry = notchVM.geometry
+    let isMediaPlaying =
+      MediaManager.shared.isPlaying
+      && MediaManager.shared.hasActiveTrack
+      && !AdzanPlayer.shared.isPlaying
+    let leftContentExpansion: CGFloat = {
+      if isMediaPlaying {
+        return NotchLayout.mediaLeftExpansion
+      }
+      return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
+    }()
 
     let topY = bounds.height
     let currentWidth: CGFloat
@@ -44,14 +54,16 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
       currentHeight = topClearance + NotchLayout.expandedHitAreaHeight
     } else {
       currentWidth =
-        geometry.collapsedWidth(isHovered: notchVM.isHovered)
-        + (notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0)
+        geometry.collapsedWidth(
+          isHovered: notchVM.isHovered,
+          isMediaPlaying: isMediaPlaying
+        ) + leftContentExpansion
       currentHeight = geometry.collapsedHeight
     }
 
     let leftExpansionOffset =
-      notchVM.isLeftCompanionVisible
-      ? -(NotchLayout.companionExpansion / 2)
+      leftContentExpansion > 0
+      ? -(leftContentExpansion / 2)
       : 0
     let minX = (bounds.width - currentWidth) / 2 + leftExpansionOffset
     let maxX = minX + currentWidth

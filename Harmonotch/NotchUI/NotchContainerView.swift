@@ -10,11 +10,24 @@ struct NotchContainerView: View {
     notchVM.geometry
   }
 
+  private var isMediaPlaying: Bool {
+    mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
+  }
+
+  private var leftContentExpansion: CGFloat {
+    if isMediaPlaying {
+      return NotchLayout.mediaLeftExpansion
+    }
+    return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
+  }
+
   private var targetWidth: CGFloat {
     guard !notchVM.isExpanded else { return NotchLayout.expandedWidth }
 
-    return geometry.collapsedWidth(isHovered: notchVM.isHovered)
-      + (notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0)
+    return geometry.collapsedWidth(
+      isHovered: notchVM.isHovered,
+      isMediaPlaying: isMediaPlaying
+    ) + leftContentExpansion
   }
 
   private var topClearance: CGFloat {
@@ -106,8 +119,8 @@ struct NotchContainerView: View {
     .frame(width: targetWidth, height: targetHeight, alignment: .top)
     .clipShape(notchShape)
     .offset(
-      x: notchVM.isLeftCompanionVisible
-        ? -(NotchLayout.companionExpansion / 2)
+      x: leftContentExpansion > 0
+        ? -(leftContentExpansion / 2)
         : 0
     )
     .frame(width: NotchWindowController.canvasWidth, alignment: .top)
@@ -121,6 +134,7 @@ struct NotchContainerView: View {
       value: notchVM.isExpanded
     )
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
+    .animation(NotchMotion.content, value: isMediaPlaying)
     .animation(NotchMotion.content, value: notchVM.selectedTab)
     .animation(NotchMotion.content, value: adzanPlayer.isPlaying)
     .animation(NotchMotion.content, value: mediaManager.hasActiveTrack)
