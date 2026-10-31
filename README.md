@@ -79,8 +79,9 @@ The harness compiles the pure logic and checks prayer times, version comparison,
 ```text
 Harmonotch/
 ├── App/
-│   ├── HarmonotchApp.swift           // App entry point
-│   └── AppDelegate.swift             // AppKit lifecycle and menu bar item
+│   ├── AppDelegate.swift             // AppKit lifecycle and menu bar item
+│   └── UserDefaultsKeys.swift        // Centralized UserDefaults keys
+├── HarmonotchApp.swift               // App entry point
 ├── NotchUI/
 │   ├── NotchGeometryHelper.swift     // Notch geometry detection
 │   ├── NotchWindowController.swift   // Floating panel with selective hit testing
