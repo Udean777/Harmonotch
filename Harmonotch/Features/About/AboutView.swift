@@ -47,10 +47,17 @@ struct AboutView: View {
                 .foregroundColor(AppTheme.textTertiary)
 
                 Button(action: {
-                    if updateManager.hasUpdate {
-                        updateManager.downloadLatestDMG()
-                    } else {
-                        updateManager.checkForUpdates(isUserInitiated: true)
+                    switch updateManager.state {
+                    case .readyToQuit:
+                        updateManager.quitAfterUpdate(relaunch: true)
+                    case .available, .failed:
+                        updateManager.downloadAndInstallUpdate()
+                    default:
+                        if updateManager.hasUpdate {
+                            updateManager.downloadAndInstallUpdate()
+                        } else {
+                            updateManager.checkForUpdates(isUserInitiated: true)
+                        }
                     }
                 }) {
                     HStack(spacing: 4) {
@@ -58,17 +65,33 @@ struct AboutView: View {
                             ProgressView()
                                 .scaleEffect(0.5)
                                 .frame(width: 10, height: 10)
+                        } else if case .readyToQuit = updateManager.state {
+                            Image(systemName: "arrow.clockwise.circle.fill")
+                                .font(.system(size: 9))
                         } else {
                             Image(systemName: updateManager.hasUpdate ? "arrow.down.circle.fill" : "arrow.triangle.2.circlepath")
                                 .font(.system(size: 9))
                         }
-                        Text(updateManager.hasUpdate ? L10n.Update.updateAvailableTitle(version: updateManager.latestVersion) : L10n.Update.checkForUpdates)
-                            .font(.system(size: 10, weight: updateManager.hasUpdate ? .semibold : .medium))
+
+                        if case .readyToQuit(let ver) = updateManager.state {
+                            Text("\(L10n.Update.readyToQuitTitle(version: ver)) - \(L10n.Update.restartApp)")
+                                .font(.system(size: 10, weight: .bold))
+                        } else if case .downloading(let fraction) = updateManager.state {
+                            let pct = fraction.map { "\(Int($0 * 100))%" } ?? ""
+                            Text("\(L10n.Update.downloading) \(pct)")
+                                .font(.system(size: 10, weight: .medium))
+                        } else if case .installing = updateManager.state {
+                            Text(L10n.Update.installing)
+                                .font(.system(size: 10, weight: .medium))
+                        } else {
+                            Text(updateManager.hasUpdate ? L10n.Update.updateAvailableTitle(version: updateManager.latestVersion) : L10n.Update.checkForUpdates)
+                                .font(.system(size: 10, weight: updateManager.hasUpdate ? .semibold : .medium))
+                        }
                     }
                     .foregroundColor(updateManager.hasUpdate ? AppTheme.accentAmber : AppTheme.accentCyan)
                 }
                 .buttonStyle(.plain)
-                .disabled(updateManager.isDownloading)
+                .disabled(updateManager.isDownloading || updateManager.state == .installing)
             }
             .padding(.top, 8)
 

@@ -254,7 +254,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        if UpdateManager.shared.hasUpdate {
+        if case .readyToQuit(let version) = UpdateManager.shared.state {
+            let readyItem = NSMenuItem(
+                title: "\(L10n.Update.readyToQuitTitle(version: version)) - \(L10n.Update.restartApp)",
+                action: #selector(restartAfterUpdate),
+                keyEquivalent: ""
+            )
+            readyItem.target = self
+            readyItem.image = NSImage(systemSymbolName: "arrow.clockwise.circle.fill", accessibilityDescription: nil)
+            menu.addItem(readyItem)
+        } else if UpdateManager.shared.hasUpdate {
             let updateItem = NSMenuItem(
                 title: L10n.Menu.updateAvailable(version: UpdateManager.shared.latestVersion),
                 action: nil,
@@ -264,7 +273,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
             let updateSubmenu = NSMenu()
             let downloadItem = NSMenuItem(
-                title: L10n.Menu.downloadDMGAction,
+                title: L10n.Update.updateNow,
                 action: #selector(downloadUpdateDMG),
                 keyEquivalent: ""
             )
@@ -379,7 +388,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func downloadUpdateDMG() {
-        UpdateManager.shared.downloadLatestDMG()
+        UpdateManager.shared.downloadAndInstallUpdate()
+    }
+
+    @objc private func restartAfterUpdate() {
+        UpdateManager.shared.quitAfterUpdate(relaunch: true)
     }
 
     @objc private func openReleaseNotes() {

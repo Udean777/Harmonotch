@@ -65,13 +65,14 @@ final class NotchViewModel: ObservableObject {
 
     func collapse() {
         guard isExpanded else { return }
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.96)) {
             isExpanded = false
         }
     }
 
     func toggleExpanded() {
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
+        let expanding = !isExpanded
+        withAnimation(.spring(response: expanding ? 0.36 : 0.34, dampingFraction: expanding ? 0.78 : 0.96)) {
             isExpanded.toggle()
         }
     }

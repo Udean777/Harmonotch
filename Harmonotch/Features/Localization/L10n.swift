@@ -403,6 +403,38 @@ enum L10n {
         static var downloadDMG: String {
             isEnglish ? "Download DMG" : "Unduh DMG"
         }
+        static var updateNow: String {
+            isEnglish ? "Update Now" : "Perbarui Sekarang"
+        }
+        static var downloading: String {
+            isEnglish ? "Downloading update..." : "Mengunduh pembaruan..."
+        }
+        static var installing: String {
+            isEnglish ? "Installing update..." : "Menginstal pembaruan..."
+        }
+        static func readyToQuitTitle(version: String) -> String {
+            isEnglish ? "Harmonotch v\(version) Ready" : "Harmonotch v\(version) Siap"
+        }
+        static var readyToQuitSubtitle: String {
+            isEnglish ? "Installation complete. Quit or restart app to finish updating." : "Instalasi selesai. Keluar atau buka ulang aplikasi untuk menyelesaikan update."
+        }
+        static var quitApp: String {
+            isEnglish ? "Quit App" : "Keluar Aplikasi"
+        }
+        static var restartApp: String {
+            isEnglish ? "Restart App" : "Buka Ulang"
+        }
+        static var retry: String {
+            isEnglish ? "Retry" : "Coba Lagi"
+        }
+        static var needsApplicationsTitle: String {
+            isEnglish ? "Move to Applications" : "Pindahkan ke Aplikasi"
+        }
+        static var needsApplicationsBody: String {
+            isEnglish
+                ? "Harmonotch cannot self-update from a read-only location or disk image. Please move Harmonotch.app to your Applications folder first."
+                : "Harmonotch tidak dapat memperbarui otomatis dari lokasi read-only atau disk image. Silakan pindahkan Harmonotch.app ke folder Applications terlebih dahulu."
+        }
         static var downloadFailedTitle: String {
             isEnglish ? "Download Failed" : "Gagal Mengunduh"
         }

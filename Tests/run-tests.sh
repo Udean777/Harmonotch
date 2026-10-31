@@ -15,6 +15,7 @@ SOURCES+=(
     "Harmonotch/Features/Prayer/Compass.swift"
     "Harmonotch/Features/Media/LRCParser.swift"
     "Harmonotch/Features/Update/Version.swift"
+    "Harmonotch/Features/Update/UpdateInstallerSupport.swift"
     "Tests/main.swift"
 )
 
