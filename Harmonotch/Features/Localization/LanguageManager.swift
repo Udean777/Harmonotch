@@ -31,13 +31,13 @@ final class LanguageManager: ObservableObject {
 
     @Published var currentLanguage: AppLanguage {
         didSet {
-            UserDefaults.standard.set(currentLanguage.rawValue, forKey: "Harmonotch_AppLanguage")
+            UserDefaults.standard.set(currentLanguage.rawValue, forKey: UserDefaultsKeys.appLanguage)
             NotificationCenter.default.post(name: .languageDidChange, object: currentLanguage)
         }
     }
 
     init() {
-        let savedCode = UserDefaults.standard.string(forKey: "Harmonotch_AppLanguage") ?? AppLanguage.english.rawValue
+        let savedCode = UserDefaults.standard.string(forKey: UserDefaultsKeys.appLanguage) ?? AppLanguage.english.rawValue
         self.currentLanguage = AppLanguage(rawValue: savedCode) ?? .english
     }
 

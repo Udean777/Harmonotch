@@ -9,7 +9,7 @@ final class ClamshellManager: ObservableObject {
 
     @Published var isArmed: Bool {
         didSet {
-            UserDefaults.standard.set(isArmed, forKey: userDefaultsKey)
+            UserDefaults.standard.set(isArmed, forKey: UserDefaultsKeys.clamshellArmed)
             recalculateState()
         }
     }
@@ -21,8 +21,9 @@ final class ClamshellManager: ObservableObject {
     @Published private(set) var isSudoConfigured: Bool = false
     @Published var isPerformingSetup: Bool = false
 
-    private let userDefaultsKey = "Harmonotch_ClamshellArmed"
-    private let sudoConfiguredKey = "Harmonotch_SudoConfigured"
+    private static let batteryResetThreshold = 62
+    private static let batteryWarningThreshold = 60
+
     private var cancellables = Set<AnyCancellable>()
     private var assertionID: IOPMAssertionID = 0
     private var hasActiveAssertion: Bool = false
@@ -30,7 +31,7 @@ final class ClamshellManager: ObservableObject {
     private var hasWarnedAt60: Bool = false
 
     private init() {
-        self.isArmed = UserDefaults.standard.bool(forKey: userDefaultsKey)
+        self.isArmed = UserDefaults.standard.bool(forKey: UserDefaultsKeys.clamshellArmed)
 
         checkSudoConfiguration()
         setupObservers()
@@ -91,7 +92,7 @@ final class ClamshellManager: ObservableObject {
         let capacity = BatteryMonitor.shared.currentCapacity
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
-        if isPlugged || capacity > 62 {
+        if isPlugged || capacity > Self.batteryResetThreshold {
             hasWarnedAt60 = false
         }
 
@@ -107,7 +108,7 @@ final class ClamshellManager: ObservableObject {
         let capacity = BatteryMonitor.shared.currentCapacity
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
-        if isArmed && currentState == .active && !isPlugged && capacity <= 60 && !hasWarnedAt60 {
+        if isArmed && currentState == .active && !isPlugged && capacity <= Self.batteryWarningThreshold && !hasWarnedAt60 {
             sendLowBatteryWarningNotification(capacity: capacity)
             hasWarnedAt60 = true
         }
@@ -185,6 +186,7 @@ final class ClamshellManager: ObservableObject {
                 return true
             }
         } catch {
+            NSLog("[Harmonotch:Clamshell] Failed to run pmset command: %@", error.localizedDescription)
         }
 
         guard allowPrompt else { return false }
@@ -201,7 +203,7 @@ final class ClamshellManager: ObservableObject {
 
 
     func checkSudoConfiguration() {
-        if UserDefaults.standard.bool(forKey: sudoConfiguredKey) {
+        if UserDefaults.standard.bool(forKey: UserDefaultsKeys.sudoConfigured) {
             isSudoConfigured = true
             return
         }
@@ -209,8 +211,7 @@ final class ClamshellManager: ObservableObject {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-            // -l checks the exact rule without running it; the previous probe used
-            // "pmset -g", which the installed rule does not cover.
+            // Check rule without running it.
             process.arguments = ["-n", "-l", "--", "/usr/bin/pmset", "-a", "disablesleep", "1"]
 
             var configured = false
@@ -219,13 +220,14 @@ final class ClamshellManager: ObservableObject {
                 process.waitUntilExit()
                 configured = (process.terminationStatus == 0)
             } catch {
+                NSLog("[Harmonotch:Clamshell] Sudo rule probe failed: %@", error.localizedDescription)
                 configured = false
             }
 
             DispatchQueue.main.async {
                 guard let self else { return }
                 if configured {
-                    UserDefaults.standard.set(true, forKey: self.sudoConfiguredKey)
+                    UserDefaults.standard.set(true, forKey: UserDefaultsKeys.sudoConfigured)
                 }
                 self.isSudoConfigured = configured
             }
@@ -275,6 +277,7 @@ final class ClamshellManager: ObservableObject {
                 return parts.count >= 2 && parts[0] == "disablesleep" && parts[1] == "1"
             }
         } catch {
+            NSLog("[Harmonotch:Clamshell] Failed to check pmset sleep status: %@", error.localizedDescription)
             return false
         }
     }
@@ -283,8 +286,7 @@ final class ClamshellManager: ObservableObject {
         isPerformingSetup = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let ruleContent = "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep *"
-            // Write to a temp file and let visudo validate it first: a malformed
-            // /etc/sudoers.d entry breaks all sudo on the machine.
+            // Validate with visudo before installing to prevent breaking sudo.
             let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 440 \"$tmp\" "
                 + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" /etc/sudoers.d/harmonotch"
             let scriptSource = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
@@ -300,7 +302,7 @@ final class ClamshellManager: ObservableObject {
                 guard let self else { return }
                 self.isPerformingSetup = false
                 self.isSudoConfigured = success
-                UserDefaults.standard.set(success, forKey: self.sudoConfiguredKey)
+                UserDefaults.standard.set(success, forKey: UserDefaultsKeys.sudoConfigured)
                 if success {
                     self.recalculateState()
                 }
@@ -325,7 +327,7 @@ final class ClamshellManager: ObservableObject {
 
         center.add(request) { error in
             if let error = error {
-                print("Failed to deliver clamshell battery notification: \(error)")
+                NSLog("[Harmonotch:Clamshell] Failed to deliver clamshell battery notification: %@", error.localizedDescription)
             }
         }
     }

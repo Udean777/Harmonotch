@@ -98,7 +98,6 @@ final class MediaManager: ObservableObject {
     private let artworkCache = NSCache<NSString, NSImage>()
     private var lyricsCache: [String: (lyrics: [LyricLine], isInstrumental: Bool, duration: TimeInterval)] = [:]
 
-    // Vorssaint NowPlaying adapter background watch process
     private var nowPlayingProcess: Process?
     private var nowPlayingBuffer = Data()
     private var nowPlayingStdin: Pipe?
@@ -158,14 +157,13 @@ final class MediaManager: ObservableObject {
 
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        // Use `watch_all` so non-music players (Safari, WebKit, Chrome, YouTube, QuickTime, etc.)
-        // are included and emit full metadata + playback state snapshots on every change.
+        // Include non-music players (Safari, Chrome, QuickTime).
         proc.arguments = [paths.script, paths.library, "watch_all"]
 
         let pipe = Pipe()
         proc.standardOutput = pipe
         proc.standardError = FileHandle.nullDevice
-        // The adapter exits as soon as its stdin closes, so keep a pipe open.
+        // Keep stdin open to prevent adapter exit.
         let stdinPipe = Pipe()
         proc.standardInput = stdinPipe
         nowPlayingStdin = stdinPipe
@@ -255,8 +253,7 @@ final class MediaManager: ObservableObject {
                 DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
                     if proc.isRunning { proc.terminate() }
                 }
-                // IMPORTANT: Read pipe data BEFORE waitUntilExit() so large base64 artwork
-                // (>64 KB pipe buffer) never deadlocks the child process.
+                // Read before waitUntilExit to prevent pipe buffer deadlock.
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 proc.waitUntilExit()
 
@@ -628,107 +625,101 @@ final class MediaManager: ObservableObject {
 
             self.appleScriptQueue.async { [weak self] in
                 guard let self = self else { return }
-
-                // 1. Spotify
-                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").isEmpty {
-                    let spotifyScript = """
-                    if application id "com.spotify.client" is running then
-                        tell application id "com.spotify.client"
-                            set playerState to player state as string
-                            set trackName to name of current track
-                            set artistName to artist of current track
-                            set albumName to album of current track
-                            set trackDuration to (duration of current track) / 1000
-                            set playerPos to player position
-                            return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
-                        end tell
-                    else
-                        return ""
-                    end if
-                    """
-
-                    if let result = self.executeAppleScript(spotifyScript), !result.isEmpty {
-                        let parts = result.components(separatedBy: "|||")
-                        if parts.count >= 6 {
-                            let isPlaying = parts[0].lowercased() == "playing"
-                            let title = parts[1]
-                            let artist = parts[2]
-                            let album = parts[3]
-                            let duration = self.extractDouble(from: parts[4]) ?? 0
-                            let pos = self.extractDouble(from: parts[5]) ?? 0
-                            if !title.isEmpty {
-                                self.updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
-                                return
-                            }
-                        }
-                    }
-                }
-
-                // 2. Apple Music
-                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music").isEmpty {
-                    let musicScript = """
-                    if application id "com.apple.Music" is running then
-                        tell application id "com.apple.Music"
-                            set playerState to player state as string
-                            set trackName to name of current track
-                            set artistName to artist of current track
-                            set albumName to album of current track
-                            set trackDuration to duration of current track
-                            set playerPos to player position
-                            return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
-                        end tell
-                    else
-                        return ""
-                    end if
-                    """
-
-                    if let result = self.executeAppleScript(musicScript), !result.isEmpty {
-                        let parts = result.components(separatedBy: "|||")
-                        if parts.count >= 6 {
-                            let isPlaying = parts[0].lowercased() == "playing"
-                            let title = parts[1]
-                            let artist = parts[2]
-                            let album = parts[3]
-                            let duration = self.extractDouble(from: parts[4]) ?? 0
-                            let pos = self.extractDouble(from: parts[5]) ?? 0
-                            if !title.isEmpty {
-                                self.updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
-                                return
-                            }
-                        }
-                    }
-                }
-
-                // 3. QuickTime Player
-                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.QuickTimePlayerX").isEmpty {
-                    let qtScript = """
-                    tell application "QuickTime Player"
-                        try
-                            if exists (document 1) then
-                                if playing of document 1 then
-                                    return (name of document 1) & "|||" & (current time of document 1 as string) & "|||" & (duration of document 1 as string)
-                                end if
-                            end if
-                        end try
-                    end tell
-                    return ""
-                    """
-                    if let res = self.executeAppleScript(qtScript), !res.isEmpty {
-                        let parts = res.components(separatedBy: "|||")
-                        if parts.count >= 3 {
-                            let name = parts[0]
-                            let pos = self.extractDouble(from: parts[1]) ?? 0
-                            let dur = self.extractDouble(from: parts[2]) ?? 0
-                            self.updateTrack(source: .quicktime, title: name, artist: "QuickTime", album: "", duration: dur, position: pos, isPlaying: true)
-                            return
-                        }
-                    }
-                }
-
-                // 4. Web Browsers fallback (only when NowPlaying adapter is unavailable)
+                if self.pollSpotifyState() { return }
+                if self.pollAppleMusicState() { return }
+                if self.pollQuickTimeState() { return }
                 self.pollWebMediaState()
             }
         }
+    }
+
+    private func pollSpotifyState() -> Bool {
+        guard !NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").isEmpty else { return false }
+        let spotifyScript = """
+        if application id "com.spotify.client" is running then
+            tell application id "com.spotify.client"
+                set playerState to player state as string
+                set trackName to name of current track
+                set artistName to artist of current track
+                set albumName to album of current track
+                set trackDuration to (duration of current track) / 1000
+                set playerPos to player position
+                return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
+            end tell
+        else
+            return ""
+        end if
+        """
+
+        guard let result = executeAppleScript(spotifyScript), !result.isEmpty else { return false }
+        let parts = result.components(separatedBy: "|||")
+        guard parts.count >= 6 else { return false }
+        let isPlaying = parts[0].lowercased() == "playing"
+        let title = parts[1]
+        let artist = parts[2]
+        let album = parts[3]
+        let duration = extractDouble(from: parts[4]) ?? 0
+        let pos = extractDouble(from: parts[5]) ?? 0
+        guard !title.isEmpty else { return false }
+        updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+        return true
+    }
+
+    private func pollAppleMusicState() -> Bool {
+        guard !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music").isEmpty else { return false }
+        let musicScript = """
+        if application id "com.apple.Music" is running then
+            tell application id "com.apple.Music"
+                set playerState to player state as string
+                set trackName to name of current track
+                set artistName to artist of current track
+                set albumName to album of current track
+                set trackDuration to duration of current track
+                set playerPos to player position
+                return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
+            end tell
+        else
+            return ""
+        end if
+        """
+
+        guard let result = executeAppleScript(musicScript), !result.isEmpty else { return false }
+        let parts = result.components(separatedBy: "|||")
+        guard parts.count >= 6 else { return false }
+        let isPlaying = parts[0].lowercased() == "playing"
+        let title = parts[1]
+        let artist = parts[2]
+        let album = parts[3]
+        let duration = extractDouble(from: parts[4]) ?? 0
+        let pos = extractDouble(from: parts[5]) ?? 0
+        guard !title.isEmpty else { return false }
+        updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+        return true
+    }
+
+    private func pollQuickTimeState() -> Bool {
+        guard !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.QuickTimePlayerX").isEmpty else { return false }
+        let qtScript = """
+        tell application "QuickTime Player"
+            try
+                if exists (document 1) then
+                    if playing of document 1 then
+                        return (name of document 1) & "|||" & (current time of document 1 as string) & "|||" & (duration of document 1 as string)
+                    end if
+                end if
+            end try
+        end tell
+        return ""
+        """
+
+        guard let res = executeAppleScript(qtScript), !res.isEmpty else { return false }
+        let parts = res.components(separatedBy: "|||")
+        guard parts.count >= 3 else { return false }
+        let name = parts[0]
+        let pos = extractDouble(from: parts[1]) ?? 0
+        let dur = extractDouble(from: parts[2]) ?? 0
+        updateTrack(source: .quicktime, title: name, artist: "QuickTime", album: "", duration: dur, position: pos, isPlaying: true)
+        return true
     }
 
     func pollWebMediaState() {
@@ -747,14 +738,7 @@ final class MediaManager: ObservableObject {
         let isOperaRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.operasoftware.Opera").isEmpty || !NSRunningApplication.runningApplications(withBundleIdentifier: "com.operasoftware.OperaGX").isEmpty
 
         guard isSafariRunning || isChromeRunning || isArcRunning || isBraveRunning || isEdgeRunning || isOperaRunning else {
-            if mediaSource == .safari || mediaSource == .web {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.isPlaying = false
-                    self.lastDetectedRawWebTitle = ""
-                    self.updatePlaybackTimerState()
-                }
-            }
+            resetWebMediaState()
             registerEmptyPoll()
             return
         }
@@ -762,37 +746,10 @@ final class MediaManager: ObservableObject {
         appleScriptQueue.async { [weak self] in
             guard let self = self else { return }
 
-            // Check Safari
-            if isSafariRunning {
-                let safariScript = """
-                set out to ""
-                tell application "Safari"
-                    try
-                        repeat with w in windows
-                            repeat with t in tabs of w
-                                set u to URL of t
-                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
-                                    set n to name of t
-                                    set out to n & "|||" & u & "|||Safari"
-                                    exit repeat
-                                end if
-                            end repeat
-                            if out is not "" then exit repeat
-                        end repeat
-                    on error
-                        set out to ""
-                    end try
-                end tell
-                return out
-                """
-
-                if let res = self.executeAppleScript(safariScript), !res.isEmpty {
-                    self.processWebMediaResult(res)
-                    return
-                }
+            if isSafariRunning && self.pollSafariMedia() {
+                return
             }
 
-            // Check Chromium browsers (Chrome, Arc, Brave, Edge, Opera)
             let chromiumApps = [
                 ("Google Chrome", isChromeRunning),
                 ("Arc", isArcRunning),
@@ -801,44 +758,85 @@ final class MediaManager: ObservableObject {
                 ("Opera", isOperaRunning)
             ]
 
-            for (appName, isRunning) in chromiumApps where isRunning {
-                let script = """
-                set out to ""
-                tell application "\(appName)"
-                    try
-                        repeat with w in windows
-                            repeat with t in tabs of w
-                                set u to URL of t
-                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
-                                    set n to title of t
-                                    set out to n & "|||" & u & "|||\(appName)"
-                                    exit repeat
-                                end if
-                            end repeat
-                            if out is not "" then exit repeat
-                        end repeat
-                    on error
-                        set out to ""
-                    end try
-                end tell
-                return out
-                """
-
-                if let res = self.executeAppleScript(script), !res.isEmpty {
-                    self.processWebMediaResult(res)
-                    return
-                }
+            if self.pollChromiumMedia(apps: chromiumApps) {
+                return
             }
 
-            if self.mediaSource == .safari || self.mediaSource == .web {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.isPlaying = false
-                    self.lastDetectedRawWebTitle = ""
-                    self.updatePlaybackTimerState()
-                }
-            }
+            self.resetWebMediaState()
             self.registerEmptyPoll()
+        }
+    }
+
+    private func pollSafariMedia() -> Bool {
+        let safariScript = """
+        set out to ""
+        tell application "Safari"
+            try
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        set u to URL of t
+                        if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
+                            set n to name of t
+                            set out to n & "|||" & u & "|||Safari"
+                            exit repeat
+                        end if
+                    end repeat
+                    if out is not "" then exit repeat
+                end repeat
+            on error
+                set out to ""
+            end try
+        end tell
+        return out
+        """
+
+        if let res = executeAppleScript(safariScript), !res.isEmpty {
+            processWebMediaResult(res)
+            return true
+        }
+        return false
+    }
+
+    private func pollChromiumMedia(apps: [(String, Bool)]) -> Bool {
+        for (appName, isRunning) in apps where isRunning {
+            let script = """
+            set out to ""
+            tell application "\(appName)"
+                try
+                    repeat with w in windows
+                        repeat with t in tabs of w
+                            set u to URL of t
+                            if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
+                                set n to title of t
+                                set out to n & "|||" & u & "|||\(appName)"
+                                exit repeat
+                            end if
+                        end repeat
+                        if out is not "" then exit repeat
+                    end repeat
+                on error
+                    set out to ""
+                end try
+            end tell
+            return out
+            """
+
+            if let res = executeAppleScript(script), !res.isEmpty {
+                processWebMediaResult(res)
+                return true
+            }
+        }
+        return false
+    }
+
+    private func resetWebMediaState() {
+        if mediaSource == .safari || mediaSource == .web {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.isPlaying = false
+                self.lastDetectedRawWebTitle = ""
+                self.updatePlaybackTimerState()
+            }
         }
     }
 
@@ -1351,7 +1349,10 @@ final class MediaManager: ObservableObject {
     }
 
     private func searchLRCLIB(track: String, artist: String, completion: @escaping (Bool) -> Void) {
-        var components = URLComponents(string: "https://lrclib.net/api/search")!
+        guard var components = URLComponents(string: "https://lrclib.net/api/search") else {
+            completion(false)
+            return
+        }
         components.queryItems = [
             URLQueryItem(name: "track_name", value: track),
             URLQueryItem(name: "artist_name", value: artist)
@@ -1366,7 +1367,10 @@ final class MediaManager: ObservableObject {
     }
 
     private func searchLRCLIBGeneral(query: String, completion: @escaping (Bool) -> Void) {
-        var components = URLComponents(string: "https://lrclib.net/api/search")!
+        guard var components = URLComponents(string: "https://lrclib.net/api/search") else {
+            completion(false)
+            return
+        }
         components.queryItems = [
             URLQueryItem(name: "q", value: query)
         ]

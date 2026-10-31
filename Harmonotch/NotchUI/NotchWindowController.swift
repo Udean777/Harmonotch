@@ -51,23 +51,19 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
         let maxX = minX + currentWidth
         let minY = topY - currentHeight
 
-        // Check if cursor point is within the notch radius / bounds
         let isInsideNotchRadius = (point.x >= minX && point.x <= maxX && point.y >= (minY - 2) && point.y <= topY)
 
         if isInsideNotchRadius {
-            // When hovering or clicking within the notch radius, intercept and consume the event
-            // so macOS does NOT slide down the application navigation menu bar.
+            // Intercept events to prevent menu bar slide-down.
             return super.hitTest(point) ?? self
         }
 
-        // When cursor is OUTSIDE the notch radius (left or right in the menu bar region):
-        // return nil so the mouse passes through to the app navigation menu bar or underlying window.
+        // Pass through to menu bar when outside notch.
         return nil
     }
 }
 
-/// Dedicated overlay Space so the notch stays anchored in place like the system
-/// menu bar when swiping between Desktop Spaces or Fullscreen windows.
+/// Overlay Space that anchors notch across Desktop Spaces and Fullscreen.
 private final class NotchOverlaySpace {
     private typealias ConnectionID = UInt32
     private typealias CreateFunction = @convention(c) (ConnectionID, Int32, CFDictionary?) -> UInt64
@@ -180,7 +176,7 @@ final class NotchWindowController: ObservableObject {
 
     @Published var isNotchHidden: Bool {
         didSet {
-            UserDefaults.standard.set(isNotchHidden, forKey: "Harmonotch_IsNotchHidden")
+            UserDefaults.standard.set(isNotchHidden, forKey: UserDefaultsKeys.isNotchHidden)
         }
     }
 
@@ -189,12 +185,12 @@ final class NotchWindowController: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var outsideClickMonitor: Any?
 
-    // Fixed canvas size; a resizing canvas triggers an Auto Layout constraint loop
+    // Fixed size prevents Auto Layout constraint loop.
     static let canvasWidth: CGFloat = 660
     static let canvasHeight: CGFloat = 620
 
     init() {
-        self.isNotchHidden = UserDefaults.standard.bool(forKey: "Harmonotch_IsNotchHidden")
+        self.isNotchHidden = UserDefaults.standard.bool(forKey: UserDefaultsKeys.isNotchHidden)
     }
 
     func setupAndShowWindow() {
@@ -272,7 +268,7 @@ final class NotchWindowController: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Collapse the expanded drawer when clicking outside the notch area, while keeping the notch pill in place.
+        // Collapse drawer on outside click.
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             guard let self = self, let panel = self.panel, NotchViewModel.shared.isExpanded else { return }
             let mouseLocation = NSEvent.mouseLocation

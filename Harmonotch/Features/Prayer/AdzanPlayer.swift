@@ -9,7 +9,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var playingPrayerName: String = ""
     @Published var isMuted: Bool {
         didSet {
-            UserDefaults.standard.set(isMuted, forKey: "Harmonotch_AdzanMuted")
+            UserDefaults.standard.set(isMuted, forKey: UserDefaultsKeys.adzanMuted)
             if isMuted && isPlaying {
                 stop()
             }
@@ -18,18 +18,18 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var volume: Float {
         didSet {
             audioPlayer?.volume = volume
-            UserDefaults.standard.set(volume, forKey: "Harmonotch_AdzanVolume")
+            UserDefaults.standard.set(volume, forKey: UserDefaultsKeys.adzanVolume)
         }
     }
 
     private var audioPlayer: AVAudioPlayer?
 
     override init() {
-        self.isMuted = UserDefaults.standard.bool(forKey: "Harmonotch_AdzanMuted")
+        self.isMuted = UserDefaults.standard.bool(forKey: UserDefaultsKeys.adzanMuted)
         // float(forKey:) cannot tell "unset" from a saved 0, so check the key explicitly.
-        self.volume = UserDefaults.standard.object(forKey: "Harmonotch_AdzanVolume") == nil
+        self.volume = UserDefaults.standard.object(forKey: UserDefaultsKeys.adzanVolume) == nil
             ? 0.85
-            : UserDefaults.standard.float(forKey: "Harmonotch_AdzanVolume")
+            : UserDefaults.standard.float(forKey: UserDefaultsKeys.adzanVolume)
         super.init()
     }
 
@@ -43,7 +43,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         guard let url = Bundle.main.url(forResource: resourceName, withExtension: "m4a")
             ?? Bundle.main.url(forResource: "adzan", withExtension: "m4a")
             ?? Bundle.main.url(forResource: "adzan", withExtension: "mp3") else {
-            print("[AdzanPlayer] Adzan audio file not found in bundle.")
+            NSLog("[Harmonotch:Adzan] Adzan audio file not found in bundle.")
             return
         }
 
@@ -60,7 +60,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 self.playingPrayerName = prayerName
             }
         } catch {
-            print("[AdzanPlayer] Failed to play adzan audio: \(error.localizedDescription)")
+            NSLog("[Harmonotch:Adzan] Failed to play adzan audio: %@", error.localizedDescription)
         }
     }
 

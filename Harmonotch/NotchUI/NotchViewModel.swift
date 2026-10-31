@@ -19,7 +19,7 @@ final class NotchViewModel: ObservableObject {
     }
 
     init() {
-        // Switch to Audio mode whenever Adzan starts playing
+        // Switch to Media tab when Adzan starts playing
         AdzanPlayer.shared.$isPlaying
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isAdzanPlaying in
@@ -38,7 +38,7 @@ final class NotchViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Switch to Audio mode whenever Music / Video / YouTube starts playing
+        // Switch to Media tab when media starts playing
         Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$trackTitle)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isPlaying, trackTitle in

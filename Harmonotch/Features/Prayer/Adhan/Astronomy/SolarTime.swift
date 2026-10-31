@@ -86,7 +86,7 @@ struct SolarTime {
 
     // hours from transit
     func afternoon(shadowLength: Double) -> DateComponents? {
-        // TODO source shadow angle calculation
+        // Shadow angle calculation for Asr: arccot(shadowLength + tan(|latitude - declination|))
         let tangent = Angle(fabs(observer.latitude - solar.declination.degrees))
         let inverse = shadowLength + tan(tangent.radians)
         let angle = Angle(radians: atan(1.0 / inverse))

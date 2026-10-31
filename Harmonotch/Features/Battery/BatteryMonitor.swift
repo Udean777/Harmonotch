@@ -29,6 +29,9 @@ private enum TimeRemaining {
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
 
+    private static let healthCacheDuration: TimeInterval = 300
+    private static let fullChargeACThreshold = 95
+
     @Published var currentCapacity: Int = 100
     @Published var isCharging: Bool = false
     @Published var isPluggedIn: Bool = false
@@ -77,6 +80,7 @@ final class BatteryMonitor: ObservableObject {
                 }
             }
         } catch {
+            NSLog("[Harmonotch:Battery] Failed to query battery health: %@", error.localizedDescription)
             return nil
         }
         return nil
@@ -85,7 +89,7 @@ final class BatteryMonitor: ObservableObject {
     private func fetchOfficialHealthIfNeeded() -> Int? {
         if let cached = cachedOfficialHealth,
            let last = lastHealthQueryTime,
-           Date().timeIntervalSince(last) < 300 {
+           Date().timeIntervalSince(last) < Self.healthCacheDuration {
             return cached
         }
         if let official = queryOfficialBatteryHealth() {
@@ -147,7 +151,7 @@ final class BatteryMonitor: ObservableObject {
                             newTimeRemaining = .toEmpty(hours: timeToEmpty / 60, mins: timeToEmpty % 60)
                         } else if let timeToFull = desc[kIOPSTimeToFullChargeKey] as? Int, timeToFull > 0, charging {
                             newTimeRemaining = .toFull(hours: timeToFull / 60, mins: timeToFull % 60)
-                        } else if plugged && !charging && cap >= 95 {
+                        } else if plugged && !charging && cap >= Self.fullChargeACThreshold {
                             newTimeRemaining = .fullChargeAC
                         } else {
                             newTimeRemaining = plugged ? .connectedCharger : .onBattery
