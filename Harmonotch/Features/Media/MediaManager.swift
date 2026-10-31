@@ -8,6 +8,11 @@ enum MediaSource: String {
     case appleMusic = "Apple Music"
     case safari = "YouTube"
     case web = "Web"
+    case iina = "IINA"
+    case vlc = "VLC"
+    case quicktime = "QuickTime"
+    case podcasts = "Podcasts"
+    case system = "Media"
     case none = "None"
 
     var iconName: String {
@@ -16,17 +21,26 @@ enum MediaSource: String {
         case .appleMusic: return "apple.logo"
         case .safari: return "play.rectangle.fill"
         case .web: return "globe"
+        case .iina: return "play.circle.fill"
+        case .vlc: return "cone.fill"
+        case .quicktime: return "play.tv.fill"
+        case .podcasts: return "antenna.radiowaves.left.and.right"
+        case .system: return "music.note"
         case .none: return "music.note"
         }
     }
 
     var brandColor: Color {
         switch self {
-        case .spotify: return .green
-        case .appleMusic: return .pink
-        case .safari: return .red
-        case .web: return .blue
-        case .none: return .gray
+        case .spotify: return Color(red: 0.20, green: 0.82, blue: 0.48)
+        case .appleMusic: return Color(red: 0.98, green: 0.35, blue: 0.55)
+        case .safari: return Color(red: 0.95, green: 0.25, blue: 0.25)
+        case .web: return Color(red: 0.25, green: 0.55, blue: 0.95)
+        case .iina, .vlc: return Color(red: 0.98, green: 0.55, blue: 0.15)
+        case .quicktime: return Color(red: 0.25, green: 0.75, blue: 0.95)
+        case .podcasts: return Color(red: 0.70, green: 0.40, blue: 0.95)
+        case .system: return Color.white
+        case .none: return Color.gray
         }
     }
 }
@@ -57,7 +71,7 @@ final class MediaManager: ObservableObject {
     @Published var isInstrumental: Bool = false
 
     var hasActiveTrack: Bool {
-        !trackTitle.isEmpty
+        !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var progress: Double {
@@ -73,7 +87,7 @@ final class MediaManager: ObservableObject {
     }
 
     private var playbackTimer: AnyCancellable?
-    private var webPollingTimer: AnyCancellable?
+    private var fastPollingTimer: AnyCancellable?
     private var lastFetchedTrackKey: String = ""
     private var cancellables = Set<AnyCancellable>()
     private var scriptCache: [String: NSAppleScript] = [:]
@@ -84,12 +98,300 @@ final class MediaManager: ObservableObject {
     private let artworkCache = NSCache<NSString, NSImage>()
     private var lyricsCache: [String: (lyrics: [LyricLine], isInstrumental: Bool, duration: TimeInterval)] = [:]
 
+    // Vorssaint NowPlaying adapter background watch process
+    private var nowPlayingProcess: Process?
+    private var nowPlayingBuffer = Data()
+    private var nowPlayingStdin: Pipe?
+    private var nowPlayingPID: Int32 = 0
+    private var nowPlayingRevision: String?
+    private var nowPlayingCanSendDirectly: Bool = false
+    private let snapshotQueue = DispatchQueue(label: "harmonotch.nowplaying.snapshot", qos: .userInitiated)
+    private var snapshotRefreshWork: DispatchWorkItem?
+    private var lastCommandAt = Date.distantPast
+    private var expectedPlayingState: Bool = false
+
     private init() {
         appleScriptQueue.setSpecific(key: appleScriptQueueKey, value: ())
         setupDistributedNotificationObservers()
-        setupWebPollingTimer()
-        pollCurrentMediaState()
+        startNowPlayingWatchProcess()
+        setupFastPollingTimer()
+        fetchNowPlayingSnapshot()
     }
+
+    deinit {
+        nowPlayingProcess?.terminate()
+        nowPlayingProcess = nil
+    }
+
+    // MARK: - Vorssaint NowPlaying Integration
+
+    private func resolveNowPlayingAdapterPaths() -> (script: String, library: String)? {
+        let fileManager = FileManager.default
+
+        // 1. Installed Vorssaint.app (standard install location on user machine)
+        let vorssaintScript = "/Applications/Vorssaint.app/Contents/Resources/now-playing.pl"
+        let vorssaintDylib = "/Applications/Vorssaint.app/Contents/Frameworks/libVorssaintNowPlaying.dylib"
+        if fileManager.fileExists(atPath: vorssaintScript) && fileManager.fileExists(atPath: vorssaintDylib) {
+            return (vorssaintScript, vorssaintDylib)
+        }
+
+        // 2. App Bundle resources fallback
+        if let resPath = Bundle.main.resourcePath {
+            let script = (resPath as NSString).appendingPathComponent("now-playing.pl")
+            let dylib = (resPath as NSString).appendingPathComponent("libVorssaintNowPlaying.dylib")
+            if fileManager.fileExists(atPath: script) && fileManager.fileExists(atPath: dylib) {
+                return (script, dylib)
+            }
+        }
+
+        return nil
+    }
+
+    private func startNowPlayingWatchProcess() {
+        guard let paths = resolveNowPlayingAdapterPaths() else {
+            NSLog("[Harmonotch:Media] NowPlaying adapter not present on disk.")
+            return
+        }
+
+        nowPlayingProcess?.terminate()
+        nowPlayingProcess = nil
+
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        // Use `watch_all` so non-music players (Safari, WebKit, Chrome, YouTube, QuickTime, etc.)
+        // are included and emit full metadata + playback state snapshots on every change.
+        proc.arguments = [paths.script, paths.library, "watch_all"]
+
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        // The adapter exits as soon as its stdin closes, so keep a pipe open.
+        let stdinPipe = Pipe()
+        proc.standardInput = stdinPipe
+        nowPlayingStdin = stdinPipe
+
+        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            self?.snapshotQueue.async {
+                self?.handleNowPlayingChunk(chunk)
+            }
+        }
+
+        proc.terminationHandler = { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self?.startNowPlayingWatchProcess()
+            }
+        }
+
+        do {
+            try proc.run()
+            self.nowPlayingProcess = proc
+            NSLog("[Harmonotch:Media] Vorssaint NowPlaying watch_all process started successfully.")
+        } catch {
+            NSLog("[Harmonotch:Media] Failed to launch now-playing.pl watch_all: %@", error.localizedDescription)
+        }
+    }
+
+    @discardableResult
+    private func sendWatchCommand(_ command: String) -> Bool {
+        guard nowPlayingProcess?.isRunning == true,
+              nowPlayingCanSendDirectly,
+              nowPlayingPID > 0,
+              let rev = nowPlayingRevision,
+              let stdin = nowPlayingStdin else {
+            return false
+        }
+        let line = "play \(nowPlayingPID) \(rev) \(command)\n"
+        guard let data = line.data(using: .utf8) else { return false }
+        do {
+            try stdin.fileHandleForWriting.write(contentsOf: data)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func handleNowPlayingChunk(_ chunk: Data) {
+        nowPlayingBuffer.append(chunk)
+
+        let newline = UInt8(ascii: "\n")
+        while let index = nowPlayingBuffer.firstIndex(of: newline) {
+            let lineData = nowPlayingBuffer.subdata(in: 0..<index)
+            nowPlayingBuffer.removeSubrange(0...index)
+
+            guard !lineData.isEmpty,
+                  let dict = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] else {
+                continue
+            }
+
+            processNowPlayingPayload(dict)
+        }
+    }
+
+    private func scheduleSnapshotRefresh() {
+        snapshotRefreshWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.fetchNowPlayingSnapshot() }
+        snapshotRefreshWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
+    }
+
+    func fetchNowPlayingSnapshot(completion: (([String: Any]?) -> Void)? = nil) {
+        guard let paths = resolveNowPlayingAdapterPaths() else {
+            completion?(nil)
+            return
+        }
+
+        snapshotQueue.async { [weak self] in
+            let proc = Process()
+            proc.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+            proc.arguments = [paths.script, paths.library, "get"]
+            let pipe = Pipe()
+            proc.standardOutput = pipe
+            proc.standardError = FileHandle.nullDevice
+
+            do {
+                try proc.run()
+                DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+                    if proc.isRunning { proc.terminate() }
+                }
+                // IMPORTANT: Read pipe data BEFORE waitUntilExit() so large base64 artwork
+                // (>64 KB pipe buffer) never deadlocks the child process.
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                proc.waitUntilExit()
+
+                guard !data.isEmpty,
+                      let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion?(nil)
+                    return
+                }
+
+                self?.processNowPlayingPayload(dict)
+                completion?(dict)
+            } catch {
+                NSLog("[Harmonotch:Media] Failed to run now-playing.pl get: %@", error.localizedDescription)
+                completion?(nil)
+            }
+        }
+    }
+
+    private func processNowPlayingPayload(_ dict: [String: Any]) {
+        // Ignore command acknowledgements or adapter errors
+        if dict["sent"] != nil || dict["validationRequest"] != nil || dict["error"] != nil {
+            return
+        }
+
+        if let rawPID = dict["pid"] as? NSNumber {
+            nowPlayingPID = rawPID.int32Value
+        }
+        if let rev = dict["playbackRevision"] as? String {
+            nowPlayingRevision = rev
+        }
+        if let canSend = dict["canSendCommandsDirectly"] as? Bool {
+            nowPlayingCanSendDirectly = canSend
+        }
+
+        var title = (dict["kMRMediaRemoteNowPlayingInfoTitle"] as? String)
+            ?? (dict["title"] as? String) ?? ""
+        var artist = (dict["kMRMediaRemoteNowPlayingInfoArtist"] as? String)
+            ?? (dict["artist"] as? String) ?? ""
+        var album = (dict["kMRMediaRemoteNowPlayingInfoAlbum"] as? String)
+            ?? (dict["album"] as? String) ?? ""
+        var duration = (dict["kMRMediaRemoteNowPlayingInfoDuration"] as? Double)
+            ?? (dict["duration"] as? Double) ?? 0
+        var elapsed = (dict["kMRMediaRemoteNowPlayingInfoElapsedTime"] as? Double)
+            ?? (dict["elapsed"] as? Double)
+            ?? (dict["position"] as? Double) ?? 0
+        var bundleId = (dict["displayID"] as? String)
+            ?? (dict["bundleIdentifier"] as? String) ?? ""
+        let artworkBase64 = (dict["artworkBase64"] as? String)
+            ?? (dict["currentArtworkBase64"] as? String)
+            ?? (dict["artwork"] as? String)
+        let rate = (dict["kMRMediaRemoteNowPlayingInfoPlaybackRate"] as? Double)
+        let flag = (dict["isPlaying"] as? Bool)
+
+        var isPlaying: Bool
+        if let p = flag, let r = rate {
+            isPlaying = p && (r > 0)
+        } else if let r = rate {
+            isPlaying = r > 0
+        } else if let p = flag {
+            isPlaying = p
+        } else {
+            isPlaying = false
+        }
+
+        if title.isEmpty, let sources = dict["sources"] as? [[String: Any]] {
+            if let active = sources.first(where: { ($0["isPlaying"] as? Bool) == true && ($0["title"] != nil) })
+                ?? sources.first(where: { $0["title"] != nil }) {
+                title = (active["title"] as? String) ?? ""
+                artist = (active["artist"] as? String) ?? ""
+                album = (active["album"] as? String) ?? ""
+                duration = (active["duration"] as? Double) ?? duration
+                elapsed = (active["elapsed"] as? Double) ?? elapsed
+                bundleId = (active["bundleIdentifier"] as? String) ?? bundleId
+            }
+        }
+
+        var playingState = isPlaying
+        if Date().timeIntervalSince(lastCommandAt) < 0.45 {
+            playingState = expectedPlayingState
+        }
+
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if self.isPlaying {
+                    self.isPlaying = false
+                    self.updatePlaybackTimerState()
+                }
+                if let sources = dict["sources"] as? [[String: Any]], sources.isEmpty {
+                    self.clearSession()
+                }
+            }
+            return
+        }
+
+        let source = mapBundleIdentifierToSource(bundleId, title: title)
+
+        var directImage: NSImage? = nil
+        if let b64 = artworkBase64, let data = Data(base64Encoded: b64) {
+            directImage = NSImage(data: data)
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.updateTrack(
+                source: source,
+                title: title,
+                artist: artist,
+                album: album,
+                duration: duration,
+                position: elapsed,
+                isPlaying: playingState,
+                directArtwork: directImage
+            )
+        }
+    }
+
+    private func mapBundleIdentifierToSource(_ bundleId: String, title: String) -> MediaSource {
+        let lower = bundleId.lowercased()
+        if lower.contains("spotify") { return .spotify }
+        if lower.contains("music") || lower.contains("itunes") { return .appleMusic }
+        if lower.contains("iina") { return .iina }
+        if lower.contains("vlc") { return .vlc }
+        if lower.contains("quicktime") { return .quicktime }
+        if lower.contains("podcasts") { return .podcasts }
+        if lower.contains("safari") || lower.contains("webkit") || lower.contains("chrome") || lower.contains("browser") || lower.contains("brave") || lower.contains("edge") || lower.contains("opera") || lower.contains("vivaldi") {
+            if title.lowercased().contains("youtube") {
+                return .safari
+            }
+            return .web
+        }
+        return .system
+    }
+
+    // MARK: - Distributed Notifications
 
     private func setupDistributedNotificationObservers() {
         let center = DistributedNotificationCenter.default()
@@ -184,10 +486,12 @@ final class MediaManager: ObservableObject {
         duration: TimeInterval,
         position: TimeInterval,
         isPlaying: Bool,
-        artworkURL: URL? = nil
+        artworkURL: URL? = nil,
+        directArtwork: NSImage? = nil
     ) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            self.emptySnapshotCount = 0
 
             self.mediaSource = source
             self.isPlaying = isPlaying
@@ -203,13 +507,47 @@ final class MediaManager: ObservableObject {
             self.artistName = artist
             self.albumName = album
 
+            if let direct = directArtwork {
+                self.artworkImage = direct
+            }
             if trackChanged && !title.isEmpty {
-                self.artworkImage = nil
-                self.fetchArtworkAsync(source: source, directURL: artworkURL)
+                if directArtwork == nil {
+                    self.fetchArtworkAsync(source: source, directURL: artworkURL)
+                }
                 self.fetchLyrics(track: title, artist: artist, album: album, duration: duration)
             }
 
             self.updateCurrentLyric()
+        }
+    }
+
+    /// Counts consecutive polls that found no media session anywhere.
+    /// A paused session is kept; it is dropped only once every source stays empty.
+    private var emptySnapshotCount = 0
+
+    private func clearSession() {
+        isPlaying = false
+        trackTitle = ""
+        artistName = ""
+        albumName = ""
+        artworkImage = nil
+        lastDetectedRawWebTitle = ""
+        playbackPosition = 0
+        duration = 0
+        expectedPlayingState = false
+        nowPlayingPID = 0
+        nowPlayingRevision = nil
+        nowPlayingCanSendDirectly = false
+        updatePlaybackTimerState()
+        updateCurrentLyric()
+    }
+
+    private func registerEmptyPoll() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.emptySnapshotCount += 1
+            guard self.emptySnapshotCount >= 3, self.hasActiveTrack else { return }
+            self.clearSession()
         }
     }
 
@@ -233,15 +571,18 @@ final class MediaManager: ObservableObject {
         }
     }
 
-    private func setupWebPollingTimer() {
-        webPollingTimer = Timer.publish(every: 6.0, on: .main, in: .common)
+    // Fast polling: 2.0s interval for fallback when watch_all is not active
+    private func setupFastPollingTimer() {
+        fastPollingTimer = Timer.publish(every: 2.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                if (self.mediaSource == .spotify || self.mediaSource == .appleMusic) && self.isPlaying {
+                // When watch_all is actively streaming real-time MediaRemote notifications,
+                // do not run AppleScript/browser URL polling that could clobber pause state.
+                if self.nowPlayingProcess?.isRunning == true {
                     return
                 }
-                self.pollWebMediaState()
+                self.pollCurrentMediaState()
             }
     }
 
@@ -268,97 +609,160 @@ final class MediaManager: ObservableObject {
     }
 
     func pollCurrentMediaState() {
-        appleScriptQueue.async { [weak self] in
-            let spotifyScript = """
-            if application id "com.spotify.client" is running then
-                tell application id "com.spotify.client"
-                    set playerState to player state as string
-                    set trackName to name of current track
-                    set artistName to artist of current track
-                    set albumName to album of current track
-                    set trackDuration to (duration of current track) / 1000
-                    set playerPos to player position
-                    return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
-                end tell
-            else
-                return ""
-            end if
-            """
+        // If the Vorssaint NowPlaying adapter is available on this system, it is the single
+        // authoritative source of truth for all system players (Safari, Chrome, YouTube, Spotify, Music).
+        if resolveNowPlayingAdapterPaths() != nil {
+            if nowPlayingProcess?.isRunning != true {
+                fetchNowPlayingSnapshot()
+            }
+            return
+        }
 
-            if let result = self?.executeAppleScript(spotifyScript), !result.isEmpty {
-                let parts = result.components(separatedBy: "|||")
-                if parts.count >= 6 {
-                    let isPlaying = parts[0].lowercased() == "playing"
-                    let title = parts[1]
-                    let artist = parts[2]
-                    let album = parts[3]
-                    let duration = self?.extractDouble(from: parts[4]) ?? 0
-                    let pos = self?.extractDouble(from: parts[5]) ?? 0
-                    if !title.isEmpty {
-                        self?.updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
-                        return
-                    }
-                }
+        // Query NowPlaying platform snapshot first (catches YouTube WebKit, Chrome, Spotify, etc.)
+        fetchNowPlayingSnapshot { [weak self] snapshot in
+            guard let self = self else { return }
+            // If now-playing provides active session information, it is the ground truth
+            if snapshot != nil && self.hasActiveTrack {
+                return
             }
 
-            let musicScript = """
-            if application id "com.apple.Music" is running then
-                tell application id "com.apple.Music"
-                    set playerState to player state as string
-                    set trackName to name of current track
-                    set artistName to artist of current track
-                    set albumName to album of current track
-                    set trackDuration to duration of current track
-                    set playerPos to player position
-                    return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
-                end tell
-            else
-                return ""
-            end if
-            """
+            self.appleScriptQueue.async { [weak self] in
+                guard let self = self else { return }
 
-            if let result = self?.executeAppleScript(musicScript), !result.isEmpty {
-                let parts = result.components(separatedBy: "|||")
-                if parts.count >= 6 {
-                    let isPlaying = parts[0].lowercased() == "playing"
-                    let title = parts[1]
-                    let artist = parts[2]
-                    let album = parts[3]
-                    let duration = self?.extractDouble(from: parts[4]) ?? 0
-                    let pos = self?.extractDouble(from: parts[5]) ?? 0
-                    if !title.isEmpty {
-                        self?.updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
-                        return
+                // 1. Spotify
+                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").isEmpty {
+                    let spotifyScript = """
+                    if application id "com.spotify.client" is running then
+                        tell application id "com.spotify.client"
+                            set playerState to player state as string
+                            set trackName to name of current track
+                            set artistName to artist of current track
+                            set albumName to album of current track
+                            set trackDuration to (duration of current track) / 1000
+                            set playerPos to player position
+                            return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
+                        end tell
+                    else
+                        return ""
+                    end if
+                    """
+
+                    if let result = self.executeAppleScript(spotifyScript), !result.isEmpty {
+                        let parts = result.components(separatedBy: "|||")
+                        if parts.count >= 6 {
+                            let isPlaying = parts[0].lowercased() == "playing"
+                            let title = parts[1]
+                            let artist = parts[2]
+                            let album = parts[3]
+                            let duration = self.extractDouble(from: parts[4]) ?? 0
+                            let pos = self.extractDouble(from: parts[5]) ?? 0
+                            if !title.isEmpty {
+                                self.updateTrack(source: .spotify, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+                                return
+                            }
+                        }
                     }
                 }
-            }
 
-            self?.pollWebMediaState()
+                // 2. Apple Music
+                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music").isEmpty {
+                    let musicScript = """
+                    if application id "com.apple.Music" is running then
+                        tell application id "com.apple.Music"
+                            set playerState to player state as string
+                            set trackName to name of current track
+                            set artistName to artist of current track
+                            set albumName to album of current track
+                            set trackDuration to duration of current track
+                            set playerPos to player position
+                            return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
+                        end tell
+                    else
+                        return ""
+                    end if
+                    """
+
+                    if let result = self.executeAppleScript(musicScript), !result.isEmpty {
+                        let parts = result.components(separatedBy: "|||")
+                        if parts.count >= 6 {
+                            let isPlaying = parts[0].lowercased() == "playing"
+                            let title = parts[1]
+                            let artist = parts[2]
+                            let album = parts[3]
+                            let duration = self.extractDouble(from: parts[4]) ?? 0
+                            let pos = self.extractDouble(from: parts[5]) ?? 0
+                            if !title.isEmpty {
+                                self.updateTrack(source: .appleMusic, title: title, artist: artist, album: album, duration: duration, position: pos, isPlaying: isPlaying)
+                                return
+                            }
+                        }
+                    }
+                }
+
+                // 3. QuickTime Player
+                if !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.QuickTimePlayerX").isEmpty {
+                    let qtScript = """
+                    tell application "QuickTime Player"
+                        try
+                            if exists (document 1) then
+                                if playing of document 1 then
+                                    return (name of document 1) & "|||" & (current time of document 1 as string) & "|||" & (duration of document 1 as string)
+                                end if
+                            end if
+                        end try
+                    end tell
+                    return ""
+                    """
+                    if let res = self.executeAppleScript(qtScript), !res.isEmpty {
+                        let parts = res.components(separatedBy: "|||")
+                        if parts.count >= 3 {
+                            let name = parts[0]
+                            let pos = self.extractDouble(from: parts[1]) ?? 0
+                            let dur = self.extractDouble(from: parts[2]) ?? 0
+                            self.updateTrack(source: .quicktime, title: name, artist: "QuickTime", album: "", duration: dur, position: pos, isPlaying: true)
+                            return
+                        }
+                    }
+                }
+
+                // 4. Web Browsers fallback (only when NowPlaying adapter is unavailable)
+                self.pollWebMediaState()
+            }
         }
     }
 
     func pollWebMediaState() {
+        if resolveNowPlayingAdapterPaths() != nil {
+            return
+        }
         if (mediaSource == .spotify || mediaSource == .appleMusic) && isPlaying {
             return
         }
 
         let isSafariRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").isEmpty
         let isChromeRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.google.Chrome").isEmpty
+        let isArcRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "company.thebrowser.Browser").isEmpty
+        let isBraveRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.brave.Browser").isEmpty
+        let isEdgeRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.microsoft.edgemac").isEmpty
+        let isOperaRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.operasoftware.Opera").isEmpty || !NSRunningApplication.runningApplications(withBundleIdentifier: "com.operasoftware.OperaGX").isEmpty
 
-        guard isSafariRunning || isChromeRunning else {
+        guard isSafariRunning || isChromeRunning || isArcRunning || isBraveRunning || isEdgeRunning || isOperaRunning else {
             if mediaSource == .safari || mediaSource == .web {
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
                     self.isPlaying = false
                     self.lastDetectedRawWebTitle = ""
                     self.updatePlaybackTimerState()
                 }
             }
+            registerEmptyPoll()
             return
         }
 
         appleScriptQueue.async { [weak self] in
             guard let self = self else { return }
 
+            // Check Safari
             if isSafariRunning {
                 let safariScript = """
                 set out to ""
@@ -367,7 +771,7 @@ final class MediaManager: ObservableObject {
                         repeat with w in windows
                             repeat with t in tabs of w
                                 set u to URL of t
-                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
                                     set n to name of t
                                     set out to n & "|||" & u & "|||Safari"
                                     exit repeat
@@ -388,17 +792,26 @@ final class MediaManager: ObservableObject {
                 }
             }
 
-            if isChromeRunning {
-                let chromeScript = """
+            // Check Chromium browsers (Chrome, Arc, Brave, Edge, Opera)
+            let chromiumApps = [
+                ("Google Chrome", isChromeRunning),
+                ("Arc", isArcRunning),
+                ("Brave Browser", isBraveRunning),
+                ("Microsoft Edge", isEdgeRunning),
+                ("Opera", isOperaRunning)
+            ]
+
+            for (appName, isRunning) in chromiumApps where isRunning {
+                let script = """
                 set out to ""
-                tell application "Google Chrome"
+                tell application "\(appName)"
                     try
                         repeat with w in windows
                             repeat with t in tabs of w
                                 set u to URL of t
-                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" then
+                                if u contains "youtube.com" or u contains "youtu.be" or u contains "spotify.com" or u contains "soundcloud.com" or u contains "twitch.tv" or u contains "netflix.com" then
                                     set n to title of t
-                                    set out to n & "|||" & u & "|||Chrome"
+                                    set out to n & "|||" & u & "|||\(appName)"
                                     exit repeat
                                 end if
                             end repeat
@@ -411,19 +824,21 @@ final class MediaManager: ObservableObject {
                 return out
                 """
 
-                if let res = self.executeAppleScript(chromeScript), !res.isEmpty {
+                if let res = self.executeAppleScript(script), !res.isEmpty {
                     self.processWebMediaResult(res)
                     return
                 }
             }
 
             if self.mediaSource == .safari || self.mediaSource == .web {
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
                     self.isPlaying = false
                     self.lastDetectedRawWebTitle = ""
                     self.updatePlaybackTimerState()
                 }
             }
+            self.registerEmptyPoll()
         }
     }
 
@@ -440,8 +855,7 @@ final class MediaManager: ObservableObject {
             return
         }
 
-        // Same raw title while the track is already active: do not re-trigger.
-        if (self.mediaSource == .safari || self.mediaSource == .web) && self.lastDetectedRawWebTitle == rawTitle && self.hasActiveTrack {
+        if self.lastDetectedRawWebTitle == rawTitle && self.hasActiveTrack {
             return
         }
         self.lastDetectedRawWebTitle = rawTitle
@@ -524,6 +938,7 @@ final class MediaManager: ObservableObject {
         var clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return nil }
 
+        // Strip notification badge e.g. (1), (123)
         clean = clean.replacingOccurrences(of: #"^\(\d+\+?\)\s*"#, with: "", options: .regularExpression)
 
         var videoId: String? = nil
@@ -621,70 +1036,113 @@ final class MediaManager: ObservableObject {
     }
 
     func playPause() {
-        if mediaSource == .safari || mediaSource == .web {
-            toggleWebPlayback()
-        } else {
-            runAppleScriptAsync("tell application \(currentAppTarget) to playpause")
-            isPlaying.toggle()
-            updatePlaybackTimerState()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-                self?.pollCurrentMediaState()
+        let wasPlaying = isPlaying
+        let targetPlaying = !wasPlaying
+        expectedPlayingState = targetPlaying
+        lastCommandAt = Date()
+
+        // 1. Instant optimistic update for 0ms visual feedback
+        isPlaying = targetPlaying
+        updatePlaybackTimerState()
+
+        // 2. Primary: Vorssaint watch_all stdin command or direct MediaRemote command
+        var commandSent = sendWatchCommand("toggle")
+        if !commandSent {
+            commandSent = MediaRemoteController.togglePlayPause(currentlyPlaying: wasPlaying)
+        }
+
+        // 3. Fallback ONLY if both watch_all stdin and MediaRemote framework failed
+        if !commandSent {
+            if mediaSource == .spotify {
+                runAppleScriptAsync("tell application id \"com.spotify.client\" to playpause")
+            } else if mediaSource == .appleMusic {
+                runAppleScriptAsync("tell application id \"com.apple.Music\" to playpause")
+            } else if mediaSource == .quicktime {
+                runAppleScriptAsync("tell application \"QuickTime Player\" to playpause document 1")
+            } else if mediaSource == .safari || mediaSource == .web {
+                let js = wasPlaying
+                    ? "let v = document.querySelector('video') || document.querySelector('audio'); if (v) v.pause();"
+                    : "let v = document.querySelector('video') || document.querySelector('audio'); if (v) v.play();"
+                runWebJavaScriptAsync(js)
+            }
+        }
+
+        // 4. Refresh snapshot if watch_all is not actively streaming
+        if nowPlayingProcess?.isRunning != true {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.fetchNowPlayingSnapshot()
             }
         }
     }
 
     func nextTrack() {
-        if mediaSource == .safari || mediaSource == .web {
-            sendSystemMediaKey(key: 17) // NX_KEYTYPE_NEXT
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.pollWebMediaState()
+        lastCommandAt = Date()
+        expectedPlayingState = isPlaying
+
+        if !sendWatchCommand("next") {
+            if !MediaRemoteController.next() {
+                if mediaSource == .spotify {
+                    runAppleScriptAsync("tell application id \"com.spotify.client\" to next track")
+                } else if mediaSource == .appleMusic {
+                    runAppleScriptAsync("tell application id \"com.apple.Music\" to next track")
+                } else if mediaSource == .safari || mediaSource == .web {
+                    sendSystemMediaKey(key: 17) // NX_KEYTYPE_NEXT
+                }
             }
-        } else {
-            runAppleScriptAsync("tell application \(currentAppTarget) to next track")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.pollCurrentMediaState()
+        }
+
+        if nowPlayingProcess?.isRunning != true {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.fetchNowPlayingSnapshot()
             }
         }
     }
 
     func previousTrack() {
-        if mediaSource == .safari || mediaSource == .web {
-            sendSystemMediaKey(key: 18) // NX_KEYTYPE_PREVIOUS
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.pollWebMediaState()
+        lastCommandAt = Date()
+        expectedPlayingState = isPlaying
+
+        if !sendWatchCommand("previous") {
+            if !MediaRemoteController.previous() {
+                if mediaSource == .spotify {
+                    runAppleScriptAsync("tell application id \"com.spotify.client\" to previous track")
+                } else if mediaSource == .appleMusic {
+                    runAppleScriptAsync("tell application id \"com.apple.Music\" to previous track")
+                } else if mediaSource == .safari || mediaSource == .web {
+                    sendSystemMediaKey(key: 18) // NX_KEYTYPE_PREVIOUS
+                }
             }
-        } else {
-            runAppleScriptAsync("tell application \(currentAppTarget) to previous track")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.pollCurrentMediaState()
+        }
+
+        if nowPlayingProcess?.isRunning != true {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.fetchNowPlayingSnapshot()
             }
         }
     }
 
     func seek(to position: TimeInterval) {
         playbackPosition = position
-        if mediaSource == .safari || mediaSource == .web {
-            runWebJavaScriptAsync("let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.currentTime = \(position); }")
-        } else {
-            runAppleScriptAsync("tell application \(currentAppTarget) to set player position to \(Int(position))")
-        }
-    }
-
-    private func toggleWebPlayback() {
-        isPlaying.toggle()
-        updatePlaybackTimerState()
-        let js = "let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.paused ? v.play() : v.pause(); }"
-        appleScriptQueue.async { [weak self] in
-            guard let self else { return }
-            if !self.runWebJavaScript(js) {
-                self.sendSystemMediaKey(key: 16) // NX_KEYTYPE_PLAY
+        if !sendWatchCommand("seek \(position)") {
+            if !MediaRemoteController.seek(to: position) {
+                if mediaSource == .spotify {
+                    runAppleScriptAsync("tell application id \"com.spotify.client\" to set player position to \(Int(position))")
+                } else if mediaSource == .appleMusic {
+                    runAppleScriptAsync("tell application id \"com.apple.Music\" to set player position to \(Int(position))")
+                } else if mediaSource == .safari || mediaSource == .web {
+                    runWebJavaScriptAsync("let v = document.querySelector('video') || document.querySelector('audio'); if (v) { v.currentTime = \(position); }")
+                }
             }
         }
     }
 
+    private func toggleWebPlayback() {
+        playPause()
+    }
+
     private func runWebJavaScriptAsync(_ js: String) {
         appleScriptQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self = self else { return }
             _ = self.runWebJavaScript(js)
         }
     }
@@ -791,7 +1249,7 @@ final class MediaManager: ObservableObject {
             }
         } else if source == .appleMusic {
             appleScriptQueue.async { [weak self] in
-                guard let self else { return }
+                guard let self = self else { return }
                 let script = """
                 tell application id "com.apple.Music"
                     try
@@ -1021,7 +1479,6 @@ final class MediaManager: ObservableObject {
             }
         }
     }
-
 
     private func cachedScript(_ scriptText: String) -> NSAppleScript? {
         if let cached = scriptCache[scriptText] { return cached }

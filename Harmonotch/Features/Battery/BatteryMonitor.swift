@@ -43,6 +43,8 @@ final class BatteryMonitor: ObservableObject {
 
     private var refreshTimer: AnyCancellable?
     private var languageCancellable: AnyCancellable?
+    private var lastHealthQueryTime: Date?
+    private var cachedOfficialHealth: Int?
 
     init() {
         refreshBatteryInfo()
@@ -53,6 +55,45 @@ final class BatteryMonitor: ObservableObject {
             .sink { [weak self] _ in
                 self?.refreshBatteryInfo()
             }
+    }
+
+    private func queryOfficialBatteryHealth() -> Int? {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/system_profiler")
+        proc.arguments = ["SPPowerDataType"]
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let str = String(data: data, encoding: .utf8) {
+                let pattern = "Maximum Capacity:\\s*(\\d+)%"
+                if let regex = try? NSRegularExpression(pattern: pattern),
+                   let match = regex.firstMatch(in: str, range: NSRange(str.startIndex..., in: str)),
+                   let range = Range(match.range(at: 1), in: str),
+                   let val = Int(str[range]) {
+                    return val
+                }
+            }
+        } catch {
+            return nil
+        }
+        return nil
+    }
+
+    private func fetchOfficialHealthIfNeeded() -> Int? {
+        if let cached = cachedOfficialHealth,
+           let last = lastHealthQueryTime,
+           Date().timeIntervalSince(last) < 300 {
+            return cached
+        }
+        if let official = queryOfficialBatteryHealth() {
+            cachedOfficialHealth = official
+            lastHealthQueryTime = Date()
+            return official
+        }
+        return cachedOfficialHealth
     }
 
     func startPeriodicRefresh() {
@@ -138,6 +179,10 @@ final class BatteryMonitor: ObservableObject {
                             let calculatedHealth = Int(round((Double(nominal) / Double(design)) * 100.0))
                             newHealthPercent = min(100, max(0, calculatedHealth))
                         }
+                    }
+
+                    if let official = self.fetchOfficialHealthIfNeeded() {
+                        newHealthPercent = official
                     }
 
                     if let adapter = dict["AdapterDetails"] as? [String: Any], let watts = adapter["Watts"] as? Int {

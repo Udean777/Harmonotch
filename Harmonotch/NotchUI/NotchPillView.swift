@@ -12,187 +12,275 @@ struct NotchPillView: View {
         notchVM.geometry
     }
 
-    private var isShowingLyrics: Bool {
-        notchVM.selectedTab == .media
-            && mediaManager.hasActiveTrack
-            && !mediaManager.currentLyricText.isEmpty
+    private var height: CGFloat {
+        geometry.collapsedHeight
     }
 
-    private var contentHeight: CGFloat {
-        isShowingLyrics ? NotchLayout.collapsedLyricHeight : NotchLayout.collapsedPillHeight
+    private var wingWidth: CGFloat {
+        NotchLayout.collapsedWingWidth + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
+    }
+
+    private var noNotchWidth: CGFloat {
+        NotchLayout.noNotchPillWidth + 2 * (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
+    }
+
+    private var outerInset: CGFloat {
+        NotchLayout.wingOuterInset(height: height)
+    }
+
+    private var innerInset: CGFloat {
+        NotchLayout.wingInnerInset
+    }
+
+    private var isAudioActive: Bool {
+        adzanPlayer.isPlaying || (mediaManager.isPlaying && mediaManager.hasActiveTrack)
+    }
+
+    /// 0 = battery, 1 = media session, 2 = adzan. Drives swap transitions.
+    private var contentMode: Int {
+        adzanPlayer.isPlaying ? 2 : ((mediaManager.isPlaying && mediaManager.hasActiveTrack) ? 1 : 0)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             if geometry.hasHardwareNotch {
-                Color.clear
-                    .frame(width: geometry.physicalNotchWidth, height: geometry.physicalNotchHeight)
-            }
+                HStack(spacing: 0) {
+                    leftContent
+                        .padding(.leading, outerInset)
+                        .padding(.trailing, innerInset)
+                        .frame(width: wingWidth, height: height, alignment: .trailing)
+                        .clipped()
 
-            pillContent
-                .padding(.horizontal, 10)
-                .padding(.vertical, isShowingLyrics ? 6 : 0)
-                .frame(width: geometry.physicalNotchWidth, height: contentHeight)
-                .transition(.opacity)
+                    Color.clear
+                        .frame(width: geometry.physicalNotchWidth, height: height)
+
+                    rightContent
+                        .padding(.leading, innerInset)
+                        .padding(.trailing, outerInset)
+                        .frame(width: wingWidth, height: height, alignment: .leading)
+                        .clipped()
+                }
+            } else {
+                HStack(spacing: 8) {
+                    leftContent
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .clipped()
+
+                    rightContent
+                        .layoutPriority(1)
+                        .frame(alignment: .trailing)
+                }
+                .padding(.horizontal, outerInset)
+                .frame(width: noNotchWidth, height: height)
+                .clipped()
+            }
         }
-        .frame(width: geometry.physicalNotchWidth)
-        .animation(.spring(response: 0.32, dampingFraction: 0.8), value: contentHeight)
-        .animation(.easeInOut(duration: 0.2), value: notchVM.selectedTab)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            notchVM.toggleExpanded()
+        }
+        .onHover { notchVM.setHovered($0) }
+    }
+
+    private var leftContent: some View {
+        ZStack { leftContentBody.id(contentMode).transition(NotchMotion.swap) }
+            .animation(NotchMotion.content, value: contentMode)
+    }
+
+    private var rightContent: some View {
+        ZStack { rightContentBody.id(contentMode).transition(NotchMotion.swap) }
+            .animation(NotchMotion.content, value: contentMode)
     }
 
     @ViewBuilder
-    private var pillContent: some View {
+    private var leftContentBody: some View {
         if adzanPlayer.isPlaying {
-            adzanPill
-        } else if notchVM.selectedTab == .prayer {
-            prayerPill
-        } else if notchVM.selectedTab == .battery {
-            batteryPill
+            HStack(spacing: 5) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .symbolEffect(.variableColor.iterative.reversing)
+
+                Text("Adzan")
+                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
+        } else if mediaManager.isPlaying && mediaManager.hasActiveTrack {
+            mediaLeft
         } else {
-            mediaPill
+            batteryLeft
         }
     }
 
-    private var adzanPill: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "speaker.wave.2.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.green)
-                .symbolEffect(.variableColor.iterative.reversing)
+    @ViewBuilder
+    private var rightContentBody: some View {
+        if adzanPlayer.isPlaying {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 5, height: 5)
 
-            Text("Adzan \(L10n.Prayer.localizedPrayerName(adzanPlayer.playingPrayerName))")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.green)
-        }
-    }
-
-    private var prayerPill: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(Color.amberCustom)
-
-            if let current = prayerManager.currentPrayerItem {
-                Text(current.name)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.85))
+                Text(L10n.Prayer.localizedPrayerName(adzanPlayer.playingPrayerName))
+                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
             }
-
-            Text("•")
-                .font(.system(size: 7))
-                .foregroundColor(.white.opacity(0.3))
-
-            if let next = prayerManager.nextPrayerItem {
-                Text(next.name)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.9))
-
-                Text(next.timeString)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.green)
-            }
+        } else if mediaManager.isPlaying && mediaManager.hasActiveTrack {
+            mediaRight
+        } else {
+            batteryRight
         }
     }
 
-    private var batteryPill: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "macbook")
+    private var batteryLeft: some View {
+        HStack(spacing: 4) {
+            Image(systemName: batteryIconName)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(batteryMonitor.isPluggedIn ? .green : (batteryMonitor.currentCapacity <= 20 ? .orange : Color.amberCustom))
-
-            Text("\(batteryMonitor.currentCapacity)%")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
 
-            Text("•")
-                .font(.system(size: 7))
-                .foregroundColor(.white.opacity(0.3))
+            Text("\(batteryMonitor.currentCapacity)%")
+                .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundColor(.white)
+        }
+    }
 
-            if batteryMonitor.isCharging {
-                HStack(spacing: 2) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 8))
-                    Text(L10n.Battery.charging)
-                        .font(.system(size: 10, weight: .semibold))
-                }
-                .foregroundColor(.green)
-            } else if batteryMonitor.isPluggedIn {
-                Text(L10n.Battery.acAdapter)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.cyan)
-            } else {
-                Text("\(batteryMonitor.healthPercent)% \(L10n.Battery.healthSuffix)")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
-            }
-
-            Text("•")
-                .font(.system(size: 7))
-                .foregroundColor(.white.opacity(0.3))
-
-            HStack(spacing: 2.5) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 7.5, weight: .bold))
-                Text("\(batteryMonitor.cycleCount)")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-            }
-            .foregroundColor(Color.amberCustom)
+    private var batteryIconName: String {
+        let cap = batteryMonitor.currentCapacity
+        if batteryMonitor.isCharging {
+            if cap >= 90 { return "battery.100.bolt" }
+            if cap >= 60 { return "battery.75.bolt" }
+            if cap >= 35 { return "battery.50.bolt" }
+            return "battery.25.bolt"
+        } else {
+            if cap >= 90 { return "battery.100" }
+            if cap >= 60 { return "battery.75" }
+            if cap >= 35 { return "battery.50" }
+            if cap >= 10 { return "battery.25" }
+            return "battery.0"
         }
     }
 
     @ViewBuilder
-    private var mediaPill: some View {
-        if isShowingLyrics {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 4) {
-                    Image(systemName: mediaManager.isPlaying ? "waveform" : mediaManager.mediaSource.iconName)
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(mediaManager.isPlaying ? mediaManager.mediaSource.brandColor : .white.opacity(0.5))
-                        .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
+    private var batteryRight: some View {
+        if batteryMonitor.isCharging {
+            HStack(spacing: 3) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 8.5, weight: .bold))
+                Text(L10n.Battery.charging)
+                    .font(.system(size: 10, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .foregroundColor(.white)
+        } else if batteryMonitor.isPluggedIn {
+            HStack(spacing: 3) {
+                Image(systemName: "powerplug.fill")
+                    .font(.system(size: 8.5, weight: .semibold))
+                Text("AC")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+            }
+            .foregroundColor(.white)
+        } else {
+            HStack(spacing: 3) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 8.5, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.85))
+                Text("\(batteryMonitor.healthPercent)%")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(1)
+            }
+        }
+    }
 
-                    Text("\(mediaManager.trackTitle) • \(mediaManager.artistName)")
-                        .font(.system(size: 8.5, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.55))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
+    private var mediaLeft: some View {
+        HStack(spacing: 5) {
+            thumbnail
+        }
+        .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
+    }
 
-                Text(mediaManager.currentLyricText)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .lineLimit(3)
-                    .lineSpacing(1.5)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .id(mediaManager.currentLyricText)
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: 4)),
-                            removal: .opacity.combined(with: .offset(y: -4))
-                        )
+    @ViewBuilder
+    private var thumbnail: some View {
+        Group {
+            if let art = mediaManager.artworkImage {
+                Image(nsImage: art)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 19, height: 19)
+                    .clipShape(RoundedRectangle(cornerRadius: 4.5, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                            .stroke(Color.white.opacity(0.20), lineWidth: 0.6)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                    .fill(Color(white: 0.16))
+                    .frame(width: 19, height: 19)
+                    .overlay(
+                        Image(systemName: mediaManager.mediaSource.iconName)
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.85))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
                     )
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(.easeInOut(duration: 0.28), value: mediaManager.currentLyricText)
-        } else {
-            HStack(spacing: 5) {
-                Image(systemName: mediaManager.isPlaying ? "waveform" : mediaManager.mediaSource.iconName)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(mediaManager.isPlaying ? mediaManager.mediaSource.brandColor : .white.opacity(0.6))
-                    .symbolEffect(.variableColor.iterative.reversing, isActive: mediaManager.isPlaying)
+        }
+    }
 
-                if mediaManager.hasActiveTrack {
-                    Text("\(mediaManager.trackTitle) • \(mediaManager.artistName)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.white.opacity(0.9))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                } else {
-                    Text(L10n.Media.noTrackPlaying)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.white.opacity(0.5))
-                }
+    @ViewBuilder
+    private var mediaRight: some View {
+        ZStack {
+            if mediaManager.isPlaying {
+                EqualizerWaveformView()
+                    .transition(NotchMotion.swap)
+            } else {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .foregroundColor(.white.opacity(0.80))
+                    .transition(NotchMotion.swap)
             }
+        }
+        .animation(NotchMotion.content, value: mediaManager.isPlaying)
+    }
+}
+
+// MARK: - Equalizer Sound Bars View
+
+struct EqualizerWaveformView: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 2.2) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.white)
+                .frame(width: 2.2, height: isAnimating ? 11 : 4)
+                .animation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true), value: isAnimating)
+
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.white)
+                .frame(width: 2.2, height: isAnimating ? 5 : 12)
+                .animation(.easeInOut(duration: 0.35).repeatForever(autoreverses: true).delay(0.1), value: isAnimating)
+
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.white)
+                .frame(width: 2.2, height: isAnimating ? 12 : 5)
+                .animation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(0.2), value: isAnimating)
+
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.white)
+                .frame(width: 2.2, height: isAnimating ? 4 : 9)
+                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(0.15), value: isAnimating)
+        }
+        .frame(height: 14)
+        .onAppear {
+            isAnimating = true
         }
     }
 }

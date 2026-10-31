@@ -49,7 +49,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     @Published var nextPrayerItem: PrayerScheduleItem?
     @Published var currentPrayerItem: PrayerScheduleItem?
     @Published var hijriDateString: String = ""
-    @Published var gregorianDateString: String = ""
     @Published var activeAdzanAlertPrayer: String? = nil
     @Published var qiblaHeading: Double = 0.0
     @Published var qiblaString: String = ""
@@ -68,11 +67,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         f.timeZone = TimeZone.current
-        return f
-    }()
-    private let gregorianFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEEE, d MMMM yyyy"
         return f
     }()
     private let hijriFormatter: DateFormatter = {
@@ -148,11 +142,9 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
             timeZone = TimeZone(identifier: selectedCity.timeZoneIdentifier) ?? .current
         }
         timeFormatter.timeZone = timeZone
-        gregorianFormatter.timeZone = timeZone
         hijriFormatter.timeZone = timeZone
 
         self.currentLocationName = locationLabel
-        self.gregorianDateString = formatGregorianDate(today)
         self.hijriDateString = formatHijriDate(today)
 
         let coords = Coordinates(latitude: lat, longitude: lon)
@@ -330,11 +322,6 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     func dismissAdzanAlert() {
         AdzanPlayer.shared.stop()
         self.activeAdzanAlertPrayer = nil
-    }
-
-    private func formatGregorianDate(_ date: Date) -> String {
-        gregorianFormatter.locale = Locale(identifier: LanguageManager.shared.currentLanguage.localeIdentifier)
-        return gregorianFormatter.string(from: date)
     }
 
     private func formatHijriDate(_ date: Date) -> String {

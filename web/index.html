@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Harmonotch - Pusat Harmoni Notch macOS</title>
+    <title>Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook</title>
     <meta
       name="description"
-      content="Jadwal Sholat & Adzan akurat, Telemetri Baterai real-time, dan Kontrol Media dengan Lirik Sinkron di dalam notch MacBook Anda."
+      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
     />
     <meta name="author" content="Harmonotch" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -25,11 +25,11 @@
     <meta property="og:url" content="https://harmonotch-web.vercel.app/" />
     <meta
       property="og:title"
-      content="Harmonotch - Pusat Harmoni Notch macOS"
+      content="Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook"
     />
     <meta
       property="og:description"
-      content="Ubah notch MacBook Anda menjadi pusat waktu sholat, telemetri daya, dan kontrol pemutar musik dalam antarmuka Liquid Glass yang memesona."
+      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
     />
     <meta
       property="og:image"
@@ -44,11 +44,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Harmonotch - The Living Notch for macOS"
+      content="Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook"
     />
     <meta
       name="twitter:description"
-      content="Accurate Prayer Times & Adhan, Real-time Battery Telemetry, and Media Controls with Synced Lyrics inside your MacBook notch."
+      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
     />
     <meta
       name="twitter:image"
@@ -69,7 +69,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "Harmonotch",
-        "description": "MacBook Notch Companion featuring Prayer Times, Adhan Audio, Battery Telemetry, and Media Controls with Synced Lyrics in Liquid Glass UI.",
+        "description": "MacBook notch companion for prayer times, battery status, and media controls with synced lyrics.",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "macOS 14.0 or later",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -86,26 +86,26 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Apakah Harmonotch memerlukan koneksi internet untuk menghitung sholat?",
+            "name": "Apakah Harmonotch butuh internet untuk menghitung waktu sholat?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Tidak. Perhitungan waktu sholat dihitung secara offline secara matematis berdasarkan koordinat astronomi kota Anda."
+              "text": "Tidak. Waktu sholat dihitung di perangkat dari koordinat kota Anda. Internet hanya dipakai untuk lirik dan pemeriksaan pembaruan."
             }
           },
           {
             "@type": "Question",
-            "name": "Apakah Harmonotch kompatibel dengan Mac yang tidak memiliki notch?",
+            "name": "Apakah Harmonotch bisa dipakai di Mac tanpa notch?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Ya! Harmonotch mendeteksi layar dan beradaptasi sebagai floating pill bar di bagian atas layar serta melalui menu bar."
+              "text": "Ya. Di Mac tanpa notch, Harmonotch memakai floating pill di bagian atas layar dan ikon menu bar."
             }
           },
           {
             "@type": "Question",
-            "name": "Kenapa muncul peringatan 'Apple cannot verify' saat pertama kali dibuka?",
+            "name": "Kenapa macOS menampilkan peringatan 'Apple cannot verify'?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Harmonotch dirilis ad-hoc open-source. Di macOS 15 Sequoia atau lebih baru, buka System Settings → Privacy & Security lalu klik 'Open Anyway'. Di macOS 14 atau lebih lama, klik kanan aplikasi dan pilih 'Open'. Alternatifnya jalankan perintah xattr -cr /Applications/Harmonotch.app di Terminal."
+              "text": "Harmonotch adalah proyek open source yang tidak memakai sertifikat Apple Developer berbayar. Di macOS 15 atau lebih baru, buka System Settings → Privacy & Security, lalu klik 'Open Anyway'. Di macOS 14 atau lebih lama, klik kanan aplikasi dan pilih 'Open'. Alternatifnya jalankan perintah xattr -cr /Applications/Harmonotch.app di Terminal."
             }
           }
         ]
@@ -121,20 +121,20 @@
 
     <header class="nav" role="banner">
       <div class="container nav-inner">
-        <a href="/" class="brand" aria-label="Harmonotch Home">
+        <a href="/" class="brand" aria-label="Harmonotch">
           <img
             src="/assets/logo.png"
-            alt="Harmonotch Logo"
+            alt="Logo Harmonotch"
             class="brand-icon"
           />
           <span class="brand-name">Harmonotch</span>
         </a>
 
         <div class="nav-menu" id="navLinks">
-          <nav role="navigation" aria-label="Navigasi Utama">
+          <nav role="navigation" aria-label="Navigasi utama">
             <ul class="nav-links">
               <li>
-                <a href="#showcase" data-i18n="nav.showcase">Showcase Notch</a>
+                <a href="#showcase" data-i18n="nav.showcase">Notch</a>
               </li>
               <li><a href="#features" data-i18n="nav.features">Fitur</a></li>
               <li><a href="#install" data-i18n="nav.install">Instalasi</a></li>
@@ -143,7 +143,7 @@
           </nav>
 
           <div class="nav-actions">
-            <div class="lang-switch" role="group" aria-label="Pilihan Bahasa">
+            <div class="lang-switch" role="group" aria-label="Pilihan bahasa">
               <button
                 type="button"
                 data-lang="id"
@@ -210,15 +210,13 @@
           </div>
 
           <h1 class="hero-title" data-i18n="hero.title">
-            Ubah Notch MacBook Jadi <em>Pusat Harmoni</em> & Produktivitas
+            Jadwal sholat, baterai, dan kontrol musik di notch MacBook Anda
           </h1>
 
           <p class="hero-desc" data-i18n="hero.desc">
-            Aplikasi pendamping notch paling anggun di macOS. Menghadirkan
-            <strong>Jadwal Sholat & Adzan akurat</strong>,
-            <strong>Telemetri Baterai real-time</strong>, serta
-            <strong>Kontrol Media dengan lirik sinkron</strong> dalam balutan
-            antarmuka <em>Liquid Glass</em> yang memukau.
+            Harmonotch menaruh jadwal sholat, sisa baterai, dan kontrol musik
+            beserta liriknya di notch. Tersedia dua tema, <em>Liquid Glass</em>
+            dan <em>Zen Serenity</em>.
           </p>
 
           <div class="hero-actions">
@@ -238,16 +236,16 @@
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
               <span class="js-download-label" data-i18n="hero.downloadBtn"
-                >Unduh Installer (DMG)</span
+                >Unduh DMG</span
               >
             </a>
 
             <a
-              href="#showcase"
+              href="#features"
               class="btn btn-secondary"
               data-i18n="hero.viewFeatures"
             >
-              Jelajahi Fitur
+              Lihat Fitur
             </a>
           </div>
 
@@ -262,8 +260,7 @@
               "
             ></span>
             <span data-i18n="hero.metaReq"
-              >Kompatibel dengan macOS 14.0+ (Sonoma & Sequoia) · Apple Silicon
-              & Intel</span
+              >macOS 14 atau lebih baru · Apple Silicon & Intel</span
             >
           </div>
 
@@ -279,7 +276,7 @@
               >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span data-i18n="hero.tag1">100% Native Swift</span>
+              <span data-i18n="hero.tag1">Native Swift & SwiftUI</span>
             </div>
             <div class="hero-tag">
               <svg
@@ -292,7 +289,7 @@
               >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span data-i18n="hero.tag2">Privasi Penuh & Offline</span>
+              <span data-i18n="hero.tag2">Data tetap di perangkat</span>
             </div>
             <div class="hero-tag">
               <svg
@@ -305,7 +302,7 @@
               >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span data-i18n="hero.tag3">Hemat Daya & Ringan</span>
+              <span data-i18n="hero.tag3">Tanpa akun</span>
             </div>
           </div>
         </div>
@@ -315,11 +312,11 @@
         <div class="container">
           <div class="section-header">
             <h2 class="section-title" data-i18n="showcase.title">
-              Sentuh & Rasakan Pengalaman Notch yang Hidup
+              Lihat notch saat dipakai
             </h2>
             <p class="section-desc" data-i18n="showcase.desc">
-              Pilih drawer di bawah untuk melihat bagaimana Harmonotch melebur
-              secara mulus di area kamera MacBook Anda.
+              Pilih tab di bawah untuk melihat animasi notch dan tampilan menu
+              bar.
             </p>
           </div>
 
@@ -331,7 +328,7 @@
               aria-selected="true"
               data-i18n="tab.video"
             >
-              Animasi Live
+              Animasi Notch
             </button>
             <button
               class="showcase-tab"
@@ -340,7 +337,7 @@
               aria-selected="false"
               data-i18n="tab.menubar"
             >
-              Menu Bar Companion
+              Menu Bar
             </button>
           </div>
 
@@ -404,7 +401,7 @@
                       type="button"
                       class="video-center-play-btn"
                       id="videoCenterPlayBtn"
-                      aria-label="Putar Demo Video"
+                      aria-label="Putar atau jeda video"
                     >
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -416,7 +413,7 @@
                         type="button"
                         class="video-ctrl-btn"
                         id="videoPlayToggleBtn"
-                        aria-label="Putar / Jeda Video"
+                        aria-label="Putar atau jeda video"
                       >
                         <span class="video-ctrl-icon" id="videoPlayIcon">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -427,7 +424,7 @@
                         <span class="video-ctrl-label" id="videoPlayLabel">Jeda</span>
                       </button>
 
-                      <div class="video-progress-track" id="videoProgressTrack" role="slider" aria-label="Progress Video" tabindex="0">
+                      <div class="video-progress-track" id="videoProgressTrack" role="slider" aria-label="Posisi video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
                         <div class="video-progress-fill" id="videoProgressFill"></div>
                       </div>
 
@@ -454,7 +451,7 @@
                     <div class="menubar-shot-frame">
                       <img
                         src="/assets/showcase-menubar.png"
-                        alt="Harmonotch Menu Bar Companion"
+                        alt="Harmonotch di menu bar"
                         class="menubar-shot-img"
                         loading="lazy"
                       />
@@ -467,10 +464,11 @@
             <div class="showcase-info-container">
               <div class="showcase-info-pane active" data-info="video">
                 <h3 data-i18n="showcase.video.title">
-                  Animasi Pegas Organik & Responsif
+                  Animasi notch mengikuti kursor
                 </h3>
                 <p data-i18n="showcase.video.desc">
-                  Harmonotch melebur secara alami dengan bezel kamera MacBook Anda menggunakan kurva pegas (spring dynamics) asli Apple. Notch mengembang seketika saat kursor didekatkan, dan menutup kembali dengan halus tanpa mengganggu fokus kerja.
+                  Drawer mengembang dari bezel kamera saat kursor mendekat,
+                  lalu menutup 0,14 detik setelah kursor menjauh.
                 </p>
                 <div class="showcase-features-list">
                   <div class="showcase-feat">
@@ -485,7 +483,7 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.video.f1"
-                      >60 FPS Native SwiftUI Spring Animation</span
+                      >Dibuat dengan SwiftUI bawaan Apple</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -500,7 +498,7 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.video.f2"
-                      >Snappy 0.14 detik dismiss debounce</span
+                      >Menutup 0,14 detik setelah kursor menjauh</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -515,7 +513,8 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.video.f3"
-                      >Navigasi kapsul instan antar fitur</span
+                      >Pindah antara sholat, baterai, dan musik dengan satu
+                      klik</span
                     >
                   </div>
                 </div>
@@ -523,11 +522,10 @@
 
               <div class="showcase-info-pane" data-info="menubar">
                 <h3 data-i18n="showcase.menubar.title">
-                  Akses Instan dari Menu Bar
+                  Akses dari menu bar
                 </h3>
                 <p data-i18n="showcase.menubar.desc">
-                  Tidak punya layar notch? Tetap nikmati seluruh kemampuan
-                  Harmonotch melalui ikon menu bar yang praktis dan ringkas.
+                  Di Mac tanpa notch, ikon menu bar membuka kontrol yang sama.
                 </p>
                 <div class="showcase-features-list">
                   <div class="showcase-feat">
@@ -542,7 +540,7 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.menubar.f1"
-                      >Dropdown status sholat dan baterai cepat</span
+                      >Sholat berikutnya dan sisa baterai</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -557,7 +555,7 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.menubar.f2"
-                      >In-app update checker otomatis</span
+                      >Pemeriksaan pembaruan dari GitHub</span
                     >
                   </div>
                   <div class="showcase-feat">
@@ -572,7 +570,7 @@
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     <span data-i18n="showcase.menubar.f3"
-                      >Shortcut dan pengaturan fleksibel</span
+                      >Pintasan papan tombol dan pengaturan</span
                     >
                   </div>
                 </div>
@@ -586,12 +584,11 @@
         <div class="container">
           <div class="section-header">
             <h2 class="section-title" data-i18n="features.title">
-              Didesain Eksklusif untuk Pengguna macOS
+              Dibuat untuk macOS
             </h2>
             <p class="section-desc" data-i18n="features.desc">
-              Harmonotch dibangun dari nol menggunakan Swift dan SwiftUI murni
-              untuk menjamin performa secepat kilat dan efisiensi memori
-              maksimal.
+              Harmonotch ditulis dengan Swift, SwiftUI, dan AppKit, tanpa
+              framework web.
             </p>
           </div>
 
@@ -611,11 +608,11 @@
                 </svg>
               </div>
               <h3 class="feature-title" data-i18n="features.c1t">
-                Presisi Waktu Sholat
+                Perhitungan Waktu Sholat
               </h3>
               <p class="feature-desc" data-i18n="features.c1d">
-                Mendukung metode Kemenag RI, Muslim World League, ISNA, Umm
-                Al-Qura, Egyptian Authority, dan penyesuaian menit manual.
+                Mendukung Kemenag, Muslim World League, ISNA, Umm Al-Qura,
+                Egyptian General Authority, dan penyesuaian menit manual.
               </p>
             </div>
 
@@ -635,11 +632,11 @@
                 </svg>
               </div>
               <h3 class="feature-title" data-i18n="features.c2t">
-                Animasi Notch Organik
+                Animasi Notch
               </h3>
               <p class="feature-desc" data-i18n="features.c2d">
-                Drawer meluncur keluar dari bezel notch dengan kurva animasi
-                spring khas Apple yang halus dan tidak mengganggu alur kerja.
+                Drawer keluar dari bezel notch dengan animasi spring bawaan
+                Apple.
               </p>
             </div>
 
@@ -658,11 +655,11 @@
                 </svg>
               </div>
               <h3 class="feature-title" data-i18n="features.c3t">
-                Indikator Baterai Pintar
+                Status Baterai
               </h3>
               <p class="feature-desc" data-i18n="features.c3d">
-                Dapatkan info detail mengenai persentase baterai, sisa waktu
-                pemakaian, dan status fast-charging dalam satu lirik pandang.
+                Persentase, sisa waktu pemakaian, dan status pengisian dalam
+                satu tampilan.
               </p>
             </div>
 
@@ -688,11 +685,11 @@
                 </svg>
               </div>
               <h3 class="feature-title" data-i18n="features.c4t">
-                100% Mengutamakan Privasi
+                Data Tetap di Perangkat
               </h3>
               <p class="feature-desc" data-i18n="features.c4d">
-                Semua perhitungan waktu sholat dan telemetri perangkat diproses
-                sepenuhnya di dalam perangkat. Tidak ada data yang dikirim ke
+                Perhitungan waktu sholat dan pembacaan baterai berjalan di
+                perangkat. Tidak ada analitik dan tidak ada data yang dikirim ke
                 server.
               </p>
             </div>
@@ -716,9 +713,8 @@
                 Dukungan Mac Tanpa Notch
               </h3>
               <p class="feature-desc" data-i18n="features.c5d">
-                Memiliki MacBook Pro lama, MacBook Air M1, Mac mini, iMac, atau
-                Mac Studio? Harmonotch tetap berfungsi sempurna melalui floating
-                drawer & menu bar.
+                MacBook Air M1, Mac mini, iMac, dan Mac Studio memakai floating
+                pill di bagian atas layar atau ikon menu bar.
               </p>
             </div>
 
@@ -738,12 +734,11 @@
                 </svg>
               </div>
               <h3 class="feature-title" data-i18n="features.c6t">
-                Pembaruan Aplikasi Terintegrasi
+                Pemeriksaan Pembaruan
               </h3>
               <p class="feature-desc" data-i18n="features.c6d">
-                Harmonotch secara berkala memeriksa rilis terbaru langsung dari
-                repositori GitHub sehingga Anda selalu mendapatkan fitur dan
-                perbaikan terkini.
+                Harmonotch memeriksa rilis terbaru di GitHub dan menampilkan
+                tautan unduhan saat ada versi baru.
               </p>
             </div>
           </div>
@@ -758,40 +753,41 @@
                 Cara Pasang di Mac Anda
               </h2>
               <p class="section-desc" data-i18n="install.desc">
-                Hanya butuh waktu kurang dari satu menit untuk mulai menikmati
-                Harmonotch.
+                Sekitar satu menit.
               </p>
             </div>
 
             <div class="install-steps">
               <div class="step-card">
                 <h3 class="step-title" data-i18n="install.step1Title">
-                  1. Unduh File Installer
+                  1. Unduh DMG
                 </h3>
                 <p class="step-desc" data-i18n="install.step1Desc">
-                  Klik tombol 'Unduh Installer (DMG)' untuk mengunduh paket
-                  resmi terbaru dari GitHub Releases.
+                  Klik Unduh DMG untuk mengambil rilis terbaru dari GitHub
+                  Releases.
                 </p>
               </div>
 
               <div class="step-card">
                 <h3 class="step-title" data-i18n="install.step2Title">
-                  2. Drag ke Applications
+                  2. Seret ke Applications
                 </h3>
                 <p class="step-desc" data-i18n="install.step2Desc">
-                  Buka file DMG yang diunduh, lalu seret ikon Harmonotch ke
-                  folder Applications Mac Anda.
+                  Buka file DMG, lalu seret ikon Harmonotch ke folder
+                  Applications.
                 </p>
               </div>
 
               <div class="step-card">
                 <h3 class="step-title" data-i18n="install.step3Title">
-                  3. Catatan Gatekeeper (Opsional)
+                  3. Jika macOS Menolak Membuka Aplikasi
                 </h3>
                 <p class="step-desc" data-i18n="install.step3Desc">
-                  Karena Harmonotch dirilis secara independen (ad-hoc signed),
-                  jika macOS memunculkan notifikasi keamanan 'Harmonotch cannot
-                  be opened', cukup jalankan perintah berikut di Terminal:
+                  Rilis ini ditandatangani secara ad-hoc, jadi macOS bisa
+                  menampilkan 'Harmonotch cannot be opened'. Buka System Settings
+                  → Privacy & Security, lalu klik 'Open Anyway'. Di macOS 14
+                  atau lebih lama, klik kanan aplikasi dan pilih 'Open'. Jika
+                  masih gagal, jalankan perintah di bawah di Terminal.
                 </p>
               </div>
             </div>
@@ -816,7 +812,7 @@
         <div class="container">
           <div class="section-header">
             <h2 class="section-title" data-i18n="faq.title">
-              Ada Pertanyaan? Kami Punya Jawabannya
+              Pertanyaan umum
             </h2>
           </div>
 
@@ -824,8 +820,8 @@
             <div class="faq-item open">
               <button class="faq-question" aria-expanded="true">
                 <span data-i18n="faq.q1"
-                  >Apakah Harmonotch memerlukan koneksi internet untuk
-                  menghitung sholat?</span
+                  >Apakah Harmonotch butuh internet untuk menghitung waktu
+                  sholat?</span
                 >
                 <svg
                   class="faq-chevron"
@@ -841,10 +837,9 @@
               </button>
               <div class="faq-answer">
                 <p data-i18n="faq.a1">
-                  Tidak. Perhitungan waktu sholat dihitung secara offline secara
-                  matematis berdasarkan koordinat astronomi kota Anda. Koneksi
-                  internet hanya dibutuhkan jika Anda menyalakan fitur cek
-                  pembaruan otomatis atau streaming lirik.
+                  Tidak. Waktu sholat dihitung di perangkat dari koordinat kota
+                  Anda. Internet hanya dipakai untuk lirik dan pemeriksaan
+                  pembaruan.
                 </p>
               </div>
             </div>
@@ -852,8 +847,7 @@
             <div class="faq-item">
               <button class="faq-question" aria-expanded="false">
                 <span data-i18n="faq.q2"
-                  >Apakah Harmonotch kompatibel dengan Mac yang tidak memiliki
-                  notch?</span
+                  >Apakah Harmonotch bisa dipakai di Mac tanpa notch?</span
                 >
                 <svg
                   class="faq-chevron"
@@ -869,10 +863,8 @@
               </button>
               <div class="faq-answer">
                 <p data-i18n="faq.a2">
-                  Ya! Harmonotch mendeteksi apakah layar Anda memiliki notch
-                  hardware atau tidak. Pada Mac tanpa notch (seperti MacBook Air
-                  M1, Mac mini, iMac), drawer akan muncul sebagai floating bar
-                  elegan di bagian atas layar serta melalui menu bar.
+                  Ya. Di Mac tanpa notch, Harmonotch memakai floating pill di
+                  bagian atas layar dan ikon menu bar.
                 </p>
               </div>
             </div>
@@ -880,8 +872,8 @@
             <div class="faq-item">
               <button class="faq-question" aria-expanded="false">
                 <span data-i18n="faq.q3"
-                  >Kenapa muncul peringatan 'Apple cannot verify' saat pertama
-                  kali dibuka?</span
+                  >Kenapa macOS menampilkan peringatan 'Apple cannot
+                  verify'?</span
                 >
                 <svg
                   class="faq-chevron"
@@ -897,13 +889,13 @@
               </button>
               <div class="faq-answer">
                 <p data-i18n="faq.a3">
-                  Harmonotch adalah proyek open-source independen yang belum
-                  memiliki sertifikat Apple Developer berbayar. Di macOS 15
-                  Sequoia atau lebih baru, buka System Settings → Privacy &
-                  Security, gulir ke bagian Security, lalu klik 'Open Anyway'.
-                  Di macOS 14 atau lebih lama, klik kanan aplikasi lalu pilih
-                  'Open'. Alternatif cepat lewat Terminal:
-                  <code>xattr -cr /Applications/Harmonotch.app</code>.
+                  Harmonotch adalah proyek open source yang tidak memakai
+                  sertifikat Apple Developer berbayar. Di macOS 15 atau lebih
+                  baru, buka System Settings → Privacy & Security, lalu klik
+                  'Open Anyway'. Di macOS 14 atau lebih lama, klik kanan
+                  aplikasi dan pilih 'Open'. Alternatifnya jalankan
+                  <code>xattr -cr /Applications/Harmonotch.app</code> di
+                  Terminal.
                 </p>
               </div>
             </div>
@@ -911,7 +903,7 @@
             <div class="faq-item">
               <button class="faq-question" aria-expanded="false">
                 <span data-i18n="faq.q4"
-                  >Apakah aplikasi ini menguras baterai MacBook saya?</span
+                  >Apakah Harmonotch menguras baterai MacBook?</span
                 >
                 <svg
                   class="faq-chevron"
@@ -927,9 +919,9 @@
               </button>
               <div class="faq-answer">
                 <p data-i18n="faq.a4">
-                  Sama sekali tidak. Harmonotch dibuat dengan Swift murni dan
-                  AppKit/SwiftUI native. Penggunaan CPU saat idle adalah 0.0%
-                  dan penggunaan RAM kurang dari 35MB.
+                  Harmonotch tidak menggambar ulang layar terus-menerus. Waktu
+                  sholat dihitung saat dibutuhkan, dan data baterai dibaca
+                  berkala di latar belakang.
                 </p>
               </div>
             </div>
@@ -937,7 +929,7 @@
             <div class="faq-item">
               <button class="faq-question" aria-expanded="false">
                 <span data-i18n="faq.q5"
-                  >Metode perhitungan sholat apa saja yang didukung?</span
+                  >Metode perhitungan waktu sholat apa saja yang didukung?</span
                 >
                 <svg
                   class="faq-chevron"
@@ -968,11 +960,10 @@
         <div class="container">
           <div class="cta-banner">
             <h2 class="cta-title" data-i18n="cta.title">
-              Harmoniskan Pengalaman MacBook Anda Hari Ini
+              Pasang Harmonotch di Mac Anda
             </h2>
             <p class="cta-desc" data-i18n="cta.desc">
-              Gratis, open-source, dan dibangun dengan penuh perhatian untuk
-              detail.
+              Gratis dan open source dengan lisensi MIT.
             </p>
             <div class="cta-actions">
               <a href="/api/download" class="btn btn-primary js-download">
@@ -991,7 +982,7 @@
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 <span class="js-download-label" data-i18n="cta.downloadBtn"
-                  >Unduh Harmonotch untuk Mac</span
+                  >Unduh DMG</span
                 >
               </a>
 
@@ -1027,24 +1018,24 @@
             <div class="brand">
               <img
                 src="/assets/logo.png"
-                alt="Harmonotch Logo"
+                alt="Logo Harmonotch"
                 class="brand-icon"
               />
               <span class="brand-name">Harmonotch</span>
             </div>
             <p class="footer-desc" data-i18n="footer.desc">
-              Pusat harmoni, waktu sholat, telemetri daya, dan pemutar musik
-              untuk notch macOS Anda. Dibuat dengan cinta untuk komunitas Mac.
+              Jadwal sholat, status baterai, dan kontrol musik untuk notch
+              MacBook.
             </p>
           </div>
 
           <div>
             <h4 class="footer-col-title" data-i18n="footer.linksTitle">
-              Navigasi
+              Tautan
             </h4>
             <ul class="footer-links">
               <li>
-                <a href="#showcase" data-i18n="footer.showcase">Showcase</a>
+                <a href="#showcase" data-i18n="footer.showcase">Notch</a>
               </li>
               <li><a href="#features" data-i18n="footer.features">Fitur</a></li>
               <li>

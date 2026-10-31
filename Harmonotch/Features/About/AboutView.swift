@@ -24,9 +24,9 @@ struct AboutView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(AppTheme.accentAmber.opacity(0.35), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
                 )
-                .shadow(color: AppTheme.accentAmber.opacity(AppTheme.isDark ? 0.25 : 0.15), radius: 10, x: 0, y: 3)
+                .shadow(color: Color.black.opacity(0.4), radius: 8, x: 0, y: 3)
 
                 Text("Harmonotch")
                     .font(.system(size: 18, weight: .bold))
@@ -97,7 +97,7 @@ struct AboutView: View {
 
                         if showingAdhanLicense {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("MIT License — Copyright © 2018 Batoul Apps")
+                                Text("MIT License, Copyright © 2018 Batoul Apps")
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                                     .foregroundColor(AppTheme.textPrimary)
 
@@ -111,6 +111,16 @@ struct AboutView: View {
                             .cornerRadius(6)
                             .transition(.opacity)
                         }
+
+                        AcknowledgementCard(
+                            title: L10n.About.vorssaintTitle,
+                            author: "Vorssaint",
+                            license: "Open Source",
+                            description: L10n.About.vorssaintDesc,
+                            iconName: "waveform.circle.fill",
+                            url: URL(string: "https://github.com/vorssaint/vorssaint-utils"),
+                            onViewLicense: nil
+                        )
 
                         AcknowledgementCard(
                             title: L10n.About.audioTitle,
@@ -161,9 +171,8 @@ struct AboutView: View {
             .padding(.bottom, 12)
         }
         .frame(width: 440, height: 420)
-        .background(AppTheme.surfaceBackground)
-        .background(.ultraThinMaterial)
-        .preferredColorScheme(themeManager.colorScheme)
+        .background(Color.black)
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -180,7 +189,7 @@ private struct AcknowledgementCard: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: iconName)
                 .font(.system(size: 14))
-                .foregroundColor(AppTheme.accentAmber)
+                .foregroundColor(.white)
                 .frame(width: 22, height: 22)
                 .background(AppTheme.badgeBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 5))
@@ -203,10 +212,10 @@ private struct AcknowledgementCard: View {
 
                     Text(license)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(AppTheme.accentGreen)
+                        .foregroundColor(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(AppTheme.accentGreen.opacity(0.12))
+                        .background(Color.white.opacity(0.12))
                         .cornerRadius(4)
                 }
 
@@ -224,7 +233,7 @@ private struct AcknowledgementCard: View {
                                     .font(.system(size: 8))
                             }
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(AppTheme.accentCyan)
+                            .foregroundColor(.white)
                         }
                     }
 
@@ -232,7 +241,7 @@ private struct AcknowledgementCard: View {
                         Button(action: onViewLicense) {
                             Text(L10n.About.viewLicense)
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(AppTheme.accentAmber)
+                                .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
                     }

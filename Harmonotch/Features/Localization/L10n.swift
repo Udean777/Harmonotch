@@ -133,9 +133,6 @@ enum L10n {
         static var capacityTitle: String {
             isEnglish ? "Full Capacity" : "Kapasitas Penuh"
         }
-        static var powerSourceTitle: String {
-            isEnglish ? "Power Source" : "Sumber Daya"
-        }
         static var designPrefix: String {
             isEnglish ? "Design: " : "Desain: "
         }
@@ -145,17 +142,8 @@ enum L10n {
         static var conditionNormal: String {
             isEnglish ? "Normal Condition" : "Kondisi Normal"
         }
-        static var powerBattery: String {
-            isEnglish ? "Battery" : "Baterai"
-        }
-        static var powerAC: String {
-            isEnglish ? "AC Power" : "Adaptor AC"
-        }
-        static var refreshData: String {
-            isEnglish ? "Refresh Data" : "Perbarui Data"
-        }
-        static var batterySettings: String {
-            isEnglish ? "macOS Battery Settings" : "Pengaturan Baterai macOS"
+        static var conditionService: String {
+            isEnglish ? "Service Recommended" : "Disarankan Servis"
         }
         static var fullChargeAc: String {
             isEnglish ? "Full Charge (AC Adapter)" : "Daya Penuh (Adaptor AC)"
@@ -200,22 +188,24 @@ enum L10n {
             isEnglish ? "No external display detected" : "Tidak ada monitor eksternal terhubung"
         }
         static var setupPermission: String {
-            isEnglish ? "Authorize Sudo" : "Otorisasi Akses Cepat"
+            isEnglish ? "Allow Access" : "Izinkan Akses"
         }
         static var authorized: String {
-            isEnglish ? "Authorized" : "Terotorisasi"
+            isEnglish ? "Authorized" : "Akses diizinkan"
         }
         static var authorizing: String {
-            isEnglish ? "Authorizing..." : "Mengotorisasi..."
+            isEnglish ? "Authorizing..." : "Meminta izin..."
         }
         static var batteryProtectionNote: String {
             isEnglish ? "Auto-pauses at ≤ 50% on battery" : "Otomatis dijeda jika baterai ≤ 50%"
         }
         static var warningNotificationTitle: String {
-            isEnglish ? "Harmonotch — Stay Awake Alert" : "Harmonotch — Peringatan Stay Awake"
+            isEnglish ? "Harmonotch stay-awake warning" : "Peringatan mode tetap hidup"
         }
-        static var warningNotificationBody: String {
-            isEnglish ? "Battery is at 60%. Connect charger to maintain Stay Awake (auto-pauses at 50%)." : "Baterai tersisa 60%. Segera charge MacBook Anda untuk tetap menggunakan mode Stay Awake (fitur akan otomatis dijeda di 50%)."
+        static func warningNotificationBody(capacity: Int) -> String {
+            isEnglish
+                ? "Battery is at \(capacity)%. Connect the charger to keep the Mac awake. Stay Awake pauses at 50%."
+                : "Baterai tersisa \(capacity)%. Sambungkan pengisi daya agar Mac tetap hidup. Mode tetap hidup dijeda otomatis di 50%."
         }
     }
 
@@ -227,7 +217,7 @@ enum L10n {
             isEnglish ? "Paused" : "Dijeda"
         }
         static var noTrackPlaying: String {
-            isEnglish ? "No Media Playing" : "Tidak Ada Musik"
+            isEnglish ? "No Media Playing" : "Tidak Ada Media"
         }
         static var openMusicPrompt: String {
             isEnglish ? "Play a song on Apple Music or Spotify" : "Putar lagu di Apple Music atau Spotify"
@@ -239,7 +229,7 @@ enum L10n {
             isEnglish ? "Fetching lyrics..." : "Memuat lirik..."
         }
         static var noLyricsFound: String {
-            isEnglish ? "No synced lyrics available" : "Lirik lagu tidak tersedia"
+            isEnglish ? "No synced lyrics available" : "Lirik tersinkron tidak tersedia"
         }
         static var instrumental: String {
             isEnglish ? "Instrumental Track" : "Lagu Instrumental"
@@ -301,12 +291,6 @@ enum L10n {
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
         }
-        static var notchActive: String {
-            isEnglish ? "Notch Active" : "Notch Aktif"
-        }
-        static var notchHidden: String {
-            isEnglish ? "Notch Hidden" : "Notch Tersembunyi"
-        }
         static var nextPrayer: String {
             isEnglish ? "Next Prayer" : "Sholat Berikutnya"
         }
@@ -344,14 +328,14 @@ enum L10n {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
         }
         static var subtitle: String {
-            isEnglish ? "Islamic Prayer & Battery Hub for MacBook Notch" : "Pusat Jadwal Sholat & Baterai untuk Notch MacBook"
+            isEnglish ? "Prayer times, battery, and music for the MacBook notch" : "Jadwal sholat, baterai, dan musik untuk notch MacBook"
         }
         static var version: String {
             let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
             return "Version \(ver)"
         }
         static var developedBy: String {
-            isEnglish ? "Crafted with care by Sajudin" : "Dibuat dengan penuh dedikasi oleh Sajudin"
+            isEnglish ? "Made by Sajudin" : "Dibuat oleh Sajudin"
         }
         static var openSourceCredits: String {
             isEnglish ? "Open Source Acknowledgements" : "Kredit & Lisensi Open Source"
@@ -361,6 +345,12 @@ enum L10n {
         }
         static var adhanDesc: String {
             isEnglish ? "Astronomical calculation engine by Batoul Apps (MIT License)" : "Mesin kalkulasi astronomi waktu sholat oleh Batoul Apps (Lisensi MIT)"
+        }
+        static var vorssaintTitle: String {
+            "vorssaint-utils"
+        }
+        static var vorssaintDesc: String {
+            isEnglish ? "macOS NowPlaying / MediaRemote architecture reference by Vorssaint" : "Referensi arsitektur NowPlaying / MediaRemote macOS oleh Vorssaint"
         }
         static var audioTitle: String {
             isEnglish ? "Adzan Audio Recordings" : "Rekaman Audio Adzan"

@@ -1,6 +1,6 @@
 # Acknowledgements & Open Source Credits
 
-Harmonotch is crafted with deep gratitude toward the open-source community and the incredible creators whose libraries, assets, and documentation make this project possible.
+Harmonotch uses the open-source projects and assets listed below. Thanks to their authors and maintainers.
 
 ---
 
@@ -35,7 +35,15 @@ THE SOFTWARE.
 
 ---
 
-## 2. Adzan Audio Recordings
+## 2. Vorssaint Utilities (`vorssaint-utils`)
+
+- **Author:** [Vorssaint](https://github.com/vorssaint)
+- **Repository:** [https://github.com/vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
+- **Purpose in Harmonotch:** Architectural reference and `NowPlayingAdapter` (`watch_all` / `MediaRemote`) integration for real-time macOS media playback telemetry, artwork snapshots, and low-latency transport commands across Safari, WebKit, Chrome, YouTube, Spotify, and Apple Music.
+
+---
+
+## 3. Adzan Audio Recordings
 
 - **Source:** [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html)
 - **Files:** `adzan.m4a` (Standard Adzan) & `adzan_subuh.m4a` (Fajr Adzan with Tathweeb)
@@ -44,7 +52,7 @@ THE SOFTWARE.
 
 ---
 
-## 3. LRCLIB (Synced Lyrics Engine)
+## 4. LRCLIB (Synced Lyrics Engine)
 
 - **Source:** [LRCLIB](https://lrclib.net)
 - **Repository:** [https://github.com/tranxuanthang/lrclib](https://github.com/tranxuanthang/lrclib)
@@ -53,10 +61,10 @@ THE SOFTWARE.
 
 ---
 
-## 4. Apple Inc. Technologies
+## 5. Apple Inc. Technologies
 
 - **SF Symbols:** Apple Inc. Human Interface Guidelines and native macOS system iconography.
-- **IOKit & AppleSmartBattery:** Darwin / Apple open-source power management framework for direct, daemon-free hardware battery health telemetry.
+- **MediaRemote & IOKit (`AppleSmartBattery`):** Darwin / Apple system frameworks for real-time media remote transport and direct, daemon-free hardware battery health telemetry.
 
 ---
 

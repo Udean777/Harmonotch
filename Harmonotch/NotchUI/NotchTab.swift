@@ -1,31 +1,31 @@
 import SwiftUI
 
 enum DrawerTab: String, CaseIterable, Identifiable {
-    case prayer = "prayer"
     case battery = "battery"
     case media = "media"
+    case prayer = "prayer"
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .prayer:
-            return L10n.Drawer.prayerTab
         case .battery:
             return L10n.Drawer.batteryTab
         case .media:
-            return L10n.Drawer.mediaTab
+            return "Audio"
+        case .prayer:
+            return L10n.Drawer.prayerTab
         }
     }
 
     var icon: String {
         switch self {
+        case .battery:
+            return "battery.100"
+        case .media:
+            return "waveform"
         case .prayer:
             return "moon.stars.fill"
-        case .battery:
-            return "macbook"
-        case .media:
-            return "music.note"
         }
     }
 }
@@ -33,49 +33,48 @@ enum DrawerTab: String, CaseIterable, Identifiable {
 struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
     @ObservedObject var languageManager = LanguageManager.shared
-    @ObservedObject var themeManager = ThemeManager.shared
+    @ObservedObject var mediaManager = MediaManager.shared
+    @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @Namespace private var tabAnimation
 
+    private var isAudioActive: Bool {
+        adzanPlayer.isPlaying || mediaManager.hasActiveTrack
+    }
+
+    private var visibleTabs: [DrawerTab] {
+        if isAudioActive {
+            return [.media, .battery, .prayer]
+        } else {
+            return [.battery, .prayer]
+        }
+    }
+
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(DrawerTab.allCases) { tab in
+        HStack(spacing: 4) {
+            ForEach(visibleTabs) { tab in
                 Button(action: {
-                    withAnimation(.spring(response: 0.26, dampingFraction: 0.84)) {
+                    withAnimation(NotchMotion.content) {
                         selectedTab = tab
                     }
                 }) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 5) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 10, weight: .semibold))
 
                         Text(tab.title)
-                            .font(.system(size: 12, weight: selectedTab == tab ? .semibold : .medium))
+                            .font(.system(size: 11, weight: selectedTab == tab ? .semibold : .medium))
+                            .lineLimit(1)
                     }
                     .foregroundColor(selectedTab == tab ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 4)
                     .background {
                         if selectedTab == tab {
                             Capsule()
                                 .fill(AppTheme.tabActiveBackground)
                                 .overlay(
                                     Capsule()
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: AppTheme.isDark
-                                                    ? [Color.white.opacity(0.40), Color.white.opacity(0.10)]
-                                                    : [Color.white.opacity(0.95), Color.black.opacity(0.08)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 0.7
-                                        )
-                                )
-                                .shadow(
-                                    color: AppTheme.isDark ? Color.black.opacity(0.25) : Color.black.opacity(0.08),
-                                    radius: 3,
-                                    x: 0,
-                                    y: 1.5
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.7)
                                 )
                                 .matchedGeometryEffect(id: "ActiveTabIndicator", in: tabAnimation)
                         }
@@ -86,22 +85,35 @@ struct NotchTabBar: View {
             }
         }
         .padding(3)
+        .animation(NotchMotion.content, value: visibleTabs)
         .background(
             Capsule()
                 .fill(AppTheme.tabBarBackground)
                 .overlay(
                     Capsule()
-                        .stroke(
-                            LinearGradient(
-                                colors: AppTheme.isDark
-                                    ? [Color.white.opacity(0.18), Color.white.opacity(0.04)]
-                                    : [Color.white.opacity(0.85), Color.black.opacity(0.06)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 0.6
-                        )
+                        .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
                 )
+        )
+    }
+}
+
+/// Shared motion language so every transition in the notch feels the same.
+enum NotchMotion {
+    static let content = Animation.spring(response: 0.34, dampingFraction: 0.82)
+    static let quick = Animation.spring(response: 0.26, dampingFraction: 0.86)
+    static let fade = Animation.easeInOut(duration: 0.22)
+
+    static var swap: AnyTransition {
+        .asymmetric(
+            insertion: .scale(scale: 0.7, anchor: .center).combined(with: .opacity),
+            removal: .scale(scale: 0.7, anchor: .center).combined(with: .opacity)
+        )
+    }
+
+    static var drawer: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)).combined(with: .offset(y: 4)),
+            removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .top))
         )
     }
 }

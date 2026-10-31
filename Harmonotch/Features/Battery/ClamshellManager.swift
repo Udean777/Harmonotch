@@ -108,7 +108,7 @@ final class ClamshellManager: ObservableObject {
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
         if isArmed && currentState == .active && !isPlugged && capacity <= 60 && !hasWarnedAt60 {
-            sendLowBatteryWarningNotification()
+            sendLowBatteryWarningNotification(capacity: capacity)
             hasWarnedAt60 = true
         }
 
@@ -310,11 +310,11 @@ final class ClamshellManager: ObservableObject {
     }
 
 
-    private func sendLowBatteryWarningNotification() {
+    private func sendLowBatteryWarningNotification(capacity: Int) {
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
         content.title = L10n.Clamshell.warningNotificationTitle
-        content.body = L10n.Clamshell.warningNotificationBody
+        content.body = L10n.Clamshell.warningNotificationBody(capacity: capacity)
         content.sound = .default
 
         let request = UNNotificationRequest(
