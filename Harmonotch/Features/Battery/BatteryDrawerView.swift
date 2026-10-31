@@ -84,7 +84,7 @@ struct BatteryDrawerView: View {
                     icon: "bolt.batteryblock.fill",
                     iconColor: Color.white,
                     title: batteryMonitor.isPluggedIn ? "Power In" : "Power Source",
-                    value: batteryMonitor.isPluggedIn ? (batteryMonitor.adapterWatts != nil ? "\(batteryMonitor.adapterWatts!)W AC" : "AC") : "Battery"
+                    value: batteryMonitor.isPluggedIn ? (batteryMonitor.adapterWatts.map { "\($0)W AC" } ?? "AC") : "Battery"
                 )
             }
 

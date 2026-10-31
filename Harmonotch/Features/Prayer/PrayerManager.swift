@@ -22,13 +22,13 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
     @Published var selectedCity: CityPreset {
         didSet {
-            UserDefaults.standard.set(selectedCity.id, forKey: "Harmonotch_SelectedCityId")
+            UserDefaults.standard.set(selectedCity.id, forKey: UserDefaultsKeys.selectedCityId)
             recalculatePrayerTimes()
         }
     }
     @Published var useGPS: Bool {
         didSet {
-            UserDefaults.standard.set(useGPS, forKey: "Harmonotch_UseGPS")
+            UserDefaults.standard.set(useGPS, forKey: UserDefaultsKeys.useGPS)
             if useGPS {
                 locationManager.requestWhenInUseAuthorization()
                 locationManager.startUpdatingLocation()
@@ -40,7 +40,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }
     @Published var jumatOffsetMinutes: Int {
         didSet {
-            UserDefaults.standard.set(jumatOffsetMinutes, forKey: "Harmonotch_JumatOffsetMinutes")
+            UserDefaults.standard.set(jumatOffsetMinutes, forKey: UserDefaultsKeys.jumatOffsetMinutes)
             recalculatePrayerTimes()
         }
     }
@@ -76,11 +76,11 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }()
 
     override init() {
-        let savedCityId = UserDefaults.standard.string(forKey: "Harmonotch_SelectedCityId") ?? CityPreset.defaultCity.id
+        let savedCityId = UserDefaults.standard.string(forKey: UserDefaultsKeys.selectedCityId) ?? CityPreset.defaultCity.id
         let initialCity = CityPreset.presets.first(where: { $0.id == savedCityId }) ?? CityPreset.defaultCity
         self.selectedCity = initialCity
-        self.useGPS = UserDefaults.standard.bool(forKey: "Harmonotch_UseGPS")
-        self.jumatOffsetMinutes = UserDefaults.standard.integer(forKey: "Harmonotch_JumatOffsetMinutes")
+        self.useGPS = UserDefaults.standard.bool(forKey: UserDefaultsKeys.useGPS)
+        self.jumatOffsetMinutes = UserDefaults.standard.integer(forKey: UserDefaultsKeys.jumatOffsetMinutes)
 
         super.init()
 
@@ -297,7 +297,11 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
                 nowComponents.hour == pComponents.hour &&
                 nowComponents.minute == pComponents.minute {
 
-                let triggerKey = "\(nowComponents.year!)-\(nowComponents.month!)-\(nowComponents.day!)_\(prayer.id)"
+                guard let year = nowComponents.year,
+                      let month = nowComponents.month,
+                      let day = nowComponents.day else { continue }
+
+                let triggerKey = "\(year)-\(month)-\(day)_\(prayer.id)"
 
                 if lastTriggeredPrayerKey != triggerKey {
                     lastTriggeredPrayerKey = triggerKey
@@ -337,7 +341,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     private func requestNotificationPermissions() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             if granted {
-                print("[PrayerManager] Izin notifikasi aktif.")
+                NSLog("[Harmonotch:Prayer] Notification permission granted.")
             }
         }
     }
@@ -394,7 +398,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         locationManager.stopUpdatingLocation()
-        print("[PrayerManager] Location error: \(error.localizedDescription)")
+        NSLog("[Harmonotch:Prayer] Location error: %@", error.localizedDescription)
     }
 
 }

@@ -40,18 +40,15 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
 final class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
 
-    private let themeKey = "Harmonotch_AppTheme"
-    private let styleKey = "Harmonotch_ThemeStyle"
-
     @Published var currentStyle: ThemeStyle {
         didSet {
-            UserDefaults.standard.set(currentStyle.rawValue, forKey: styleKey)
+            UserDefaults.standard.set(currentStyle.rawValue, forKey: UserDefaultsKeys.themeStyle)
         }
     }
 
     @Published var currentMode: AppThemeMode {
         didSet {
-            UserDefaults.standard.set(currentMode.rawValue, forKey: themeKey)
+            UserDefaults.standard.set(currentMode.rawValue, forKey: UserDefaultsKeys.themeMode)
             updateEffectiveAppearance()
         }
     }
@@ -61,10 +58,10 @@ final class ThemeManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
-        let savedStyle = UserDefaults.standard.string(forKey: styleKey) ?? ThemeStyle.liquidGlass.rawValue
+        let savedStyle = UserDefaults.standard.string(forKey: UserDefaultsKeys.themeStyle) ?? ThemeStyle.liquidGlass.rawValue
         self.currentStyle = ThemeStyle(rawValue: savedStyle) ?? .liquidGlass
 
-        let saved = UserDefaults.standard.string(forKey: themeKey) ?? AppThemeMode.system.rawValue
+        let saved = UserDefaults.standard.string(forKey: UserDefaultsKeys.themeMode) ?? AppThemeMode.system.rawValue
         self.currentMode = AppThemeMode(rawValue: saved) ?? .system
 
         updateEffectiveAppearance()

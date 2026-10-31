@@ -127,7 +127,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        addDrawerSection(to: menu)
+        menu.addItem(NSMenuItem.separator())
+        addAdzanSection(to: menu)
+        menu.addItem(NSMenuItem.separator())
+        addSettingsSection(to: menu)
+        menu.addItem(NSMenuItem.separator())
+        addUpdateSection(to: menu)
+        addFooterSection(to: menu)
+    }
 
+    private func addDrawerSection(to menu: NSMenu) {
         let headerItem = NSMenuItem()
         let hostingView = NSHostingView(rootView: MenuBarHeaderView())
         hostingView.frame = NSRect(x: 0, y: 0, width: 250, height: 44)
@@ -155,8 +165,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let tabsItem = NSMenuItem(title: L10n.Menu.tabsMenu, action: nil, keyEquivalent: "")
         tabsItem.image = NSImage(systemSymbolName: "square.grid.2x2.fill", accessibilityDescription: nil)
-        let tabsSubmenu = NSMenu()
+        tabsItem.submenu = buildTabsSubmenu()
+        menu.addItem(tabsItem)
+    }
 
+    private func buildTabsSubmenu() -> NSMenu {
+        let tabsSubmenu = NSMenu()
         let currentTab = NotchViewModel.shared.selectedTab
 
         let prayerTabItem = NSMenuItem(title: L10n.Drawer.prayerTab, action: #selector(selectTabPrayer), keyEquivalent: "1")
@@ -177,11 +191,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         mediaTabItem.state = (currentTab == .media) ? .on : .off
         tabsSubmenu.addItem(mediaTabItem)
 
-        tabsItem.submenu = tabsSubmenu
-        menu.addItem(tabsItem)
+        return tabsSubmenu
+    }
 
-        menu.addItem(NSMenuItem.separator())
-
+    private func addAdzanSection(to menu: NSMenu) {
         let muteTitle = AdzanPlayer.shared.isMuted ? L10n.Menu.unmuteAdzan : L10n.Menu.muteAdzan
         let muteItem = NSMenuItem(title: muteTitle, action: #selector(toggleAdzanMute), keyEquivalent: "m")
         muteItem.target = self
@@ -193,24 +206,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         testAdzanItem.target = self
         testAdzanItem.image = NSImage(systemSymbolName: AdzanPlayer.shared.isPlaying ? "stop.fill" : "play.fill", accessibilityDescription: nil)
         menu.addItem(testAdzanItem)
+    }
 
-        menu.addItem(NSMenuItem.separator())
-
+    private func addSettingsSection(to menu: NSMenu) {
         let langItem = NSMenuItem(title: L10n.Menu.languageMenu, action: nil, keyEquivalent: "")
         langItem.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
-        let langSubmenu = NSMenu()
-        for lang in AppLanguage.allCases {
-            let item = NSMenuItem(
-                title: lang.displayName,
-                action: #selector(AppDelegate.switchLanguage(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = lang
-            item.state = (LanguageManager.shared.currentLanguage == lang) ? NSControl.StateValue.on : NSControl.StateValue.off
-            langSubmenu.addItem(item)
-        }
-        langItem.submenu = langSubmenu
+        langItem.submenu = buildLanguageSubmenu()
         menu.addItem(langItem)
 
         let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
@@ -251,9 +252,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clamshellItem.image = NSImage(systemSymbolName: clamshellIcon, accessibilityDescription: nil)
         clamshellItem.state = ClamshellManager.shared.isArmed ? .on : .off
         menu.addItem(clamshellItem)
+    }
 
-        menu.addItem(NSMenuItem.separator())
+    private func buildLanguageSubmenu() -> NSMenu {
+        let langSubmenu = NSMenu()
+        for lang in AppLanguage.allCases {
+            let item = NSMenuItem(
+                title: lang.displayName,
+                action: #selector(AppDelegate.switchLanguage(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = lang
+            item.state = (LanguageManager.shared.currentLanguage == lang) ? NSControl.StateValue.on : NSControl.StateValue.off
+            langSubmenu.addItem(item)
+        }
+        return langSubmenu
+    }
 
+    private func addUpdateSection(to menu: NSMenu) {
         if case .readyToQuit(let version) = UpdateManager.shared.state {
             let readyItem = NSMenuItem(
                 title: "\(L10n.Update.readyToQuitTitle(version: version)) - \(L10n.Update.restartApp)",
@@ -303,7 +320,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             checkUpdateItem.isEnabled = !UpdateManager.shared.isChecking
             menu.addItem(checkUpdateItem)
         }
+    }
 
+    private func addFooterSection(to menu: NSMenu) {
         let aboutItem = NSMenuItem(title: L10n.Menu.aboutHarmonotch, action: #selector(showAboutWindow), keyEquivalent: "")
         aboutItem.target = self
         aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
@@ -345,7 +364,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 try SMAppService.mainApp.register()
             }
         } catch {
-            print("[Harmonotch] Failed to toggle launch at login: \(error)")
+            NSLog("[Harmonotch:App] Failed to toggle launch at login: %@", error.localizedDescription)
         }
     }
 
