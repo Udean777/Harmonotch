@@ -106,9 +106,9 @@ struct NotchContainerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(
             .spring(
-                response: notchVM.isExpanded ? 0.36 : 0.38,
-                dampingFraction: notchVM.isExpanded ? 0.74 : 0.68,
-                blendDuration: 0.06
+                response: notchVM.isExpanded ? 0.36 : 0.34,
+                dampingFraction: notchVM.isExpanded ? 0.78 : 0.96,
+                blendDuration: 0.04
             ),
             value: notchVM.isExpanded
         )

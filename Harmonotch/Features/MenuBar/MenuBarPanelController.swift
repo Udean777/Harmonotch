@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 
 final class MenuBarPanelController: NSObject {
     static let shared = MenuBarPanelController()
@@ -8,6 +9,7 @@ final class MenuBarPanelController: NSObject {
     private var globalEventMonitor: Any?
     private var localEventMonitor: Any?
     private weak var currentStatusButton: NSStatusBarButton?
+    private var cancellables = Set<AnyCancellable>()
 
     var isVisible: Bool {
         panel?.isVisible ?? false
@@ -15,6 +17,19 @@ final class MenuBarPanelController: NSObject {
 
     private override init() {
         super.init()
+        observeUpdateState()
+    }
+
+    private func observeUpdateState() {
+        UpdateManager.shared.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self, let panel = self.panel, panel.isVisible, let button = self.currentStatusButton else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    self.positionPanel(panel, relativeTo: button)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func toggle(relativeTo button: NSStatusBarButton) {
