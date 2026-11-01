@@ -144,7 +144,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eu\nDYLIB=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libHarmonotchNowPlaying.dylib\"\nmkdir -p \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\"\nclang -dynamiclib -fobjc-arc -fblocks -arch $ARCHS -framework Foundation -o \"$DYLIB\" \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m\"\ncp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"\n";
+			shellScript = "set -eu\nDYLIB=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libHarmonotchNowPlaying.dylib\"\nmkdir -p \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\"\nset --\nfor arch in $ARCHS; do\n  clang -dynamiclib -fobjc-arc -fblocks -arch \"$arch\" -framework Foundation -o \"$DYLIB.$arch\" \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m\"\n  set -- \"$@\" \"$DYLIB.$arch\"\ndone\nlipo -create \"$@\" -output \"$DYLIB\"\nrm -f \"$DYLIB\".*\ncp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
