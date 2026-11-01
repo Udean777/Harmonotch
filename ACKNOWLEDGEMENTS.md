@@ -35,20 +35,21 @@ THE SOFTWARE.
 
 ---
 
-## 2. Vorssaint Utilities (`vorssaint-utils`)
-
-- **Author:** [Vorssaint](https://github.com/vorssaint)
-- **Repository:** [https://github.com/vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
-- **Purpose in Harmonotch:** Architectural reference and `NowPlayingAdapter` (`watch_all` / `MediaRemote`) integration for real-time macOS media playback telemetry, artwork snapshots, and low-latency transport commands across Safari, WebKit, Chrome, YouTube, Spotify, and Apple Music.
-
----
-
-## 3. Adzan Audio Recordings
+## 2. Adzan Audio Recordings
 
 - **Source:** [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html)
 - **Files:** `adzan.m4a` (Standard Adzan) & `adzan_subuh.m4a` (Fajr Adzan with Tathweeb)
 - **Format:** AAC 48 kHz
 - **Purpose in Harmonotch:** High-fidelity call to prayer audio playback integrated with local notifications.
+
+---
+
+## 3. Vorssaint (MediaRemote Bridge Approach)
+
+- **Author:** [Vorssaint](https://github.com/vorssaint)
+- **Repository:** [https://github.com/vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
+- **License:** GNU General Public License v3.0 (GPL-3.0)
+- **Purpose in Harmonotch:** The now-playing bridge loads a small adapter into `/usr/bin/perl` and talks to Apple's private MediaRemote framework from there, an approach demonstrated by Vorssaint. It is used with the author's written permission and with credit. The files in this repository (`NowPlayingAdapter.m`, `nowplaying.pl`, and `NowPlayingBridge.swift`) are an independent implementation; no Vorssaint source code was copied, so Harmonotch remains MIT-licensed.
 
 ---
 
@@ -64,8 +65,8 @@ THE SOFTWARE.
 ## 5. Apple Inc. Technologies
 
 - **SF Symbols:** Apple Inc. Human Interface Guidelines and native macOS system iconography.
-- **MediaRemote & IOKit (`AppleSmartBattery`):** Darwin / Apple system frameworks for real-time media remote transport and direct, daemon-free hardware battery health telemetry.
+- **MediaRemote & IOKit (`AppleSmartBattery`):** Darwin / Apple system frameworks for real-time media remote transport and direct, daemon-free hardware battery health telemetry. Harmonotch's MediaRemote adapter is written from scratch (see the Vorssaint credit above) and uses the framework's undocumented symbols at runtime; no third-party bridge code is included.
 
 ---
 
-*Thank you to all contributors and open-source maintainers worldwide.*
+_Thank you to all contributors and open-source maintainers worldwide._

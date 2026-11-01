@@ -17,6 +17,9 @@ struct MediaDrawerView: View {
             } else {
                 emptyAudioView.transition(NotchMotion.drawer)
             }
+            if let hint = mediaManager.webMediaHint {
+                webHintBanner(hint)
+            }
         }
         .frame(width: NotchLayout.expandedContentWidth, alignment: .top)
         .animation(NotchMotion.content, value: mediaManager.hasActiveTrack)
@@ -27,6 +30,29 @@ struct MediaDrawerView: View {
         .onAppear {
             mediaManager.pollCurrentMediaState()
         }
+    }
+
+    private func webHintBanner(_ hint: WebMediaProbeError) -> some View {
+        let message: String
+        switch hint {
+        case .javascriptDisabled(let browser):
+            message = L10n.Media.javascriptDisabledHint(browser: browser)
+        case .automationDenied(let browser):
+            message = L10n.Media.automationDeniedHint(browser: browser)
+        }
+        return HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10, weight: .bold))
+            Text(message)
+                .font(.system(size: 10, weight: .medium))
+                .lineLimit(2)
+        }
+        .foregroundColor(.white.opacity(0.85))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.08))
+        .cornerRadius(8)
     }
 
     // MARK: - Prayer Audio Mode View

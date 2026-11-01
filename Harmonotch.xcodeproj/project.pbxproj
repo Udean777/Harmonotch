@@ -13,10 +13,24 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D0BCA8E83086863B0080715B /* Harmonotch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D0BCA8F93086863C0080715B /* Exceptions for "Harmonotch" folder in "Harmonotch" target */,
+			);
 			path = Harmonotch;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D0BCA8F93086863C0080715B /* Exceptions for "Harmonotch" folder in "Harmonotch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Features/Media/NowPlaying/NowPlayingAdapter.m",
+				"Features/Media/NowPlaying/nowplaying.pl",
+			);
+			target = D0BCA8E53086863B0080715B /* Harmonotch */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		D0BCA8E33086863B0080715B /* Frameworks */ = {
@@ -53,6 +67,7 @@
 				D0BCA8E23086863B0080715B /* Sources */,
 				D0BCA8E33086863B0080715B /* Frameworks */,
 				D0BCA8E43086863B0080715B /* Resources */,
+				D0BCA8FA3086863C0080715B /* Build NowPlaying bridge */,
 			);
 			buildRules = (
 			);
@@ -107,6 +122,32 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		D0BCA8FA3086863C0080715B /* Build NowPlaying bridge */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m",
+				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/nowplaying.pl",
+			);
+			name = "Build NowPlaying bridge";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/libHarmonotchNowPlaying.dylib",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/nowplaying.pl",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nDYLIB=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libHarmonotchNowPlaying.dylib\"\nmkdir -p \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\"\nclang -dynamiclib -fobjc-arc -fblocks -arch $ARCHS -framework Foundation -o \"$DYLIB\" \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m\"\ncp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		D0BCA8E23086863B0080715B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -155,7 +196,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -221,7 +262,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -255,7 +296,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to control playback in Spotify, Apple Music, Safari, and Google Chrome.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to read and control playback in Spotify, Apple Music, Safari, and Chromium browsers.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch needs your location to calculate accurate prayer times.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -294,7 +335,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to control playback in Spotify, Apple Music, Safari, and Google Chrome.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Harmonotch needs permission to read and control playback in Spotify, Apple Music, Safari, and Chromium browsers.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Harmonotch needs your location to calculate accurate prayer times.";
 				LD_RUNPATH_SEARCH_PATHS = (

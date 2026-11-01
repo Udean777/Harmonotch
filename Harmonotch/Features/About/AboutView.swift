@@ -147,16 +147,6 @@ struct AboutView: View {
             }
 
             AcknowledgementCard(
-              title: L10n.About.vorssaintTitle,
-              author: "Vorssaint",
-              license: "Open Source",
-              description: L10n.About.vorssaintDesc,
-              iconName: "waveform.circle.fill",
-              url: URL(string: "https://github.com/vorssaint/vorssaint-utils"),
-              onViewLicense: nil
-            )
-
-            AcknowledgementCard(
               title: L10n.About.audioTitle,
               author: "IslamDownload.net",
               license: "Free Audio",

@@ -34,10 +34,12 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 
 ### Media and lyrics
 
-- Real-time system-wide playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) across Safari, WebKit, Chrome, YouTube, YouTube Music, Spotify, and Apple Music via macOS `MediaRemote` and the NowPlaying architecture from [vorssaint-utils](https://github.com/vorssaint/vorssaint-utils), with AppleScript and iTunes Search API metadata fallbacks.
+- Playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) for Apple Music, Spotify, QuickTime, Podcasts, and browsers through a MediaRemote bridge: a small adapter loaded into Apple's `/usr/bin/perl` because macOS no longer answers MediaRemote directly from third-party apps. The approach was inspired by [Vorssaint](https://github.com/vorssaint/vorssaint-utils) and is used with the author's permission; the adapter itself is an independent implementation. When the bridge is unavailable, the app falls back to AppleScript and Safari/Chromium Apple Events.
 - Collapsed notch narrows toward the hardware notch while playing, showing the interactive companion and artwork thumbnail on the expanded left wing with a live equalizer waveform on the right, then restores the battery layout when playback ends.
 - Expanded 560pt notch drawer displays high-resolution 64×64 artwork, track metadata, interactive progress scrubber, playback transport controls, and time-synchronized karaoke lyrics from [LRCLIB](https://lrclib.net/).
 - Lets you click any lyric line to seek directly to its timestamp.
+
+The MediaRemote bridge uses an undocumented Apple framework, so it can change or disappear in a future macOS release. That is why the AppleScript path stays in place, and why this app ships outside the Mac App Store.
 
 ### Interface
 
@@ -98,7 +100,7 @@ Harmonotch/
 │   ├── Localization/                 // Language state and strings
 │   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
 │   ├── Battery/                      // IOKit monitor and clamshell mode
-│   ├── Media/                        // MediaRemote, NowPlaying, lyrics, and metadata
+│   ├── Media/                        // MediaRemote bridge, lyrics, and metadata
 │   ├── Update/                       // GitHub release checks
 │   └── About/                        // About window and credits
 ├── web/                              // Landing page (HTML, CSS, JS)
@@ -112,9 +114,9 @@ Harmonotch/
 ## Credits
 
 - [Adhan-Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps (MIT License) for astronomical prayer calculations.
-- [vorssaint-utils](https://github.com/vorssaint/vorssaint-utils) by Vorssaint for the macOS `NowPlayingAdapter` / `MediaRemote` real-time media playback architecture and reference implementation.
 - [LRCLIB](https://lrclib.net/) for synced lyrics.
 - [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html) for the adhan recordings.
+- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0) for the MediaRemote-through-perl technique, used with permission. Harmonotch's adapter is written independently, so no GPL code is included.
 - Apple for the iTunes Search API, `MediaRemote`, SF Symbols, and IOKit.
 
 Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).

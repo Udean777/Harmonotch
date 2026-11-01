@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
+    MediaManager.shared.stop()
     ClamshellManager.shared.prepareForTermination()
   }
 
