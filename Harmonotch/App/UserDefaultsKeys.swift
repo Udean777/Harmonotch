@@ -12,4 +12,5 @@ enum UserDefaultsKeys {
     static let clamshellArmed = "Harmonotch_ClamshellArmed"
     static let sudoConfigured = "Harmonotch_SudoConfigured"
     static let appLanguage = "Harmonotch_AppLanguage"
+    static let companionEnabled = "Harmonotch_CompanionEnabled"
 }

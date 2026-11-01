@@ -39,7 +39,7 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
       && !AdzanPlayer.shared.isPlaying
     let leftContentExpansion: CGFloat = {
       if isMediaPlaying {
-        return NotchLayout.mediaLeftExpansion
+        return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
       }
       return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
     }()
@@ -62,15 +62,17 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     }
 
     let leftExpansionOffset =
-      leftContentExpansion > 0
+      !isExpanded && leftContentExpansion > 0
       ? -(leftContentExpansion / 2)
       : 0
     let minX = (bounds.width - currentWidth) / 2 + leftExpansionOffset
     let maxX = minX + currentWidth
-    let minY = topY - currentHeight
+    let topInset = geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset
+    let minY = topY - topInset - currentHeight
+    let maxY = topY - topInset
 
     let isInsideNotchRadius =
-      (point.x >= minX && point.x <= maxX && point.y >= (minY - 2) && point.y <= topY)
+      (point.x >= minX && point.x <= maxX && point.y >= (minY - 2) && point.y <= maxY)
 
     if isInsideNotchRadius {
       // Intercept events to prevent menu bar slide-down.

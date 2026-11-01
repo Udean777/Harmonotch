@@ -28,7 +28,7 @@ struct NotchPillView: View {
 
   private var leftContentExpansion: CGFloat {
     if isMediaPlaying {
-      return NotchLayout.mediaLeftExpansion
+      return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
     }
     return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
   }
@@ -74,10 +74,7 @@ struct NotchPillView: View {
             .padding(.trailing, innerInset)
             .frame(width: leftWingWidth, height: height, alignment: .leading)
             .clipped()
-            .onHover {
-              isLeftHovered = $0
-              notchVM.setLeftCompanionVisible($0 && isBatteryMode)
-            }
+            .onHover { updateLeftHover($0) }
 
           Color.clear
             .frame(width: geometry.physicalNotchWidth, height: height)
@@ -93,10 +90,6 @@ struct NotchPillView: View {
           leftContent
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipped()
-            .onHover {
-              isLeftHovered = $0
-              notchVM.setLeftCompanionVisible($0 && isBatteryMode)
-            }
 
           rightContent
             .layoutPriority(1)
@@ -105,6 +98,14 @@ struct NotchPillView: View {
         .padding(.horizontal, outerInset)
         .frame(width: noNotchWidth, height: height)
         .clipped()
+        .onContinuousHover(coordinateSpace: .local) { phase in
+          switch phase {
+          case .active(let location):
+            updateLeftHover(location.x < noNotchWidth * NotchLayout.leftHoverFraction)
+          case .ended:
+            updateLeftHover(false)
+          }
+        }
       }
     }
     .contentShape(Rectangle())
@@ -112,9 +113,14 @@ struct NotchPillView: View {
       notchVM.toggleExpanded()
     }
     .onHover { notchVM.setHovered($0) }
-    .onChange(of: isBatteryMode) { _, batteryMode in
-      notchVM.setLeftCompanionVisible(isLeftHovered && batteryMode)
+    .onChange(of: isBatteryMode) { _, _ in
+      updateLeftHover(isLeftHovered)
     }
+  }
+
+  private func updateLeftHover(_ hovering: Bool) {
+    if isLeftHovered != hovering { isLeftHovered = hovering }
+    notchVM.setLeftCompanionVisible(hovering && isBatteryMode)
   }
 
   private var leftContent: some View {
@@ -132,7 +138,7 @@ struct NotchPillView: View {
   private var leftContentBody: some View {
     if isBatteryMode {
       HStack(spacing: 4) {
-        if isLeftHovered {
+        if isLeftHovered && notchVM.isCompanionEnabled {
           PrayerCompanionView()
             .transition(.opacity.combined(with: .scale(scale: 0.82, anchor: .trailing)))
         }
@@ -140,8 +146,10 @@ struct NotchPillView: View {
       }
     } else if isMediaPlaying {
       mediaLeft
-    } else {
+    } else if notchVM.isCompanionEnabled {
       PrayerCompanionView()
+    } else {
+      batteryLeft
     }
   }
 
@@ -227,7 +235,9 @@ struct NotchPillView: View {
 
   private var mediaLeft: some View {
     HStack(spacing: 5) {
-      PrayerCompanionView()
+      if notchVM.isCompanionEnabled {
+        PrayerCompanionView()
+      }
       thumbnail
     }
     .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
@@ -241,13 +251,13 @@ struct NotchPillView: View {
           .resizable()
           .aspectRatio(contentMode: .fill)
           .frame(width: 19, height: 19)
-          .clipShape(RoundedRectangle(cornerRadius: 4.5, style: .continuous))
+          .clipShape(Circle())
           .overlay(
-            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+            Circle()
               .stroke(Color.white.opacity(0.20), lineWidth: 0.6)
           )
       } else {
-        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+        Circle()
           .fill(Color(white: 0.16))
           .frame(width: 19, height: 19)
           .overlay(
@@ -256,58 +266,64 @@ struct NotchPillView: View {
               .foregroundColor(.white.opacity(0.85))
           )
           .overlay(
-            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+            Circle()
               .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
           )
       }
     }
   }
 
+  private var mediaAccentColor: Color {
+    mediaManager.artworkAccentColor.map(Color.init(nsColor:)) ?? .white
+  }
+
   @ViewBuilder
   private var mediaRight: some View {
     ZStack {
       if mediaManager.isPlaying {
-        EqualizerWaveformView()
+        EqualizerWaveformView(barColor: mediaAccentColor)
           .transition(NotchMotion.swap)
       } else {
         Image(systemName: "pause.fill")
           .font(.system(size: 9.5, weight: .bold))
-          .foregroundColor(.white.opacity(0.80))
+          .foregroundColor(mediaAccentColor.opacity(0.80))
           .transition(NotchMotion.swap)
       }
     }
     .animation(NotchMotion.content, value: mediaManager.isPlaying)
+    .animation(NotchMotion.fade, value: mediaAccentColor)
   }
 }
 
 // MARK: - Equalizer Sound Bars View
 
 struct EqualizerWaveformView: View {
+  var barColor: Color = .white
   @State private var isAnimating = false
 
   var body: some View {
     HStack(alignment: .center, spacing: 2.2) {
       RoundedRectangle(cornerRadius: 1)
-        .fill(Color.white)
+        .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 11 : 4)
         .animation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true), value: isAnimating)
 
       RoundedRectangle(cornerRadius: 1)
-        .fill(Color.white)
+        .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 5 : 12)
         .animation(
           .easeInOut(duration: 0.35).repeatForever(autoreverses: true).delay(0.1),
           value: isAnimating)
 
       RoundedRectangle(cornerRadius: 1)
-        .fill(Color.white)
+        .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 12 : 5)
         .animation(
           .easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(0.2), value: isAnimating
         )
 
       RoundedRectangle(cornerRadius: 1)
-        .fill(Color.white)
+        .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 4 : 9)
         .animation(
           .easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(0.15),

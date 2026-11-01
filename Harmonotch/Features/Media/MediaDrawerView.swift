@@ -8,6 +8,10 @@ struct MediaDrawerView: View {
     @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var themeManager = ThemeManager.shared
 
+    private var mediaAccentColor: Color {
+        mediaManager.artworkAccentColor.map(Color.init(nsColor:)) ?? .white
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             if adzanPlayer.isPlaying {
@@ -177,6 +181,7 @@ struct MediaDrawerView: View {
                             Image(systemName: "waveform")
                                 .font(.system(size: 8.5))
                                 .symbolEffect(.variableColor.iterative.reversing)
+                                .foregroundColor(mediaAccentColor)
                         }
                     }
                     .foregroundColor(Color.white.opacity(0.65))
@@ -209,7 +214,7 @@ struct MediaDrawerView: View {
                     }) {
                         Image(systemName: "backward.fill")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(mediaAccentColor)
                             .frame(width: 34, height: 34)
                             .background(Color.white.opacity(0.10))
                             .clipShape(Circle())
@@ -225,9 +230,9 @@ struct MediaDrawerView: View {
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.black)
                             .frame(width: 42, height: 42)
-                            .background(Color.white)
+                            .background(mediaAccentColor)
                             .clipShape(Circle())
-                            .shadow(color: Color.white.opacity(0.15), radius: 6, x: 0, y: 2)
+                            .shadow(color: mediaAccentColor.opacity(0.25), radius: 6, x: 0, y: 2)
                     }
                     .buttonStyle(.plain)
 
@@ -236,7 +241,7 @@ struct MediaDrawerView: View {
                     }) {
                         Image(systemName: "forward.fill")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(mediaAccentColor)
                             .frame(width: 34, height: 34)
                             .background(Color.white.opacity(0.10))
                             .clipShape(Circle())
@@ -260,7 +265,7 @@ struct MediaDrawerView: View {
                             .frame(height: 5)
 
                         Capsule()
-                            .fill(Color.white)
+                            .fill(mediaAccentColor)
                             .frame(width: max(5, geo.size.width * CGFloat(mediaManager.progress)), height: 5)
                     }
                 }
@@ -277,7 +282,7 @@ struct MediaDrawerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "quote.bubble.fill")
                         .font(.system(size: 11))
-                        .foregroundColor(.white)
+                        .foregroundColor(mediaAccentColor)
 
                     Text(mediaManager.currentLyricText)
                         .font(.system(size: 11.5, weight: .semibold, design: .rounded))

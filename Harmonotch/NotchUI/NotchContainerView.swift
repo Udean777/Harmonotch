@@ -16,7 +16,7 @@ struct NotchContainerView: View {
 
   private var leftContentExpansion: CGFloat {
     if isMediaPlaying {
-      return NotchLayout.mediaLeftExpansion
+      return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
     }
     return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
   }
@@ -58,7 +58,11 @@ struct NotchContainerView: View {
   }
 
   private var notchShape: NotchShape {
-    NotchShape.island(height: targetHeight, isExpanded: notchVM.isExpanded)
+    NotchShape.island(
+      height: targetHeight,
+      isExpanded: notchVM.isExpanded,
+      isFloating: !geometry.hasHardwareNotch
+    )
   }
 
   var body: some View {
@@ -119,9 +123,10 @@ struct NotchContainerView: View {
     .frame(width: targetWidth, height: targetHeight, alignment: .top)
     .clipShape(notchShape)
     .offset(
-      x: leftContentExpansion > 0
+      x: !notchVM.isExpanded && leftContentExpansion > 0
         ? -(leftContentExpansion / 2)
-        : 0
+        : 0,
+      y: geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset
     )
     .frame(width: NotchWindowController.canvasWidth, alignment: .top)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -135,6 +140,7 @@ struct NotchContainerView: View {
     )
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
     .animation(NotchMotion.content, value: isMediaPlaying)
+    .animation(NotchMotion.content, value: notchVM.isCompanionEnabled)
     .animation(NotchMotion.content, value: notchVM.selectedTab)
     .animation(NotchMotion.content, value: adzanPlayer.isPlaying)
     .animation(NotchMotion.content, value: mediaManager.hasActiveTrack)

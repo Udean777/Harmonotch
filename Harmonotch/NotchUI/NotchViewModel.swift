@@ -7,6 +7,12 @@ final class NotchViewModel: ObservableObject {
   @Published var isExpanded: Bool = false
   @Published var isHovered: Bool = false
   @Published var isLeftCompanionVisible: Bool = false
+  @Published var isCompanionEnabled: Bool {
+    didSet {
+      UserDefaults.standard.set(isCompanionEnabled, forKey: UserDefaultsKeys.companionEnabled)
+      if !isCompanionEnabled { isLeftCompanionVisible = false }
+    }
+  }
   @Published var selectedTab: DrawerTab = .battery  // Default / main view is Battery
   @Published var geometry: NotchGeometry = NotchGeometry.current()
 
@@ -20,6 +26,9 @@ final class NotchViewModel: ObservableObject {
   }
 
   init() {
+    self.isCompanionEnabled = UserDefaults.standard.bool(
+      forKey: UserDefaultsKeys.companionEnabled)
+
     // Switch to Media tab when Adzan starts playing
     AdzanPlayer.shared.$isPlaying
       .receive(on: DispatchQueue.main)
@@ -39,21 +48,23 @@ final class NotchViewModel: ObservableObject {
       }
       .store(in: &cancellables)
 
-    // Switch to Media tab when media starts playing
+    // Switch to Media tab when media starts playing, never while the user is on another tab.
     Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$trackTitle)
+      .map { isPlaying, trackTitle in
+        isPlaying && !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      }
+      .removeDuplicates()
       .receive(on: DispatchQueue.main)
-      .sink { [weak self] isPlaying, trackTitle in
+      .sink { [weak self] isMediaActive in
         guard let self = self else { return }
-        let hasTrack = !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        if isPlaying && hasTrack {
+        if isMediaActive {
+          guard self.selectedTab != .media else { return }
           withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
             self.selectedTab = .media
           }
-        } else if !hasTrack && !AdzanPlayer.shared.isPlaying {
-          if self.selectedTab == .media {
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
-              self.selectedTab = .battery
-            }
+        } else if !AdzanPlayer.shared.isPlaying, self.selectedTab == .media {
+          withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+            self.selectedTab = .battery
           }
         }
       }
@@ -65,7 +76,9 @@ final class NotchViewModel: ObservableObject {
   }
 
   func setLeftCompanionVisible(_ visible: Bool) {
-    isLeftCompanionVisible = visible
+    let next = visible && isCompanionEnabled
+    guard isLeftCompanionVisible != next else { return }
+    isLeftCompanionVisible = next
   }
 
   func collapse() {
