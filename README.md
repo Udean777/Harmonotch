@@ -52,8 +52,8 @@ The MediaRemote bridge uses an undocumented Apple framework, so it can change or
 
 ## Requirements
 
-- macOS 14.0 (Sonoma) or later.
-- Xcode 16.0 or later with the Swift 6 toolchain.
+- macOS 14.0 (Sonoma) or later. Verified up to macOS 27.
+- Xcode 16.3 or later (Swift 6.1+, needed for `nonisolated` types).
 
 ## Build and run
 
