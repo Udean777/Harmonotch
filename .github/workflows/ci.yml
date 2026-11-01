@@ -12,20 +12,19 @@ concurrency:
 jobs:
   build:
     name: Build & Verify
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Select Xcode
         run: |
-          for xcode in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
-            if [ -d "$xcode" ]; then
-              echo "Selecting $xcode"
-              sudo xcode-select -s "$xcode"
-              break
-            fi
-          done
+          # `nonisolated` on types (used by the now-playing bridge) needs Swift 6.1+.
+          xcode=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -vi beta | sort -V | tail -n 1)
+          if [ -n "$xcode" ]; then
+            echo "Selecting $xcode"
+            sudo xcode-select -s "$xcode"
+          fi
           xcodebuild -version
 
       - name: Ensure Xcode Project Compatibility
@@ -48,6 +47,7 @@ jobs:
             -project Harmonotch.xcodeproj \
             -scheme Harmonotch \
             -configuration Debug \
+            -derivedDataPath build/dd \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log || {
@@ -55,3 +55,11 @@ jobs:
               grep -E "(error:|fatal error:)" xcodebuild.log || tail -n 100 xcodebuild.log
               exit 1
             }
+
+      - name: Verify Media bridge in bundle
+        run: |
+          APP="build/dd/Build/Products/Debug/Harmonotch.app"
+          test -f "$APP/Contents/Frameworks/libHarmonotchNowPlaying.dylib"
+          test -f "$APP/Contents/Resources/nowplaying.pl"
+          perl -c "$APP/Contents/Resources/nowplaying.pl"
+          codesign --verify "$APP/Contents/Frameworks/libHarmonotchNowPlaying.dylib"

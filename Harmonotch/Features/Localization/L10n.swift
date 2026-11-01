@@ -210,6 +210,21 @@ enum L10n {
     }
 
     enum Media {
+        static func javascriptDisabledHint(browser: String) -> String {
+            if browser == "Safari" {
+                return isEnglish
+                    ? "Safari: Develop > Developer Settings > Allow JavaScript from Apple Events"
+                    : "Safari: Develop > Developer Settings > Allow JavaScript from Apple Events"
+            }
+            return isEnglish
+                ? "\(browser): View > Developer > Allow JavaScript from Apple Events"
+                : "\(browser): View > Developer > Allow JavaScript from Apple Events"
+        }
+        static func automationDeniedHint(browser: String) -> String {
+            isEnglish
+                ? "Allow Harmonotch to control \(browser) in System Settings > Privacy & Security > Automation"
+                : "Izinkan Harmonotch mengontrol \(browser) di Pengaturan Sistem > Privasi & Keamanan > Otomasi"
+        }
         static var nowPlaying: String {
             isEnglish ? "Now Playing" : "Sedang Diputar"
         }
@@ -345,12 +360,6 @@ enum L10n {
         }
         static var adhanDesc: String {
             isEnglish ? "Astronomical calculation engine by Batoul Apps (MIT License)" : "Mesin kalkulasi astronomi waktu sholat oleh Batoul Apps (Lisensi MIT)"
-        }
-        static var vorssaintTitle: String {
-            "vorssaint-utils"
-        }
-        static var vorssaintDesc: String {
-            isEnglish ? "macOS NowPlaying / MediaRemote architecture reference by Vorssaint" : "Referensi arsitektur NowPlaying / MediaRemote macOS oleh Vorssaint"
         }
         static var audioTitle: String {
             isEnglish ? "Adzan Audio Recordings" : "Rekaman Audio Adzan"

@@ -116,6 +116,95 @@ checkEqual(Compass.cardinal(for: 270, isEnglish: true), "W", "compass west")
 checkEqual(Compass.cardinal(for: -90, isEnglish: true), "W", "negative heading wraps")
 checkEqual(Compass.cardinal(for: 360, isEnglish: true), "N", "full turn")
 
+// MARK: - Web media
+
+let paused = "1\t2\thttps://www.youtube.com/watch?v=aaaaaaaaaaa\t{\"paused\":true,\"t\":12.5,\"d\":200,\"title\":\"First\",\"artist\":\"A\",\"art\":\"\"}\n"
+let playing = "1\t3\thttps://www.youtube.com/watch?v=bbbbbbbbbbb\t{\"paused\":false,\"t\":3,\"d\":180,\"title\":\"Second\",\"artist\":\"B\",\"art\":\"https://x/y.jpg\"}\n"
+let tabs = WebMediaParser.parse(output: paused + playing, browser: "Safari")
+checkEqual(tabs.count, 2, "parses both tabs")
+checkEqual(tabs[1].tabIndex, 3, "tab index parsed")
+checkEqual(tabs[1].artworkURL, "https://x/y.jpg", "artwork parsed")
+checkEqual(WebMediaParser.pick(from: tabs)?.title, "Second", "playing tab beats first tab")
+checkEqual(
+    WebMediaParser.pick(from: [tabs[0]], preferredURL: nil)?.title, "First", "paused tab with progress is picked")
+checkEqual(
+    WebMediaParser.pick(from: [tabs[0], tabs[0]], preferredURL: tabs[0].url)?.title, "First", "preferred paused tab kept")
+
+check(WebMediaParser.parse(output: "", browser: "Safari").isEmpty, "empty output")
+check(WebMediaParser.parse(output: "garbage\n1\t2\turl\tnot json\n", browser: "Safari").isEmpty, "broken lines skipped")
+
+let live = WebMediaParser.parse(
+    output: "1\t1\thttps://www.youtube.com/watch?v=ccccccccccc\t{\"paused\":false,\"t\":5,\"d\":0,\"title\":\"Live\",\"artist\":\"\",\"art\":\"\"}", browser: "Safari")
+checkEqual(live.first?.duration, 0, "live stream has zero duration")
+
+checkEqual(
+    WebMediaParser.error(from: "ERR\t-1743\tnot allowed", browser: "Safari"),
+    .automationDenied(browser: "Safari"), "automation denied")
+checkEqual(
+    WebMediaParser.error(
+        from: "ERR\t8\tYou must enable the 'Allow JavaScript from Apple Events' option", browser: "Safari"),
+    .javascriptDisabled(browser: "Safari"), "javascript disabled")
+check(WebMediaParser.error(from: "ERR\t5\tother", browser: "Safari") == nil, "unrelated error ignored")
+
+// MARK: - Now-playing bridge
+
+func decodeNowPlayingEvent(_ json: String) -> NowPlayingEvent? {
+    try? JSONDecoder().decode(NowPlayingEvent.self, from: Data(json.utf8))
+}
+
+let nowPlayingJSON = """
+{"event":"state","source":"com.spotify.client","title":"Track","artist":"Artist","album":"Album","duration":215.4,"elapsed":42.1,"rate":1.0,"playing":true,"contentID":"abc"}
+"""
+if case .state(let state)? = decodeNowPlayingEvent(nowPlayingJSON) {
+    checkEqual(state.title, "Track", "now-playing title")
+    checkEqual(state.artist, "Artist", "now-playing artist")
+    checkEqual(state.duration, 215.4, "now-playing duration")
+    checkEqual(state.elapsed, 42.1, "now-playing elapsed")
+    checkEqual(state.playing, true, "now-playing playing")
+    checkEqual(state.sourceKind, .spotify, "now-playing source")
+    check(state.artwork == nil, "now-playing artwork absent")
+} else {
+    check(false, "now-playing state decodes")
+}
+
+let artworkJSON = """
+{"event":"state","source":"com.google.Chrome","title":"Track","artist":"","album":"","duration":0,"elapsed":0,"rate":0,"playing":false,"contentID":"abc","artwork":"AAEC"}
+"""
+if case .state(let state)? = decodeNowPlayingEvent(artworkJSON) {
+    checkEqual(state.artwork, "AAEC", "now-playing artwork decoded")
+    checkEqual(state.sourceKind, .web, "chromium maps to web")
+} else {
+    check(false, "now-playing state with artwork decodes")
+}
+
+if case .result(let id, let ok)? = decodeNowPlayingEvent(
+    #"{"event":"result","id":"command-1","ok":true}"#)
+{
+    checkEqual(id, "command-1", "result id")
+    checkEqual(ok, true, "result ok")
+} else {
+    check(false, "now-playing result decodes")
+}
+
+if case .error(let message)? = decodeNowPlayingEvent(
+    #"{"event":"error","message":"MediaRemote unavailable"}"#)
+{
+    checkEqual(message, "MediaRemote unavailable", "error message")
+} else {
+    check(false, "now-playing error decodes")
+}
+
+check(decodeNowPlayingEvent(#"{"event":"unknown"}"#) == nil, "unknown event rejected")
+check(decodeNowPlayingEvent(#"{"event":"state","title":"partial"}"#) == nil, "incomplete state rejected")
+
+checkEqual(NowPlayingSourceKind(bundleID: "com.apple.Music"), .appleMusic, "Apple Music mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "com.apple.WebKit.GPU"), .safari, "Safari mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "com.brave.Browser"), .web, "Brave mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "company.thebrowser.Browser"), .web, "Arc mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "com.apple.QuickTimePlayerX"), .quicktime, "QuickTime mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "com.apple.podcasts"), .podcasts, "Podcasts mapping")
+checkEqual(NowPlayingSourceKind(bundleID: "com.example.unknown"), .system, "unknown source mapping")
+
 if failures > 0 {
     fputs("\(failures) test(s) failed\n", stderr)
     exit(1)
