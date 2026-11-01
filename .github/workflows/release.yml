@@ -157,6 +157,7 @@ jobs:
             --icon "Harmonotch.app" 150 190 \
             --hide-extension "Harmonotch.app" \
             --app-drop-link 450 190 \
+            --skip-jenkins \
             "$DMG_NAME" \
             "$APP_PATH"
 
