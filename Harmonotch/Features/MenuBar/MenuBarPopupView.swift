@@ -709,6 +709,24 @@ struct MenuBarPopupView: View {
             }
           }
       }
+
+      HStack(spacing: 6) {
+        HStack(spacing: 4) {
+          Image(systemName: "face.smiling")
+            .font(.system(size: 9))
+            .foregroundColor(AppTheme.textSecondary)
+          Text(L10n.Menu.companionToggle)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(AppTheme.textSecondary)
+        }
+
+        Spacer()
+
+        Toggle("", isOn: $notchVM.isCompanionEnabled)
+          .toggleStyle(.switch)
+          .labelsHidden()
+          .scaleEffect(0.68)
+      }
     }
   }
 

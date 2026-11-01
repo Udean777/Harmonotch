@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 var failures = 0
@@ -204,6 +205,42 @@ checkEqual(NowPlayingSourceKind(bundleID: "company.thebrowser.Browser"), .web, "
 checkEqual(NowPlayingSourceKind(bundleID: "com.apple.QuickTimePlayerX"), .quicktime, "QuickTime mapping")
 checkEqual(NowPlayingSourceKind(bundleID: "com.apple.podcasts"), .podcasts, "Podcasts mapping")
 checkEqual(NowPlayingSourceKind(bundleID: "com.example.unknown"), .system, "unknown source mapping")
+
+// MARK: - ArtworkPalette
+
+func solidPixels(_ red: UInt8, _ green: UInt8, _ blue: UInt8, count: Int = 64) -> [UInt8] {
+    Array(repeating: [red, green, blue, 255], count: count).flatMap { $0 }
+}
+
+if let accent = ArtworkPalette.accent(fromRGBA: solidPixels(220, 30, 30)) {
+    var hue: CGFloat = 0
+    var saturation: CGFloat = 0
+    var brightness: CGFloat = 0
+    var alpha: CGFloat = 0
+    accent.usingColorSpace(.deviceRGB)?.getHue(
+        &hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+    check(hue < 0.05 || hue > 0.95, "red artwork keeps red hue")
+    check(saturation >= 0.45, "accent saturation is boosted for legibility")
+    check(brightness >= 0.85, "accent brightness is boosted for legibility")
+} else {
+    check(false, "colored artwork yields an accent")
+}
+
+check(
+    ArtworkPalette.accent(fromRGBA: solidPixels(128, 128, 128)) == nil,
+    "grayscale artwork falls back to white")
+
+if let accent = ArtworkPalette.accent(fromRGBA: solidPixels(20, 40, 220)) {
+    var hue: CGFloat = 0
+    var saturation: CGFloat = 0
+    var brightness: CGFloat = 0
+    var alpha: CGFloat = 0
+    accent.usingColorSpace(.deviceRGB)?.getHue(
+        &hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+    check(hue > 0.55 && hue < 0.75, "blue artwork keeps blue hue")
+} else {
+    check(false, "blue artwork yields an accent")
+}
 
 if failures > 0 {
     fputs("\(failures) test(s) failed\n", stderr)

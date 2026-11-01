@@ -34,6 +34,6 @@ enum DetachedProcess {
     /// Relaunches an app bundle after the current process quits.
     static func relaunchAfterExit(appPath: String, pid: pid_t) {
         let script = "while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done; /usr/bin/open \"$1\""
-        try? spawn("/bin/sh", ["-c", script, "relaunch", appPath])
+        _ = try? spawn("/bin/sh", ["-c", script, "relaunch", appPath])
     }
 }

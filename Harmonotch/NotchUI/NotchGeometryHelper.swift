@@ -11,6 +11,16 @@ enum NotchLayout {
   static let mediaLeftExpansion: CGFloat = 28
   static let maxShoulder: CGFloat = 10
   static let wingInnerInset: CGFloat = 3
+  /// Left hover zone on non-notched displays, as a fraction of pill width.
+  static let leftHoverFraction: CGFloat = 0.45
+  /// Gap between the virtual (non-notched) pill and the top screen edge.
+  static let floatingTopInset: CGFloat = 2
+  /// Slimmer pill height used on displays without a hardware notch.
+  static let floatingPillHeight: CGFloat = 24
+
+  static func floatingRadius(height: CGFloat, isExpanded: Bool) -> CGFloat {
+    isExpanded ? 22 : height / 2
+  }
   static let expandedWidth: CGFloat = 560
   static let expandedHorizontalInset: CGFloat = 20
   static let expandedContentWidth: CGFloat = expandedWidth - (expandedHorizontalInset * 2)
@@ -40,9 +50,11 @@ enum NotchLayout {
 
 /// Dynamic Island / Notch silhouette hanging from the top screen edge (y = 0),
 /// with concave top shoulders that flare into the bezel and convex bottom corners.
+/// In floating mode (no hardware notch) it renders as a detached rounded pill.
 struct NotchShape: Shape {
   var radius: CGFloat
   var shoulder: CGFloat
+  var isFloating: Bool = false
 
   var animatableData: AnimatablePair<CGFloat, CGFloat> {
     get { AnimatablePair(radius, shoulder) }
@@ -52,14 +64,29 @@ struct NotchShape: Shape {
     }
   }
 
-  static func island(height: CGFloat, isExpanded: Bool) -> NotchShape {
-    NotchShape(
+  static func island(height: CGFloat, isExpanded: Bool, isFloating: Bool = false) -> NotchShape {
+    if isFloating {
+      return NotchShape(
+        radius: NotchLayout.floatingRadius(height: height, isExpanded: isExpanded),
+        shoulder: 0,
+        isFloating: true
+      )
+    }
+    return NotchShape(
       radius: NotchLayout.surfaceRadius(height: height, isExpanded: isExpanded),
       shoulder: NotchLayout.shoulder(height: height)
     )
   }
 
   func path(in rect: CGRect) -> Path {
+    if isFloating {
+      // Detached pill: fully rounded ends instead of the bezel shoulders.
+      return Path(
+        roundedRect: rect,
+        cornerRadius: min(radius, rect.height / 2, rect.width / 2)
+      )
+    }
+
     let clampedShoulder = min(max(0, shoulder), rect.height * 0.25, rect.width / 4)
     let bottom = min(
       max(0, radius), rect.height / 2, max(0, (rect.width - clampedShoulder * 2) / 2))
@@ -101,6 +128,7 @@ struct NotchShape: Shape {
 struct NotchOpenBorderShape: Shape {
   var radius: CGFloat
   var shoulder: CGFloat
+  var isFloating: Bool = false
 
   var animatableData: AnimatablePair<CGFloat, CGFloat> {
     get { AnimatablePair(radius, shoulder) }
@@ -111,6 +139,13 @@ struct NotchOpenBorderShape: Shape {
   }
 
   func path(in rect: CGRect) -> Path {
+    if isFloating {
+      return Path(
+        roundedRect: rect,
+        cornerRadius: min(radius, rect.height / 2, rect.width / 2)
+      )
+    }
+
     let clampedShoulder = min(max(0, shoulder), rect.height * 0.25, rect.width / 4)
     let bottom = min(
       max(0, radius), rect.height / 2, max(0, (rect.width - clampedShoulder * 2) / 2))
@@ -155,7 +190,7 @@ struct NotchGeometry: Equatable {
 
   var collapsedHeight: CGFloat {
     hasHardwareNotch
-      ? physicalNotchHeight : max(NotchLayout.collapsedPillHeight, physicalNotchHeight)
+      ? physicalNotchHeight : NotchLayout.floatingPillHeight
   }
 
   func collapsedWidth(isHovered: Bool, isMediaPlaying: Bool = false) -> CGFloat {

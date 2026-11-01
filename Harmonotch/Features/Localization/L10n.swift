@@ -300,6 +300,9 @@ enum L10n {
         static var launchAtLogin: String {
             isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
         }
+        static var companionToggle: String {
+            isEnglish ? "Show Notch Companion" : "Tampilkan Companion Notch"
+        }
         static var clamshellToggle: String {
             isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
         }

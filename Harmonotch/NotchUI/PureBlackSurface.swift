@@ -9,7 +9,11 @@ struct PureBlackSurface: View {
   let isExpanded: Bool
 
   private var openBorder: NotchOpenBorderShape {
-    NotchOpenBorderShape(radius: shape.radius, shoulder: shape.shoulder)
+    NotchOpenBorderShape(
+      radius: shape.radius,
+      shoulder: shape.shoulder,
+      isFloating: shape.isFloating
+    )
   }
 
   var body: some View {
