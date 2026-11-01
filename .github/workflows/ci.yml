@@ -12,7 +12,8 @@ concurrency:
 jobs:
   build:
     name: Build & Verify
-    runs-on: macos-15
+    # Same toolchain as the release build.
+    runs-on: xcode-27
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

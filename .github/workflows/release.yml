@@ -29,7 +29,9 @@ concurrency:
 jobs:
   release:
     name: Build & Publish Release
-    runs-on: macos-15
+    # Xcode 27.1: Xcode 26.3's Swift 6.2.4 crashes in the inliner when compiling the
+    # x86_64 Release slice of PassThroughHostingView.
+    runs-on: xcode-27
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
