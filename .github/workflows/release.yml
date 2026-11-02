@@ -133,12 +133,59 @@ jobs:
           perl -c "$APP/Contents/Resources/nowplaying.pl"
           lipo -info "$APP/Contents/Frameworks/libHarmonotchNowPlaying.dylib"
 
-      - name: Ad-Hoc Code Sign
+      - name: Import Signing Certificate
+        id: signing
+        env:
+          CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        run: |
+          if [ -z "$CERT_P12" ]; then
+            echo "::warning::SIGNING_CERT_P12 is not set; falling back to ad-hoc signing."
+            echo "identity=-" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p ci "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p ci "$KEYCHAIN"
+
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security import "$RUNNER_TEMP/signing.p12" \
+            -k "$KEYCHAIN" \
+            -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -k ci "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(.*\)"/\1/p' | head -n 1)
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::Signing certificate imported but no codesigning identity was found."
+            exit 1
+          fi
+          echo "Signing identity: $IDENTITY"
+          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+
+      - name: Code Sign
         run: |
           APP_PATH="build/Harmonotch.xcarchive/Products/Applications/Harmonotch.app"
-          echo "Signing app ad-hoc to ensure native execution on Apple Silicon..."
-          codesign --force --deep -s - "$APP_PATH"
+          IDENTITY="${{ steps.signing.outputs.identity }}"
+          if [ "$IDENTITY" = "-" ]; then
+            echo "::warning::Signing ad-hoc. The Accessibility grant resets on every update."
+          fi
+
+          # Nested code must be signed before the bundle. --deep is deprecated and
+          # hides problems. A stable identity keeps the TCC code requirement
+          # certificate-based instead of cdhash-based, so users grant Accessibility once.
+          # No hardened runtime: the dylib is injected into /usr/bin/perl voluntarily,
+          # and library validation would reject a certificate without a Team ID.
+          codesign --force -s "$IDENTITY" \
+            "$APP_PATH/Contents/Frameworks/libHarmonotchNowPlaying.dylib"
+          codesign --force -s "$IDENTITY" "$APP_PATH"
           codesign -vvv --deep --strict "$APP_PATH"
+
+          echo "Designated requirement:"
+          codesign -d -r- "$APP_PATH" 2>&1 | tail -n 1
 
       - name: Create DMG Installer
         run: |

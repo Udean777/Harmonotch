@@ -75,6 +75,33 @@ Press `Cmd + R` in Xcode. For a release build from the command line:
 xcodebuild -project Harmonotch.xcodeproj -scheme Harmonotch -configuration Release -destination 'platform=macOS' build
 ```
 
+## Release signing
+
+The release workflow signs with a stable certificate when these secrets are set:
+
+| Secret | Value |
+| --- | --- |
+| `SIGNING_CERT_P12` | base64 of the `.p12` (single line) |
+| `SIGNING_CERT_PASSWORD` | password used when exporting the `.p12` |
+
+Without them the workflow falls back to ad-hoc signing. Do not ship that way: an ad-hoc signature makes the Accessibility grant cdhash-based, so the replacement HUDs stop working after every update until the app is removed and re-added in System Settings.
+
+To create a free self-signed certificate:
+
+1. Keychain Access → Certificate Assistant → Create a Certificate…
+   Name `Harmonotch Release`, Identity Type *Self Signed Root*, Certificate Type *Code Signing*.
+2. Export it as `.p12` with a password, then run `base64 -i HarmonotchRelease.p12 | pbcopy` and paste it into `SIGNING_CERT_P12`.
+
+After a release, verify the identity is stable:
+
+```bash
+codesign -d -r- /Applications/Harmonotch.app
+# expect: identifier "com.ssajudn.Harmonotch" and certificate leaf = H"..."
+# not:    cdhash H"..."
+```
+
+Users upgrading from an ad-hoc build must remove and re-add the app in System Settings → Privacy & Security → Accessibility once.
+
 ## Test
 
 ```bash

@@ -400,6 +400,15 @@ enum L10n {
         static var clamshellToggle: String {
             isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
         }
+        static var replaceVolumeHUD: String {
+            isEnglish ? "Replace macOS Volume HUD" : "Ganti Tampilan Volume macOS"
+        }
+        static var replaceBrightnessHUD: String {
+            isEnglish ? "Replace macOS Brightness HUD" : "Ganti Tampilan Kecerahan macOS"
+        }
+        static var volumeFeedbackSound: String {
+            isEnglish ? "Sound Feedback on Volume Change" : "Bunyi Efek saat Volume Berubah"
+        }
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
         }
@@ -408,6 +417,39 @@ enum L10n {
         }
         static var headerSubtitle: String {
             isEnglish ? "Battery & Audio Notch" : "Notch Baterai & Audio"
+        }
+    }
+
+    enum Volume {
+        static var title: String {
+            isEnglish ? "Volume HUD" : "HUD Volume"
+        }
+        static var replaceHUD: String {
+            isEnglish ? "Replace macOS Volume HUD" : "Ganti HUD Volume macOS"
+        }
+        static var feedbackSound: String {
+            isEnglish ? "Play Sound on Change" : "Putar Suara saat Berubah"
+        }
+        static var muted: String {
+            isEnglish ? "Mute" : "Bisu"
+        }
+        static var accessibilityRequired: String {
+            isEnglish ? "Accessibility Required" : "Perlu Izin Aksesibilitas"
+        }
+        static var grantPermission: String {
+            isEnglish ? "Grant" : "Izinkan"
+        }
+    }
+
+    enum Brightness {
+        static var title: String {
+            isEnglish ? "Brightness HUD" : "HUD Kecerahan"
+        }
+        static var replaceHUD: String {
+            isEnglish ? "Replace macOS Brightness HUD" : "Ganti HUD Kecerahan macOS"
+        }
+        static var display: String {
+            isEnglish ? "Built-in Display" : "Layar Bawaan"
         }
     }
 

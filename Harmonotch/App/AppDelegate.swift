@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     NotchWindowController.shared.setupAndShowWindow()
     setupStatusBarItem()
     observeUpdates()
+    VolumeManager.shared.start()
+    BrightnessManager.shared.start()
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
       UpdateManager.shared.checkForUpdates(isUserInitiated: false)
@@ -19,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   func applicationWillTerminate(_ notification: Notification) {
     MediaManager.shared.stop()
+    VolumeManager.shared.stop()
+    BrightnessManager.shared.stop()
     ClamshellManager.shared.prepareForTermination()
     BatteryChargeLimiter.shared.prepareForTermination()
   }
@@ -99,6 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       UpdateManager.shared.$isChecking.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$currentState.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$isArmed.map { _ in () }.eraseToAnyPublisher(),
+      VolumeManager.shared.$isEnabled.map { _ in () }.eraseToAnyPublisher(),
+      BrightnessManager.shared.$isEnabled.map { _ in () }.eraseToAnyPublisher(),
     ]
 
     Publishers.MergeMany(inputs)
@@ -276,6 +282,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     clamshellItem.image = NSImage(systemSymbolName: clamshellIcon, accessibilityDescription: nil)
     clamshellItem.state = ClamshellManager.shared.isArmed ? .on : .off
     menu.addItem(clamshellItem)
+
+    let volumeHUDItem = NSMenuItem(
+      title: L10n.Menu.replaceVolumeHUD,
+      action: #selector(toggleReplaceVolumeHUD),
+      keyEquivalent: ""
+    )
+    volumeHUDItem.target = self
+    volumeHUDItem.image = NSImage(systemSymbolName: "speaker.wave.2.fill", accessibilityDescription: nil)
+    volumeHUDItem.state = VolumeManager.shared.isEnabled ? .on : .off
+    menu.addItem(volumeHUDItem)
+
+    let volumeSoundItem = NSMenuItem(
+      title: L10n.Menu.volumeFeedbackSound,
+      action: #selector(toggleVolumeFeedbackSound),
+      keyEquivalent: ""
+    )
+    volumeSoundItem.target = self
+    volumeSoundItem.image = NSImage(systemSymbolName: "speaker.wave.1.fill", accessibilityDescription: nil)
+    volumeSoundItem.state = VolumeManager.shared.isFeedbackSoundEnabled ? .on : .off
+    menu.addItem(volumeSoundItem)
+
+    let brightnessHUDItem = NSMenuItem(
+      title: L10n.Menu.replaceBrightnessHUD,
+      action: #selector(toggleReplaceBrightnessHUD),
+      keyEquivalent: ""
+    )
+    brightnessHUDItem.target = self
+    brightnessHUDItem.image = NSImage(systemSymbolName: "sun.max.fill", accessibilityDescription: nil)
+    brightnessHUDItem.state = BrightnessManager.shared.isEnabled ? .on : .off
+    menu.addItem(brightnessHUDItem)
+
+    if !VolumeManager.shared.hasAccessibilityPermission {
+      let isId = LanguageManager.shared.currentLanguage == .indonesian
+      let title = isId ? "⚠️ Izin Aksesibilitas (Sembunyikan HUD macOS)" : "⚠️ Grant Accessibility (Hide Native HUD)"
+      let permItem = NSMenuItem(
+        title: title,
+        action: #selector(openAccessibilitySettings),
+        keyEquivalent: ""
+      )
+      permItem.target = self
+      permItem.image = NSImage(systemSymbolName: "hand.raised.fill", accessibilityDescription: nil)
+      menu.addItem(permItem)
+    }
   }
 
   private func buildLanguageSubmenu() -> NSMenu {
@@ -438,6 +487,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleClamshellStayAwake() {
     ClamshellManager.shared.isArmed.toggle()
+  }
+
+  @objc private func toggleReplaceVolumeHUD() {
+    if !VolumeManager.shared.isEnabled && !VolumeManager.shared.checkAccessibilityPermission() {
+      VolumeManager.shared.requestAccessibilityPermission()
+    }
+    VolumeManager.shared.toggleEnabled()
+  }
+
+  @objc private func toggleVolumeFeedbackSound() {
+    VolumeManager.shared.toggleFeedbackSound()
+  }
+
+  @objc private func toggleReplaceBrightnessHUD() {
+    if !BrightnessManager.shared.isEnabled && !VolumeManager.shared.checkAccessibilityPermission() {
+      VolumeManager.shared.requestAccessibilityPermission()
+    }
+    BrightnessManager.shared.toggleEnabled()
+  }
+
+  @objc private func openAccessibilitySettings() {
+    VolumeManager.shared.openAccessibilityPreferences()
   }
 
   @objc private func quitApp() {

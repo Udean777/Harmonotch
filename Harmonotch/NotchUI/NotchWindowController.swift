@@ -29,6 +29,25 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     super.mouseMoved(with: event)
   }
 
+  private var accumulatedScroll: CGFloat = 0
+
+  override func scrollWheel(with event: NSEvent) {
+    if !NotchViewModel.shared.isExpanded && VolumeManager.shared.isEnabled {
+      accumulatedScroll += event.scrollingDeltaY
+      if abs(accumulatedScroll) >= 1.0 {
+        let isFine = event.modifierFlags.contains(.shift) && event.modifierFlags.contains(.option)
+        if accumulatedScroll > 0 {
+          VolumeManager.shared.volumeUp(fine: isFine)
+        } else {
+          VolumeManager.shared.volumeDown(fine: isFine)
+        }
+        accumulatedScroll = 0
+      }
+    } else {
+      super.scrollWheel(with: event)
+    }
+  }
+
   override func hitTest(_ point: NSPoint) -> NSView? {
     let notchVM = NotchViewModel.shared
     let isExpanded = notchVM.isExpanded
@@ -56,7 +75,9 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
       currentWidth =
         geometry.collapsedWidth(
           isHovered: notchVM.isHovered,
-          isMediaPlaying: isMediaPlaying
+          isMediaPlaying: isMediaPlaying,
+          isVolumeHUD: VolumeManager.shared.isHUDVisible,
+          isBrightnessHUD: BrightnessManager.shared.isHUDVisible
         ) + leftContentExpansion
       currentHeight = geometry.collapsedHeight
     }

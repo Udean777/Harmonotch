@@ -5,6 +5,8 @@ struct NotchContainerView: View {
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var mediaManager = MediaManager.shared
   @ObservedObject var themeManager = ThemeManager.shared
+  @ObservedObject var volumeManager = VolumeManager.shared
+  @ObservedObject var brightnessManager = BrightnessManager.shared
 
   private var geometry: NotchGeometry {
     notchVM.geometry
@@ -26,7 +28,9 @@ struct NotchContainerView: View {
 
     return geometry.collapsedWidth(
       isHovered: notchVM.isHovered,
-      isMediaPlaying: isMediaPlaying
+      isMediaPlaying: isMediaPlaying,
+      isVolumeHUD: volumeManager.isHUDVisible,
+      isBrightnessHUD: brightnessManager.isHUDVisible
     ) + leftContentExpansion
   }
 

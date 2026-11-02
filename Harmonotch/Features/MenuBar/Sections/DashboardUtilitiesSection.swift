@@ -9,6 +9,7 @@ struct DashboardUtilitiesSection: View {
   @ObservedObject private var clamshellManager = ClamshellManager.shared
   @ObservedObject private var languageManager = LanguageManager.shared
   @ObservedObject private var themeManager = ThemeManager.shared
+  @ObservedObject private var volumeManager = VolumeManager.shared
   @State private var isLaunchAtLogin = (SMAppService.mainApp.status == .enabled)
 
   var body: some View {
@@ -31,6 +32,8 @@ struct DashboardUtilitiesSection: View {
           launchAtLoginRow
           Divider().background(AppTheme.divider)
           companionRow
+          Divider().background(AppTheme.divider)
+          volumeFeedbackRow
         }
       }
     }
@@ -411,6 +414,28 @@ struct DashboardUtilitiesSection: View {
         .labelsHidden()
         .scaleEffect(0.72)
         .accessibilityLabel(L10n.Menu.companionToggle)
+    }
+  }
+
+  private var volumeFeedbackRow: some View {
+    HStack(spacing: 6) {
+      HStack(spacing: 5) {
+        Image(systemName: "speaker.wave.2")
+          .font(.system(size: 9.5))
+          .foregroundColor(AppTheme.textSecondary)
+          .accessibilityHidden(true)
+        Text(L10n.Volume.feedbackSound)
+          .font(.system(size: 10, weight: .medium))
+          .foregroundColor(AppTheme.textSecondary)
+      }
+
+      Spacer()
+
+      Toggle("", isOn: $volumeManager.isFeedbackSoundEnabled)
+        .toggleStyle(.switch)
+        .labelsHidden()
+        .scaleEffect(0.72)
+        .accessibilityLabel(L10n.Volume.feedbackSound)
     }
   }
 
