@@ -44,12 +44,17 @@ THE SOFTWARE.
 
 ---
 
-## 3. Vorssaint (MediaRemote Bridge Approach)
+## 3. Vorssaint (MediaRemote Technique and Product Research)
 
 - **Author:** [Vorssaint](https://github.com/vorssaint)
 - **Repository:** [https://github.com/vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
-- **License:** GNU General Public License v3.0 (GPL-3.0)
-- **Purpose in Harmonotch:** The now-playing bridge loads a small adapter into `/usr/bin/perl` and talks to Apple's private MediaRemote framework from there, an approach demonstrated by Vorssaint. It is used with the author's written permission and with credit. The files in this repository (`NowPlayingAdapter.m`, `nowplaying.pl`, and `NowPlayingBridge.swift`) are an independent implementation; no Vorssaint source code was copied, so Harmonotch remains MIT-licensed.
+- **Reviewed revision:** [`a5da7633e09d0ebbf5b5607c0434ded28a239469`](https://github.com/vorssaint/vorssaint-utils/commit/a5da7633e09d0ebbf5b5607c0434ded28a239469)
+- **License:** GNU General Public License v3.0 or later (GPL-3.0-or-later)
+- **Purpose in Harmonotch:** The now-playing bridge loads a small adapter into `/usr/bin/perl` and talks to Apple's private MediaRemote framework from there, a technique demonstrated by Vorssaint. The technique is used with the author's written permission and with credit. Product-level research into demand-driven monitoring and modular utility panels also informed Harmonotch's requirements.
+- **Implementation boundary:** Harmonotch's implementations are written independently from Apple documentation and original testing. No Vorssaint source code, assets, strings, type names, or trade dress are included. The MediaRemote files in this repository (`NowPlayingAdapter.m`, `nowplaying.pl`, and `NowPlayingBridge.swift`) are independent implementations, so Harmonotch remains MIT-licensed.
+- **Trademark notice:** Harmonotch is not affiliated with or endorsed by Vorssaint. The Vorssaint name, logo, icon, bundle identity, trade dress, and official branding are not used by Harmonotch.
+
+The detailed source record and clean-room rules are maintained in [`docs/IMPLEMENTATION_PROVENANCE.md`](docs/IMPLEMENTATION_PROVENANCE.md).
 
 ---
 
@@ -57,7 +62,7 @@ THE SOFTWARE.
 
 - **Source:** [LRCLIB](https://lrclib.net)
 - **Repository:** [https://github.com/tranxuanthang/lrclib](https://github.com/tranxuanthang/lrclib)
-- **License:** Open Source / Free Community API
+- **License:** MIT License ([LICENSE](https://github.com/tranxuanthang/lrclib/blob/main/LICENSE))
 - **Purpose in Harmonotch:** Powers the real-time karaoke synced lyrics fetcher and time-synchronized lyric scroller.
 
 ---
@@ -66,6 +71,13 @@ THE SOFTWARE.
 
 - **SF Symbols:** Apple Inc. Human Interface Guidelines and native macOS system iconography.
 - **MediaRemote & IOKit (`AppleSmartBattery`):** Darwin / Apple system frameworks for real-time media remote transport and direct, daemon-free hardware battery health telemetry. Harmonotch's MediaRemote adapter is written from scratch (see the Vorssaint credit above) and uses the framework's undocumented symbols at runtime; no third-party bridge code is included.
+
+---
+
+## 6. Apple SMC & Battery Limiter Research
+
+- **Research Credits:** [actuallymentor/battery](https://github.com/actuallymentor/battery), [hholtmann/smcFanControl](https://github.com/hholtmann/smcFanControl), and macOS reverse engineering of `AppleSMCKeysEndpoint`.
+- **Purpose in Harmonotch:** Informed Harmonotch's native hardware SMC control registers (`CH0B` on Apple Silicon and `BCLM` on Intel) for power pass-through and charging limit enforcement.
 
 ---
 

@@ -6,6 +6,15 @@ struct LyricLine: Identifiable, Hashable {
     let text: String
 }
 
+enum LyricsStatus: Equatable {
+    case idle
+    case loading
+    case synced([LyricLine])
+    case unsynced([String])
+    case instrumental
+    case unavailable(String)
+}
+
 enum LRCParser {
     /// Parses `[mm:ss.xx]` timestamps. Lines may carry several timestamps, and
     /// metadata tags such as `[ar:...]` are ignored because they have no `mm:ss`.

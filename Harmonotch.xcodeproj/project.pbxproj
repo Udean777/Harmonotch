@@ -10,6 +10,17 @@
 		D0BCA8E63086863B0080715B /* Harmonotch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Harmonotch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D0BCA8F93086863C0080715B /* Exceptions for "Harmonotch" folder in "Harmonotch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Features/Media/NowPlaying/nowplaying.pl,
+				Features/Media/NowPlaying/NowPlayingAdapter.m,
+			);
+			target = D0BCA8E53086863B0080715B /* Harmonotch */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D0BCA8E83086863B0080715B /* Harmonotch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -20,17 +31,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D0BCA8F93086863C0080715B /* Exceptions for "Harmonotch" folder in "Harmonotch" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Features/Media/NowPlaying/NowPlayingAdapter.m",
-				"Features/Media/NowPlaying/nowplaying.pl",
-			);
-			target = D0BCA8E53086863B0080715B /* Harmonotch */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		D0BCA8E33086863B0080715B /* Frameworks */ = {
@@ -126,25 +126,31 @@
 		D0BCA8FA3086863C0080715B /* Build NowPlaying bridge */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
 			inputPaths = (
 				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m",
 				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/nowplaying.pl",
 			);
 			name = "Build NowPlaying bridge";
-			outputFileListPaths = (
-			);
 			outputPaths = (
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/libHarmonotchNowPlaying.dylib",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/nowplaying.pl",
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eu\nDYLIB=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libHarmonotchNowPlaying.dylib\"\nmkdir -p \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\"\nset --\nfor arch in $ARCHS; do\n  clang -dynamiclib -fobjc-arc -fblocks -arch \"$arch\" -framework Foundation -o \"$DYLIB.$arch\" \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m\"\n  set -- \"$@\" \"$DYLIB.$arch\"\ndone\nlipo -create \"$@\" -output \"$DYLIB\"\nrm -f \"$DYLIB\".*\ncp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"\n";
+			shellScript = (
+				"set -eu",
+				"DYLIB=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libHarmonotchNowPlaying.dylib\"",
+				"mkdir -p \"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH\"",
+				"set --",
+				"for arch in $ARCHS; do",
+				"  clang -dynamiclib -fobjc-arc -fblocks -arch \"$arch\" -framework Foundation -o \"$DYLIB.$arch\" \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m\"",
+				"  set -- \"$@\" \"$DYLIB.$arch\"",
+				"done",
+				"lipo -create \"$@\" -output \"$DYLIB\"",
+				"rm -f \"$DYLIB\".*",
+				"cp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"",
+				"codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 

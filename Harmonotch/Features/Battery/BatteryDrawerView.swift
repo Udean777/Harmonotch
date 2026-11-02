@@ -2,8 +2,8 @@ import SwiftUI
 
 struct BatteryDrawerView: View {
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
+  @ObservedObject var chargeLimiter = BatteryChargeLimiter.shared
   @ObservedObject var languageManager = LanguageManager.shared
-  @ObservedObject var themeManager = ThemeManager.shared
 
   var body: some View {
     VStack(spacing: 12) {
@@ -83,9 +83,9 @@ struct BatteryDrawerView: View {
         BatteryStatCard(
           icon: "bolt.batteryblock.fill",
           iconColor: AppTheme.accentAmber,
-          title: batteryMonitor.isPluggedIn ? "Power In" : "Power Source",
+          title: batteryMonitor.isPluggedIn ? L10n.Dashboard.adapter : L10n.Dashboard.powerSource,
           value: batteryMonitor.isPluggedIn
-            ? (batteryMonitor.adapterWatts.map { "\($0)W AC" } ?? "AC") : "Battery"
+            ? (batteryMonitor.adapterWatts.map { "\($0)W AC" } ?? "AC") : L10n.Battery.internalBattery
         )
       }
 
@@ -105,6 +105,9 @@ struct BatteryDrawerView: View {
   }
 
   private var powerSourceLabel: String {
+    if chargeLimiter.isEnabled && chargeLimiter.isChargingInhibited {
+      return L10n.Battery.chargeLimitStatusBypass
+    }
     if batteryMonitor.isPluggedIn {
       if let watts = batteryMonitor.adapterWatts {
         return L10n.Battery.acAdapterWatts(watts)
@@ -180,7 +183,6 @@ struct BatteryStatCard: View {
 
 struct ClamshellCardView: View {
   @ObservedObject var clamshell = ClamshellManager.shared
-  @ObservedObject var themeManager = ThemeManager.shared
 
   var body: some View {
     HStack(spacing: 10) {

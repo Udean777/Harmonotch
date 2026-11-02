@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   func applicationWillTerminate(_ notification: Notification) {
     MediaManager.shared.stop()
     ClamshellManager.shared.prepareForTermination()
+    BatteryChargeLimiter.shared.prepareForTermination()
   }
 
   private lazy var appLogoStatusBarImage: NSImage? = {
@@ -447,7 +448,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 private struct MenuBarHeaderView: View {
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var mediaManager = MediaManager.shared
-  @ObservedObject var themeManager = ThemeManager.shared
   @ObservedObject var updateManager = UpdateManager.shared
 
   var body: some View {
@@ -510,7 +510,7 @@ private struct MenuBarHeaderView: View {
             .font(.system(size: 10, weight: .medium))
             .foregroundColor(.white)
         } else {
-          Text("Battery & Audio Notch")
+          Text(L10n.Menu.headerSubtitle)
             .font(.system(size: 10, weight: .medium))
             .foregroundColor(AppTheme.textTertiary)
         }

@@ -149,10 +149,12 @@ final class MediaManager: ObservableObject {
   @Published private(set) var artworkAccentColor: NSColor? = nil
 
   @Published var syncedLyrics: [LyricLine] = []
+  @Published var unsyncedLyrics: [String] = []
   @Published var currentLyricIndex: Int = -1
   @Published var currentLyricText: String = ""
   @Published var isLoadingLyrics: Bool = false
   @Published var isInstrumental: Bool = false
+  @Published var lyricsStatus: LyricsStatus = .idle
 
   var hasActiveTrack: Bool {
     !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -182,7 +184,10 @@ final class MediaManager: ObservableObject {
   private let appleScriptQueueKey = DispatchSpecificKey<Void>()
   private let artworkCache = NSCache<NSString, NSImage>()
   private var lyricsCache:
-    [String: (lyrics: [LyricLine], isInstrumental: Bool, duration: TimeInterval)] = [:]
+    [String: (
+      status: LyricsStatus, synced: [LyricLine], unsynced: [String], isInstrumental: Bool,
+      duration: TimeInterval
+    )] = [:]
 
   @Published var webMediaHint: WebMediaProbeError? = nil
   private var activeWebTarget: WebMediaSnapshot?
@@ -319,7 +324,9 @@ final class MediaManager: ObservableObject {
       if position > 0 || trackChanged {
         self.playbackPosition = position
       }
-      if duration > 0 { self.duration = duration }
+      if duration > 0 {
+        self.duration = duration
+      }
 
       self.trackTitle = title
       self.artistName = artist
@@ -611,7 +618,9 @@ final class MediaManager: ObservableObject {
   ]
 
   private func isRunning(_ bundleIDs: [String]) -> Bool {
-    bundleIDs.contains { !NSRunningApplication.runningApplications(withBundleIdentifier: $0).isEmpty }
+    bundleIDs.contains {
+      !NSRunningApplication.runningApplications(withBundleIdentifier: $0).isEmpty
+    }
   }
 
   /// Must run on `appleScriptQueue`. Reads every media tab of every running browser,
@@ -1081,27 +1090,44 @@ final class MediaManager: ObservableObject {
     let cleanArtist = sanitizeArtistName(artist)
     let key = "\(cleanTrack.lowercased())--\(cleanArtist.lowercased())"
 
-    if key == lastFetchedTrackKey && !syncedLyrics.isEmpty {
+    guard !cleanTrack.isEmpty else {
+      DispatchQueue.main.async {
+        self.isLoadingLyrics = false
+        self.lyricsStatus = .idle
+        self.syncedLyrics = []
+        self.unsyncedLyrics = []
+        self.currentLyricIndex = -1
+        self.currentLyricText = ""
+        self.isInstrumental = false
+      }
       return
     }
 
     if let cached = lyricsCache[key] {
       DispatchQueue.main.async {
         self.isLoadingLyrics = false
+        self.lyricsStatus = cached.status
+        self.syncedLyrics = cached.synced
+        self.unsyncedLyrics = cached.unsynced
         self.isInstrumental = cached.isInstrumental
         if self.duration == 0 && cached.duration > 0 {
           self.duration = cached.duration
         }
-        self.syncedLyrics = cached.lyrics
         self.lastFetchedTrackKey = key
         self.updateCurrentLyric()
       }
       return
     }
 
+    if key == lastFetchedTrackKey && lyricsStatus != .idle && lyricsStatus != .loading {
+      return
+    }
+
     DispatchQueue.main.async {
       self.isLoadingLyrics = true
+      self.lyricsStatus = .loading
       self.syncedLyrics = []
+      self.unsyncedLyrics = []
       self.currentLyricIndex = -1
       self.currentLyricText = ""
       self.isInstrumental = false
@@ -1119,7 +1145,7 @@ final class MediaManager: ObservableObject {
             if !success2 {
               self.searchLRCLIBGeneral(query: cleanTrack) { success3 in
                 if !success3 {
-                  self.fetchAppleMusicLocalLyrics()
+                  self.fetchAppleMusicLocalLyrics(key: key)
                 }
               }
             }
@@ -1130,7 +1156,7 @@ final class MediaManager: ObservableObject {
       searchLRCLIBGeneral(query: cleanTrack) { [weak self] success in
         guard let self = self else { return }
         if !success {
-          self.fetchAppleMusicLocalLyrics()
+          self.fetchAppleMusicLocalLyrics(key: key)
         }
       }
     }
@@ -1193,15 +1219,28 @@ final class MediaManager: ObservableObject {
       var matchedItem: [String: Any]? = nil
 
       if let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-        matchedItem =
-          array.first(where: {
-            if let s = $0["syncedLyrics"] as? String,
-              !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-              return true
-            }
-            return false
+        let currentDuration = self.duration
+        if currentDuration > 0 {
+          matchedItem = array.first(where: { item in
+            guard let s = item["syncedLyrics"] as? String,
+              !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+            let itemDur = self.extractDouble(from: item["duration"]) ?? 0
+            return itemDur > 0 ? abs(itemDur - currentDuration) <= 15 : true
+          })
+        }
+        if matchedItem == nil {
+          matchedItem = array.first(where: {
+            guard let s = $0["syncedLyrics"] as? String else { return false }
+            return !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+          })
+        }
+        if matchedItem == nil {
+          matchedItem = array.first(where: {
+            let plain = $0["plainLyrics"] as? String ?? ""
+            let instrumental = $0["instrumental"] as? Bool ?? false
+            return !plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || instrumental
           }) ?? array.first
+        }
       } else if let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
         matchedItem = dict
       }
@@ -1216,30 +1255,70 @@ final class MediaManager: ObservableObject {
       let plainLyrics = item["plainLyrics"] as? String ?? ""
       let trackDuration = self.extractDouble(from: item["duration"]) ?? 0
 
-      if !syncedLRC.isEmpty || !plainLyrics.isEmpty || instrumental {
+      var verifiedSyncedLyrics: [LyricLine] = []
+      if !syncedLRC.isEmpty {
+        let parsed = LRCParser.parse(syncedLRC)
+        let hasDistinctTimestamps = parsed.count > 1 && (parsed.last?.time ?? 0) > (parsed.first?.time ?? 0)
+        if hasDistinctTimestamps {
+          verifiedSyncedLyrics = parsed
+        }
+      }
+
+      var extractedPlainLines: [String] = []
+      if !plainLyrics.isEmpty {
+        extractedPlainLines = plainLyrics.components(separatedBy: "\n")
+          .map { $0.trimmingCharacters(in: .whitespaces) }
+          .filter { !$0.isEmpty }
+      } else if !syncedLRC.isEmpty && verifiedSyncedLyrics.isEmpty {
+        extractedPlainLines = syncedLRC.components(separatedBy: "\n")
+          .map { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if let closeIdx = trimmed.lastIndex(of: "]") {
+              return String(trimmed[trimmed.index(after: closeIdx)...]).trimmingCharacters(in: .whitespaces)
+            }
+            return trimmed
+          }
+          .filter { !$0.isEmpty }
+      }
+
+      if !verifiedSyncedLyrics.isEmpty || !extractedPlainLines.isEmpty || instrumental {
         DispatchQueue.main.async {
           self.isLoadingLyrics = false
           self.isInstrumental = instrumental
           if self.duration == 0 && trackDuration > 0 {
             self.duration = trackDuration
           }
-          if !syncedLRC.isEmpty {
-            self.syncedLyrics = LRCParser.parse(syncedLRC)
+
+          if instrumental {
+            self.syncedLyrics = []
+            self.unsyncedLyrics = []
+            self.lyricsStatus = .instrumental
+          } else if !verifiedSyncedLyrics.isEmpty {
+            self.syncedLyrics = verifiedSyncedLyrics
+            self.unsyncedLyrics = []
+            self.lyricsStatus = .synced(verifiedSyncedLyrics)
             NSLog(
               "[Harmonotch:Media] Successfully parsed %ld synced lyric lines for %@ - %@",
-              self.syncedLyrics.count, track, artist)
-          } else if !plainLyrics.isEmpty {
-            let lines = plainLyrics.components(separatedBy: "\n")
-              .map { $0.trimmingCharacters(in: .whitespaces) }
-              .filter { !$0.isEmpty }
-            self.syncedLyrics = lines.map { LyricLine(time: 0, text: $0) }
+              verifiedSyncedLyrics.count, track, artist)
+          } else if !extractedPlainLines.isEmpty {
+            self.syncedLyrics = []
+            self.unsyncedLyrics = extractedPlainLines
+            self.lyricsStatus = .unsynced(extractedPlainLines)
             NSLog(
-              "[Harmonotch:Media] Successfully parsed %ld plain lyric lines for %@ - %@",
-              self.syncedLyrics.count, track, artist)
+              "[Harmonotch:Media] Detected %ld unsynced plain lyric lines for %@ - %@",
+              extractedPlainLines.count, track, artist)
           }
-          self.lastFetchedTrackKey = "\(track.lowercased())--\(artist.lowercased())"
-          self.lyricsCache[self.lastFetchedTrackKey] = (
-            self.syncedLyrics, self.isInstrumental, self.duration
+
+          let cleanTrackTitle = self.sanitizeTrackTitle(track)
+          let cleanArtistName = self.sanitizeArtistName(artist)
+          let cacheKey = "\(cleanTrackTitle.lowercased())--\(cleanArtistName.lowercased())"
+          self.lastFetchedTrackKey = cacheKey
+          self.lyricsCache[cacheKey] = (
+            status: self.lyricsStatus,
+            synced: self.syncedLyrics,
+            unsynced: self.unsyncedLyrics,
+            isInstrumental: self.isInstrumental,
+            duration: self.duration
           )
           self.updateCurrentLyric()
         }
@@ -1250,9 +1329,22 @@ final class MediaManager: ObservableObject {
     }.resume()
   }
 
-  private func fetchAppleMusicLocalLyrics() {
+  private func fetchAppleMusicLocalLyrics(key: String) {
     guard mediaSource == .appleMusic else {
-      DispatchQueue.main.async { self.isLoadingLyrics = false }
+      DispatchQueue.main.async {
+        self.isLoadingLyrics = false
+        let desc = L10n.Media.lyricsUnavailableDesc
+        self.lyricsStatus = .unavailable(desc)
+        self.syncedLyrics = []
+        self.unsyncedLyrics = []
+        self.lyricsCache[key] = (
+          status: .unavailable(desc),
+          synced: [],
+          unsynced: [],
+          isInstrumental: false,
+          duration: self.duration
+        )
+      }
       return
     }
 
@@ -1273,13 +1365,39 @@ final class MediaManager: ObservableObject {
           .map { $0.trimmingCharacters(in: .whitespaces) }
           .filter { !$0.isEmpty }
         DispatchQueue.main.async {
-          self?.isLoadingLyrics = false
-          self?.syncedLyrics = lines.map { LyricLine(time: 0, text: $0) }
-          self?.updateCurrentLyric()
+          guard let self = self else { return }
+          self.isLoadingLyrics = false
+          self.syncedLyrics = []
+          self.unsyncedLyrics = lines
+          self.isInstrumental = false
+          self.lyricsStatus = .unsynced(lines)
+          self.lastFetchedTrackKey = key
+          self.lyricsCache[key] = (
+            status: .unsynced(lines),
+            synced: [],
+            unsynced: lines,
+            isInstrumental: false,
+            duration: self.duration
+          )
+          self.updateCurrentLyric()
         }
       } else {
         DispatchQueue.main.async {
-          self?.isLoadingLyrics = false
+          guard let self = self else { return }
+          self.isLoadingLyrics = false
+          self.syncedLyrics = []
+          self.unsyncedLyrics = []
+          self.isInstrumental = false
+          let desc = L10n.Media.lyricsUnavailableDesc
+          self.lyricsStatus = .unavailable(desc)
+          self.lastFetchedTrackKey = key
+          self.lyricsCache[key] = (
+            status: .unavailable(desc),
+            synced: [],
+            unsynced: [],
+            isInstrumental: false,
+            duration: self.duration
+          )
         }
       }
     }

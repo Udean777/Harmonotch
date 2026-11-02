@@ -43,7 +43,8 @@ nonisolated enum WebMediaParser {
         WebMediaSnapshot(
           browser: browser, windowIndex: window, tabIndex: tab, url: String(fields[2]),
           title: (object["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
-          artist: (object["artist"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+          artist: (object["artist"] as? String ?? "").trimmingCharacters(
+            in: .whitespacesAndNewlines),
           artworkURL: object["art"] as? String ?? "",
           isPaused: object["paused"] as? Bool ?? true,
           currentTime: current, duration: duration))

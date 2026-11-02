@@ -103,6 +103,17 @@ enum L10n {
                 ? "It is now \(prayer) (\(time)) in \(location)."
                 : "Telah masuk waktu sholat \(prayer) (\(time)) untuk wilayah \(location)."
         }
+        static func companionBatteryLabel(capacity: Int) -> String {
+            isEnglish ? "Battery \(capacity) percent" : "Baterai \(capacity) persen"
+        }
+        static func companionAdzanLabel(prayer: String, battery: Int) -> String {
+            isEnglish ? "Adzan for \(prayer). Battery \(battery) percent" : "Adzan untuk \(prayer). Baterai \(battery) persen"
+        }
+        static func companionNextPrayerLabel(prayer: String, time: String, battery: Int) -> String {
+            isEnglish
+                ? "Next prayer \(prayer), at \(time). Battery \(battery) percent"
+                : "Salat berikutnya \(prayer), pukul \(time). Baterai \(battery) persen"
+        }
     }
 
     enum Battery {
@@ -159,6 +170,56 @@ enum L10n {
         }
         static var healthSuffix: String {
             isEnglish ? "Health" : "Sehat"
+        }
+        static var chargeLimitTitle: String {
+            isEnglish ? "Charge Limit" : "Batas Pengisian"
+        }
+        static func chargeLimitDescription(for limit: Int) -> String {
+            if limit >= 100 {
+                return isEnglish
+                    ? "Full charging to 100% with no capacity cap"
+                    : "Mengisi penuh hingga 100% tanpa batasan"
+            } else {
+                return isEnglish
+                    ? "Preserve battery health by capping charge at \(limit)%"
+                    : "Jaga kesehatan baterai dengan membatasi daya di \(limit)%"
+            }
+        }
+        static var chargeToFull: String {
+            isEnglish ? "Charge to Full (100%)" : "Isi Penuh (100%)"
+        }
+        static var fullCharge100: String {
+            isEnglish ? "100% Full" : "100% Penuh"
+        }
+        static var nativeLimitActive: String {
+            isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
+        }
+        static var chargeLimitStatusBypass: String {
+            isEnglish ? "AC Bypass Active" : "Bypass AC Aktif"
+        }
+        static var chargeLimitStatusCharging: String {
+            isEnglish ? "Charging to Limit" : "Mengisi Daya Menuju Batas"
+        }
+        static var chargeLimitStatusPaused: String {
+            isEnglish ? "Limit Inactive" : "Batas Nonaktif"
+        }
+        static var chargeLimitHelperTitle: String {
+            isEnglish ? "Hardware SMC Helper" : "Helper SMC Hardware"
+        }
+        static var chargeLimitHelperConfigured: String {
+            isEnglish ? "SMC Helper Configured" : "Helper SMC Siap"
+        }
+        static var chargeLimitSetupAction: String {
+            isEnglish ? "Setup Helper" : "Pasang Helper"
+        }
+        static var chargeLimitSettingUp: String {
+            isEnglish ? "Configuring..." : "Memasang..."
+        }
+        static var chargeLimitSetupDesc: String {
+            isEnglish ? "One-time admin setup required to manage hardware charging on macOS." : "Pengaturan hak admin sekali diperlukan untuk mengontrol pengisian daya di macOS."
+        }
+        static var chargeLimitThresholdLabel: String {
+            isEnglish ? "Target Limit" : "Batas Target"
         }
     }
 
@@ -238,16 +299,49 @@ enum L10n {
             isEnglish ? "Play a song on Apple Music or Spotify" : "Putar lagu di Apple Music atau Spotify"
         }
         static var syncedLyricsTitle: String {
-            isEnglish ? "Synced Lyrics" : "Lirik Lagu"
+            isEnglish ? "Lyrics" : "Lirik Lagu"
+        }
+        static var syncedLyricsBadge: String {
+            isEnglish ? "Synced" : "Tersinkron"
+        }
+        static var unsyncedLyricsBadge: String {
+            isEnglish ? "Unsynced" : "Tidak Sinkron"
+        }
+        static var unsyncedLyricsNotice: String {
+            isEnglish ? "This track only has plain lyrics without timing sync." : "Lagu ini hanya memiliki teks lirik tanpa sinkronisasi waktu."
+        }
+        static var lyricsUnavailable: String {
+            isEnglish ? "Lyrics Unavailable" : "Lirik Tidak Tersedia"
+        }
+        static var lyricsUnavailableDesc: String {
+            isEnglish ? "Lyrics could not be found or synced for this track." : "Lirik tidak dapat dimuat atau belum tersedia untuk lagu ini."
         }
         static var loadingLyrics: String {
             isEnglish ? "Fetching lyrics..." : "Memuat lirik..."
         }
         static var noLyricsFound: String {
-            isEnglish ? "No synced lyrics available" : "Lirik tersinkron tidak tersedia"
+            isEnglish ? "No lyrics available" : "Lirik tidak tersedia"
         }
         static var instrumental: String {
             isEnglish ? "Instrumental Track" : "Lagu Instrumental"
+        }
+        static var instrumentalDesc: String {
+            isEnglish ? "Instrumental audio with no vocal lyrics." : "Audio instrumental tanpa vokal atau lirik."
+        }
+        static var previousTrack: String {
+            isEnglish ? "Previous Track" : "Lagu Sebelumnya"
+        }
+        static var nextTrack: String {
+            isEnglish ? "Next Track" : "Lagu Berikutnya"
+        }
+        static var play: String {
+            isEnglish ? "Play" : "Putar"
+        }
+        static var pause: String {
+            isEnglish ? "Pause" : "Jeda"
+        }
+        static var sync: String {
+            isEnglish ? "Sync" : "Sinkron"
         }
     }
 
@@ -311,6 +405,161 @@ enum L10n {
         }
         static var nextPrayer: String {
             isEnglish ? "Next Prayer" : "Sholat Berikutnya"
+        }
+        static var headerSubtitle: String {
+            isEnglish ? "Battery & Audio Notch" : "Notch Baterai & Audio"
+        }
+    }
+
+    enum Dashboard {
+        static var nowTab: String {
+            isEnglish ? "Overview" : "Ringkasan"
+        }
+        static var batteryTab: String {
+            isEnglish ? "Battery" : "Baterai"
+        }
+        static var processTab: String {
+            isEnglish ? "Activity" : "Aktivitas"
+        }
+        static var prayerTab: String {
+            isEnglish ? "Prayer" : "Sholat"
+        }
+        static var utilitiesTab: String {
+            isEnglish ? "Utilities" : "Utilitas"
+        }
+        static var closeDashboard: String {
+            isEnglish ? "Close Dashboard" : "Tutup Dashboard"
+        }
+
+        static var battery: String {
+            isEnglish ? "Battery" : "Baterai"
+        }
+        static var topResourceActivity: String {
+            "Top Resource Activity"
+        }
+        static var noProcessSamples: String {
+            isEnglish ? "No process samples yet" : "Belum ada sampel proses"
+        }
+        static var processNotEnabled: String {
+            isEnglish
+                ? "Process activity sampling will run only while this panel is open."
+                : "Pengambilan data aktivitas proses akan berjalan hanya saat panel ini terbuka."
+        }
+        static var prayer: String {
+            isEnglish ? "Prayer" : "Sholat"
+        }
+        static var utilities: String {
+            isEnglish ? "Utilities" : "Utilitas"
+        }
+        static var loading: String {
+            isEnglish ? "Loading..." : "Memuat..."
+        }
+        static var permissionRequired: String {
+            isEnglish ? "Permission required" : "Izin diperlukan"
+        }
+        static var permissionDenied: String {
+            isEnglish ? "Permission denied" : "Izin ditolak"
+        }
+        static var processMeasuring: String {
+            isEnglish ? "Measuring CPU activity..." : "Mengukur aktivitas CPU..."
+        }
+        static var processIdle: String {
+            isEnglish ? "No app is using noticeable CPU right now" : "Tidak ada aplikasi yang memakai CPU secara berarti saat ini"
+        }
+        static var processUnavailable: String {
+            isEnglish ? "No application processes could be read" : "Tidak ada proses aplikasi yang dapat dibaca"
+        }
+        static var processFailed: String {
+            isEnglish ? "Could not sample processes. Try refreshing." : "Gagal mengambil sampel proses. Coba segarkan."
+        }
+        static var processPartial: String {
+            isEnglish ? "Some processes could not be read, so totals may be low." : "Sebagian proses tidak dapat dibaca, sehingga total bisa lebih rendah."
+        }
+        static var processRefresh: String {
+            isEnglish ? "Refresh CPU activity" : "Segarkan aktivitas CPU"
+        }
+        static func processMetricNote(seconds: Int) -> String {
+            isEnglish
+                ? "CPU time per core over the last \(seconds)s. Not the same as Activity Monitor's Energy Impact."
+                : "Waktu CPU per core dalam \(seconds) detik terakhir. Bukan Energy Impact milik Activity Monitor."
+        }
+        static func processCount(_ count: Int) -> String {
+            isEnglish ? "\(count) processes" : "\(count) proses"
+        }
+        static var batteryReadFailed: String {
+            isEnglish ? "Could not read the battery" : "Tidak dapat membaca baterai"
+        }
+        static var notAvailable: String {
+            isEnglish ? "Not available" : "Tidak tersedia"
+        }
+        static var batteryRefresh: String {
+            isEnglish ? "Refresh battery" : "Segarkan baterai"
+        }
+        static var batteryStale: String {
+            isEnglish ? "Reading may be out of date" : "Pembacaan mungkin sudah usang"
+        }
+        static var batteryShowingLastReading: String {
+            isEnglish ? "Refresh failed. Showing the last reading." : "Gagal menyegarkan. Menampilkan pembacaan terakhir."
+        }
+        static func batteryUpdated(_ time: String) -> String {
+            isEnglish ? "Updated \(time)" : "Diperbarui \(time)"
+        }
+        static var designCapacity: String {
+            isEnglish ? "Design Capacity" : "Kapasitas Desain"
+        }
+        static var designCycles: String {
+            isEnglish ? "Design Cycles" : "Siklus Desain"
+        }
+        static var adapter: String {
+            isEnglish ? "Adapter" : "Adaptor"
+        }
+        static var voltage: String {
+            isEnglish ? "Voltage" : "Tegangan"
+        }
+        static var current: String {
+            isEnglish ? "Current" : "Arus"
+        }
+        static var temperature: String {
+            isEnglish ? "Temperature" : "Suhu"
+        }
+        static var power: String {
+            isEnglish ? "Power" : "Daya"
+        }
+        static var health: String {
+            L10n.Battery.healthTitle
+        }
+        static var cycles: String {
+            L10n.Battery.cycleTitle
+        }
+        static var powerSource: String {
+            isEnglish ? "Power Source" : "Sumber Daya"
+        }
+        static var readingBattery: String {
+            isEnglish ? "Reading battery..." : "Membaca baterai..."
+        }
+        static var batteryUnavailable: String {
+            isEnglish ? "Battery unavailable" : "Baterai tidak tersedia"
+        }
+        static var noInternalBattery: String {
+            isEnglish ? "No internal battery" : "Tidak ada baterai internal"
+        }
+        static func calculationMethod(_ name: String) -> String {
+            isEnglish ? "Method: \(name)" : "Metode: \(name)"
+        }
+        static var prayerUnavailableDetail: String {
+            isEnglish
+                ? "Times could not be calculated for this location. Check the location in Prayer settings."
+                : "Waktu tidak dapat dihitung untuk lokasi ini. Periksa lokasi di pengaturan Sholat."
+        }
+        static var prayerUnavailable: String {
+            isEnglish ? "Prayer schedule unavailable" : "Jadwal sholat tidak tersedia"
+        }
+        static func countdown(hours: Int, minutes: Int) -> String {
+            if hours <= 0 && minutes <= 0 {
+                return isEnglish ? "in <1m" : "dalam <1m"
+            }
+            let value = hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
+            return isEnglish ? "in \(value)" : "dalam \(value)"
         }
     }
 

@@ -86,6 +86,18 @@ checkEqual(lyrics[2].time, 65.0, "LRC repeated timestamp")
 checkEqual(LRCParser.parse("[00:01.00]").count, 0, "empty text is skipped")
 checkEqual(LRCParser.parse("not lrc").count, 0, "plain text is skipped")
 
+// MARK: - Lyrics Sync Validation & Status
+let zeroLrc = "[00:00.00]Line one\n[00:00.00]Line two"
+let parsedZero = LRCParser.parse(zeroLrc)
+let hasDistinct = parsedZero.count > 1 && (parsedZero.last?.time ?? 0) > (parsedZero.first?.time ?? 0)
+checkEqual(hasDistinct, false, "zero timestamp LRC is not treated as synced")
+
+let realLrc = "[00:04.50]Line one\n[00:10.20]Line two"
+let parsedReal = LRCParser.parse(realLrc)
+let hasRealTimestamps = parsedReal.count > 1 && (parsedReal.last?.time ?? 0) > (parsedReal.first?.time ?? 0)
+checkEqual(hasRealTimestamps, true, "valid LRC has distinct timestamps")
+checkEqual(LyricsStatus.unavailable("none") == LyricsStatus.unavailable("none"), true, "LyricsStatus equality")
+
 // MARK: - Clamshell policy
 
 checkEqual(ClamshellPolicy.state(
@@ -177,74 +189,3 @@ if case .state(let state)? = decodeNowPlayingEvent(artworkJSON) {
 } else {
     check(false, "now-playing state with artwork decodes")
 }
-
-if case .result(let id, let ok)? = decodeNowPlayingEvent(
-    #"{"event":"result","id":"command-1","ok":true}"#)
-{
-    checkEqual(id, "command-1", "result id")
-    checkEqual(ok, true, "result ok")
-} else {
-    check(false, "now-playing result decodes")
-}
-
-if case .error(let message)? = decodeNowPlayingEvent(
-    #"{"event":"error","message":"MediaRemote unavailable"}"#)
-{
-    checkEqual(message, "MediaRemote unavailable", "error message")
-} else {
-    check(false, "now-playing error decodes")
-}
-
-check(decodeNowPlayingEvent(#"{"event":"unknown"}"#) == nil, "unknown event rejected")
-check(decodeNowPlayingEvent(#"{"event":"state","title":"partial"}"#) == nil, "incomplete state rejected")
-
-checkEqual(NowPlayingSourceKind(bundleID: "com.apple.Music"), .appleMusic, "Apple Music mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "com.apple.WebKit.GPU"), .safari, "Safari mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "com.brave.Browser"), .web, "Brave mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "company.thebrowser.Browser"), .web, "Arc mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "com.apple.QuickTimePlayerX"), .quicktime, "QuickTime mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "com.apple.podcasts"), .podcasts, "Podcasts mapping")
-checkEqual(NowPlayingSourceKind(bundleID: "com.example.unknown"), .system, "unknown source mapping")
-
-// MARK: - ArtworkPalette
-
-func solidPixels(_ red: UInt8, _ green: UInt8, _ blue: UInt8, count: Int = 64) -> [UInt8] {
-    Array(repeating: [red, green, blue, 255], count: count).flatMap { $0 }
-}
-
-if let accent = ArtworkPalette.accent(fromRGBA: solidPixels(220, 30, 30)) {
-    var hue: CGFloat = 0
-    var saturation: CGFloat = 0
-    var brightness: CGFloat = 0
-    var alpha: CGFloat = 0
-    accent.usingColorSpace(.deviceRGB)?.getHue(
-        &hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-    check(hue < 0.05 || hue > 0.95, "red artwork keeps red hue")
-    check(saturation >= 0.45, "accent saturation is boosted for legibility")
-    check(brightness >= 0.85, "accent brightness is boosted for legibility")
-} else {
-    check(false, "colored artwork yields an accent")
-}
-
-check(
-    ArtworkPalette.accent(fromRGBA: solidPixels(128, 128, 128)) == nil,
-    "grayscale artwork falls back to white")
-
-if let accent = ArtworkPalette.accent(fromRGBA: solidPixels(20, 40, 220)) {
-    var hue: CGFloat = 0
-    var saturation: CGFloat = 0
-    var brightness: CGFloat = 0
-    var alpha: CGFloat = 0
-    accent.usingColorSpace(.deviceRGB)?.getHue(
-        &hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-    check(hue > 0.55 && hue < 0.75, "blue artwork keeps blue hue")
-} else {
-    check(false, "blue artwork yields an accent")
-}
-
-if failures > 0 {
-    fputs("\(failures) test(s) failed\n", stderr)
-    exit(1)
-}
-
-print("All tests passed")

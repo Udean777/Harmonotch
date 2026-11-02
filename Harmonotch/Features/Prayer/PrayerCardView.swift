@@ -2,8 +2,6 @@ import SwiftUI
 
 struct PrayerCardView: View {
   let item: PrayerScheduleItem
-  @ObservedObject var languageManager = LanguageManager.shared
-  @ObservedObject var themeManager = ThemeManager.shared
 
   var body: some View {
     VStack(spacing: 5) {
@@ -76,8 +74,3 @@ struct PrayerCardView: View {
   }
 }
 
-extension Color {
-  static var amberCustom: Color {
-    AppTheme.accentAmber
-  }
-}

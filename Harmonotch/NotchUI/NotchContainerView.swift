@@ -44,7 +44,8 @@ struct NotchContainerView: View {
       if adzanPlayer.isPlaying {
         return topClearance + NotchLayout.expandedAdzanHeight
       }
-      let hasLyrics = mediaManager.hasActiveTrack && !mediaManager.currentLyricText.isEmpty
+      let hasLyrics = mediaManager.hasActiveTrack
+        && (!mediaManager.syncedLyrics.isEmpty || !mediaManager.currentLyricText.isEmpty || mediaManager.isLoadingLyrics || mediaManager.isInstrumental)
       return topClearance
         + (hasLyrics
           ? NotchLayout.expandedMediaTrackHeight
@@ -139,12 +140,8 @@ struct NotchContainerView: View {
       value: notchVM.isExpanded
     )
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
-    .animation(NotchMotion.content, value: isMediaPlaying)
-    .animation(NotchMotion.content, value: notchVM.isCompanionEnabled)
-    .animation(NotchMotion.content, value: notchVM.selectedTab)
-    .animation(NotchMotion.content, value: adzanPlayer.isPlaying)
-    .animation(NotchMotion.content, value: mediaManager.hasActiveTrack)
-    .animation(NotchMotion.content, value: mediaManager.currentLyricText.isEmpty)
+    .animation(NotchMotion.content, value: targetWidth)
+    .animation(NotchMotion.content, value: targetHeight)
     .preferredColorScheme(themeManager.colorScheme)
   }
 }
