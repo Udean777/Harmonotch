@@ -20,7 +20,7 @@ private final class MenuBarHostingView<Content: View>: NSHostingView<Content> {
     // Convert from superview (window's flipped content area) coordinates to our own.
     let local = convert(point, from: superview)
     // The card is top-aligned; anything below cardHeight is transparent padding.
-    if local.y > cardHeight { return nil }
+    if local.y > cardHeight + 1 { return nil }
     return super.hitTest(point)
   }
 }
@@ -204,15 +204,27 @@ final class MenuBarPanelController: NSObject {
 
   private func resizePanel(to height: CGFloat) {
     measuredPanelHeight = height
-    guard let panel, let button = currentStatusButton else { return }
+    guard let panel = panel, panel.isVisible, let button = currentStatusButton else { return }
 
-    let frame = frame(for: panel, relativeTo: button, height: height)
-    guard panel.frame != frame else { return }
+    let targetFrame = frame(for: panel, relativeTo: button, height: height)
+    guard abs(panel.frame.height - height) > 0.5 || panel.frame.origin != targetFrame.origin else { return }
+
+    // If the panel is still fading in, apply the target frame immediately without animating.
+    if panel.alphaValue < 0.95 {
+      panel.setFrame(targetFrame, display: false)
+      hostingView?.cardHeight = height
+      return
+    }
+
+    hostingView?.cardHeight = max(panel.frame.height, height)
 
     NSAnimationContext.runAnimationGroup { context in
-      context.duration = 0.16
+      context.duration = 0.14
       context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-      panel.animator().setFrame(frame, display: true)
+      panel.animator().setFrame(targetFrame, display: true)
+    } completionHandler: { [weak self, weak panel] in
+      self?.hostingView?.cardHeight = height
+      panel?.invalidateShadow()
     }
   }
 
@@ -276,8 +288,9 @@ final class MenuBarPanelController: NSObject {
         self.close()
       } else if let hv = self.hostingView {
         // Convert screen point into hosting-view local coords and check against card.
-        let hvPoint = hv.convert(clickScreenPoint, from: nil)
-        if hvPoint.y > hv.cardHeight {
+        let windowPoint = panel.convertPoint(fromScreen: clickScreenPoint)
+        let hvPoint = hv.convert(windowPoint, from: nil)
+        if hvPoint.y > hv.cardHeight + 1 {
           self.close()
         }
       }

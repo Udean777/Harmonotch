@@ -10,6 +10,17 @@ struct MenuBarDashboardView: View {
   @ObservedObject private var languageManager = LanguageManager.shared
 
   var body: some View {
+    GeometryReader { proxy in
+      cardContent
+        .frame(width: proxy.size.width, alignment: .top)
+    }
+    .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
+      viewModel.onCardHeightChanged?(height)
+    }
+    .onExitCommand(perform: onClose)
+  }
+
+  private var cardContent: some View {
     VStack(spacing: 10) {
       headerBar
 
@@ -40,10 +51,6 @@ struct MenuBarDashboardView: View {
         Color.clear.preference(key: DashboardHeightPreferenceKey.self, value: geo.size.height)
       }
     )
-    .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
-      viewModel.onCardHeightChanged?(height)
-    }
-    .onExitCommand(perform: onClose)
   }
 
   private var headerBar: some View {
@@ -153,33 +160,29 @@ struct MenuBarDashboardView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .animation(.easeInOut(duration: 0.16), value: isSelected)
+    .animation(.easeInOut(duration: 0.14), value: isSelected)
     .accessibilityLabel(label)
     .help(label)
   }
 
   @ViewBuilder
   private var currentTabContent: some View {
-    Group {
-      switch viewModel.selectedTab {
-      case .now:
-        DashboardNowSection(
-          onSelectTab: { tab in
-            viewModel.selectedTab = tab
-          }
-        )
-      case .battery:
-        DashboardBatterySection()
-      case .process:
-        DashboardProcessSection()
-      case .prayer:
-        DashboardPrayerSection()
-      case .utilities:
-        DashboardUtilitiesSection()
-      }
+    switch viewModel.selectedTab {
+    case .now:
+      DashboardNowSection(
+        onSelectTab: { tab in
+          viewModel.selectedTab = tab
+        }
+      )
+    case .battery:
+      DashboardBatterySection()
+    case .process:
+      DashboardProcessSection()
+    case .prayer:
+      DashboardPrayerSection()
+    case .utilities:
+      DashboardUtilitiesSection()
     }
-    .transition(.opacity)
-    .id(viewModel.selectedTab)
   }
 
   private var footerBar: some View {
@@ -239,9 +242,9 @@ struct MenuBarDashboardView: View {
 /// Reports the dashboard card's natural rendered height so the controller can
 /// resize the panel while keeping its top edge anchored below the menu bar.
 struct DashboardHeightPreferenceKey: PreferenceKey {
-  static var defaultValue: CGFloat = 400
+  static var defaultValue: CGFloat = 0
   static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-    value = nextValue()
+    value = max(value, nextValue())
   }
 }
 

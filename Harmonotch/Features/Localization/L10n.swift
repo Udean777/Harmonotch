@@ -616,6 +616,22 @@ enum L10n {
         static var adhanDesc: String {
             isEnglish ? "Astronomical calculation engine by Batoul Apps (MIT License)" : "Mesin kalkulasi astronomi waktu sholat oleh Batoul Apps (Lisensi MIT)"
         }
+        static var vorssaintTitle: String {
+            "Vorssaint"
+        }
+        static var vorssaintDesc: String {
+            isEnglish
+                ? "MediaRemote technique & product research reference for now-playing media player"
+                : "Referensi teknik MediaRemote & riset produk untuk media player pemutar musik"
+        }
+        static var lrclibTitle: String {
+            "LRCLIB"
+        }
+        static var lrclibDesc: String {
+            isEnglish
+                ? "Real-time synchronized karaoke lyrics engine by Tran Xuan Thang (MIT License)"
+                : "Mesin sinkronisasi lirik karaoke real-time oleh Tran Xuan Thang (Lisensi MIT)"
+        }
         static var audioTitle: String {
             isEnglish ? "Adzan Audio Recordings" : "Rekaman Audio Adzan"
         }
