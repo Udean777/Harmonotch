@@ -614,7 +614,7 @@ struct ExpandedLyricsView: View {
             markUserInteraction()
           }
       )
-      .onChange(of: mediaManager.currentLyricIndex) { newIndex in
+      .onChange(of: mediaManager.currentLyricIndex) { _, newIndex in
         guard !isUserInteracting,
               newIndex >= 0 && newIndex < mediaManager.syncedLyrics.count else { return }
         let targetId = mediaManager.syncedLyrics[newIndex].id

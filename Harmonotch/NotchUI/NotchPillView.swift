@@ -6,6 +6,8 @@ struct NotchPillView: View {
   @ObservedObject var notchVM = NotchViewModel.shared
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
   @ObservedObject var mediaManager = MediaManager.shared
+  @ObservedObject var volumeManager = VolumeManager.shared
+  @ObservedObject var brightnessManager = BrightnessManager.shared
   @State private var isLeftHovered = false
 
   private var geometry: NotchGeometry {
@@ -20,9 +22,18 @@ struct NotchPillView: View {
     mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
   }
 
+  private var isHUDVisible: Bool {
+    volumeManager.isHUDVisible || brightnessManager.isHUDVisible
+  }
+
   private var wingWidth: CGFloat {
-    (isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth)
-      + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
+    let base: CGFloat = {
+      if isHUDVisible {
+        return NotchLayout.volumeWingWidth
+      }
+      return isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
+    }()
+    return base + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
   }
 
   private var leftContentExpansion: CGFloat {
@@ -37,11 +48,15 @@ struct NotchPillView: View {
   }
 
   private var noNotchWidth: CGFloat {
-    let baseWidth =
-      isMediaPlaying
-      ? NotchLayout.noNotchPillWidth - 2
-        * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
-      : NotchLayout.noNotchPillWidth
+    let baseWidth: CGFloat = {
+      if isHUDVisible {
+        return NotchLayout.noNotchVolumeWidth
+      }
+      return isMediaPlaying
+        ? NotchLayout.noNotchPillWidth - 2
+          * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
+        : NotchLayout.noNotchPillWidth
+    }()
     return baseWidth
       + 2 * (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
       + leftContentExpansion
@@ -55,13 +70,19 @@ struct NotchPillView: View {
     NotchLayout.wingInnerInset
   }
 
-  /// 0 = battery, 1 = media session, 2 = adzan. Drives swap transitions.
+  /// 0 = battery, 1 = media session, 2 = adzan, 3 = volume HUD, 4 = brightness HUD. Drives swap transitions.
   private var contentMode: Int {
-    adzanPlayer.isPlaying ? 2 : ((mediaManager.isPlaying && mediaManager.hasActiveTrack) ? 1 : 0)
+    if brightnessManager.isHUDVisible {
+      return 4
+    }
+    if volumeManager.isHUDVisible {
+      return 3
+    }
+    return adzanPlayer.isPlaying ? 2 : ((mediaManager.isPlaying && mediaManager.hasActiveTrack) ? 1 : 0)
   }
 
   private var isBatteryMode: Bool {
-    !adzanPlayer.isPlaying && !(mediaManager.isPlaying && mediaManager.hasActiveTrack)
+    !isHUDVisible && !adzanPlayer.isPlaying && !(mediaManager.isPlaying && mediaManager.hasActiveTrack)
   }
 
   var body: some View {
@@ -85,25 +106,35 @@ struct NotchPillView: View {
             .clipped()
         }
       } else {
-        HStack(spacing: 8) {
-          leftContent
-            .frame(maxWidth: .infinity, alignment: .leading)
+        if brightnessManager.isHUDVisible {
+          BrightnessHUDFloatingView()
+            .frame(width: noNotchWidth, height: height)
             .clipped()
+        } else if volumeManager.isHUDVisible {
+          VolumeHUDFloatingView()
+            .frame(width: noNotchWidth, height: height)
+            .clipped()
+        } else {
+          HStack(spacing: 8) {
+            leftContent
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .clipped()
 
-          rightContent
-            .layoutPriority(1)
-            .frame(alignment: .trailing)
-        }
-        .padding(.leading, isMediaPlaying && !geometry.hasHardwareNotch ? 0 : outerInset)
-        .padding(.trailing, outerInset)
-        .frame(width: noNotchWidth, height: height)
-        .clipped()
-        .onContinuousHover(coordinateSpace: .local) { phase in
-          switch phase {
-          case .active(let location):
-            updateLeftHover(location.x < noNotchWidth * NotchLayout.leftHoverFraction)
-          case .ended:
-            updateLeftHover(false)
+            rightContent
+              .layoutPriority(1)
+              .frame(alignment: .trailing)
+          }
+          .padding(.leading, isMediaPlaying && !geometry.hasHardwareNotch ? 0 : outerInset)
+          .padding(.trailing, outerInset)
+          .frame(width: noNotchWidth, height: height)
+          .clipped()
+          .onContinuousHover(coordinateSpace: .local) { phase in
+            switch phase {
+            case .active(let location):
+              updateLeftHover(location.x < noNotchWidth * NotchLayout.leftHoverFraction)
+            case .ended:
+              updateLeftHover(false)
+            }
           }
         }
       }
@@ -136,7 +167,11 @@ struct NotchPillView: View {
 
   @ViewBuilder
   private var leftContentBody: some View {
-    if isBatteryMode {
+    if brightnessManager.isHUDVisible {
+      BrightnessHUDLeftWingView()
+    } else if volumeManager.isHUDVisible {
+      VolumeHUDLeftWingView()
+    } else if isBatteryMode {
       HStack(spacing: 4) {
         if isLeftHovered && notchVM.isCompanionEnabled {
           PrayerCompanionView()
@@ -155,7 +190,11 @@ struct NotchPillView: View {
 
   @ViewBuilder
   private var rightContentBody: some View {
-    if adzanPlayer.isPlaying {
+    if brightnessManager.isHUDVisible {
+      BrightnessHUDRightWingView()
+    } else if volumeManager.isHUDVisible {
+      VolumeHUDRightWingView()
+    } else if adzanPlayer.isPlaying {
       HStack(spacing: 4) {
         Circle()
           .fill(Color.white)
@@ -223,7 +262,7 @@ struct NotchPillView: View {
       HStack(spacing: 3) {
         Image(systemName: "heart.fill")
           .font(.system(size: 8.5, weight: .semibold))
-          .foregroundColor(.white.opacity(0.85))
+        .foregroundColor(.white.opacity(0.85))
         Text("\(batteryMonitor.healthPercent)%")
           .font(.system(size: 10, weight: .semibold, design: .rounded))
           .monospacedDigit()

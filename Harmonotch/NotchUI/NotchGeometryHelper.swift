@@ -5,7 +5,9 @@ enum NotchLayout {
   static let collapsedPillHeight: CGFloat = 28
   static let collapsedWingWidth: CGFloat = 68
   static let mediaWingWidth: CGFloat = 42
+  static let volumeWingWidth: CGFloat = 86
   static let noNotchPillWidth: CGFloat = 154
+  static let noNotchVolumeWidth: CGFloat = 208
   static let hoverWingExpansion: CGFloat = 2
   static let companionExpansion: CGFloat = 28
   static let mediaLeftExpansion: CGFloat = 28
@@ -91,6 +93,7 @@ struct NotchShape: Shape {
     let bottom = min(
       max(0, radius), rect.height / 2, max(0, (rect.width - clampedShoulder * 2) / 2))
     let tangent: CGFloat = 0.55228475
+    let oneMinusTangent: CGFloat = 1 - tangent
 
     var path = Path()
     path.move(to: CGPoint(x: 0, y: 0))
@@ -98,24 +101,24 @@ struct NotchShape: Shape {
     path.addCurve(
       to: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder),
       control1: CGPoint(x: rect.width - clampedShoulder * tangent, y: 0),
-      control2: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder * (1 - tangent))
+      control2: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder * oneMinusTangent)
     )
     path.addLine(to: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom))
     path.addCurve(
       to: CGPoint(x: rect.width - clampedShoulder - bottom, y: rect.height),
-      control1: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom * (1 - tangent)),
-      control2: CGPoint(x: rect.width - clampedShoulder - bottom * (1 - tangent), y: rect.height)
+      control1: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom * oneMinusTangent),
+      control2: CGPoint(x: rect.width - clampedShoulder - bottom * oneMinusTangent, y: rect.height)
     )
     path.addLine(to: CGPoint(x: clampedShoulder + bottom, y: rect.height))
     path.addCurve(
       to: CGPoint(x: clampedShoulder, y: rect.height - bottom),
-      control1: CGPoint(x: clampedShoulder + bottom * (1 - tangent), y: rect.height),
-      control2: CGPoint(x: clampedShoulder, y: rect.height - bottom * (1 - tangent))
+      control1: CGPoint(x: clampedShoulder + bottom * oneMinusTangent, y: rect.height),
+      control2: CGPoint(x: clampedShoulder, y: rect.height - bottom * oneMinusTangent)
     )
     path.addLine(to: CGPoint(x: clampedShoulder, y: clampedShoulder))
     path.addCurve(
       to: .zero,
-      control1: CGPoint(x: clampedShoulder, y: clampedShoulder * (1 - tangent)),
+      control1: CGPoint(x: clampedShoulder, y: clampedShoulder * oneMinusTangent),
       control2: CGPoint(x: clampedShoulder * tangent, y: 0)
     )
     path.closeSubpath()
@@ -150,30 +153,31 @@ struct NotchOpenBorderShape: Shape {
     let bottom = min(
       max(0, radius), rect.height / 2, max(0, (rect.width - clampedShoulder * 2) / 2))
     let tangent: CGFloat = 0.55228475
+    let oneMinusTangent: CGFloat = 1 - tangent
 
     var path = Path()
     path.move(to: CGPoint(x: 0, y: 0))
     path.addCurve(
       to: CGPoint(x: clampedShoulder, y: clampedShoulder),
       control1: CGPoint(x: clampedShoulder * tangent, y: 0),
-      control2: CGPoint(x: clampedShoulder, y: clampedShoulder * (1 - tangent))
+      control2: CGPoint(x: clampedShoulder, y: clampedShoulder * oneMinusTangent)
     )
     path.addLine(to: CGPoint(x: clampedShoulder, y: rect.height - bottom))
     path.addCurve(
       to: CGPoint(x: clampedShoulder + bottom, y: rect.height),
-      control1: CGPoint(x: clampedShoulder, y: rect.height - bottom * (1 - tangent)),
-      control2: CGPoint(x: clampedShoulder + bottom * (1 - tangent), y: rect.height)
+      control1: CGPoint(x: clampedShoulder, y: rect.height - bottom * oneMinusTangent),
+      control2: CGPoint(x: clampedShoulder + bottom * oneMinusTangent, y: rect.height)
     )
     path.addLine(to: CGPoint(x: rect.width - clampedShoulder - bottom, y: rect.height))
     path.addCurve(
       to: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom),
-      control1: CGPoint(x: rect.width - clampedShoulder - bottom * (1 - tangent), y: rect.height),
-      control2: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom * (1 - tangent))
+      control1: CGPoint(x: rect.width - clampedShoulder - bottom * oneMinusTangent, y: rect.height),
+      control2: CGPoint(x: rect.width - clampedShoulder, y: rect.height - bottom * oneMinusTangent)
     )
     path.addLine(to: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder))
     path.addCurve(
       to: CGPoint(x: rect.width, y: 0),
-      control1: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder * (1 - tangent)),
+      control1: CGPoint(x: rect.width - clampedShoulder, y: clampedShoulder * oneMinusTangent),
       control2: CGPoint(x: rect.width - clampedShoulder * tangent, y: 0)
     )
     return path
@@ -193,17 +197,32 @@ struct NotchGeometry: Equatable {
       ? physicalNotchHeight : NotchLayout.floatingPillHeight
   }
 
-  func collapsedWidth(isHovered: Bool, isMediaPlaying: Bool = false) -> CGFloat {
+  func collapsedWidth(
+    isHovered: Bool,
+    isMediaPlaying: Bool = false,
+    isVolumeHUD: Bool = false,
+    isBrightnessHUD: Bool = false
+  ) -> CGFloat {
     let hoverExtra = isHovered ? NotchLayout.hoverWingExpansion : 0
-    let wingWidth = isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
+    let isHUD = isVolumeHUD || isBrightnessHUD
+    let wingWidth: CGFloat = {
+      if isHUD {
+        return NotchLayout.volumeWingWidth
+      }
+      return isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
+    }()
     if hasHardwareNotch {
       return physicalNotchWidth + 2 * (wingWidth + hoverExtra)
     } else {
-      let baseWidth =
-        isMediaPlaying
-        ? NotchLayout.noNotchPillWidth - 2
-          * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
-        : NotchLayout.noNotchPillWidth
+      let baseWidth: CGFloat = {
+        if isHUD {
+          return NotchLayout.noNotchVolumeWidth
+        }
+        return isMediaPlaying
+          ? NotchLayout.noNotchPillWidth - 2
+            * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
+          : NotchLayout.noNotchPillWidth
+      }()
       return baseWidth + 2 * hoverExtra
     }
   }
