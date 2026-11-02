@@ -12,7 +12,6 @@ struct BatteryDrawerView: View {
           Image(systemName: batteryIconName)
             .font(.system(size: 20, weight: .bold))
             .foregroundColor(batteryAccentColor)
-            .symbolEffect(.pulse, isActive: batteryMonitor.isCharging)
 
           Text("\(batteryMonitor.currentCapacity)%")
             .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -29,20 +28,20 @@ struct BatteryDrawerView: View {
           HStack(spacing: 5) {
             Image(systemName: batteryMonitor.isPluggedIn ? "bolt.fill" : "batteryblock.fill")
               .font(.system(size: 10, weight: .bold))
-              .foregroundColor(.white)
+              .foregroundColor(batteryMonitor.isPluggedIn ? AppTheme.accentGreen : AppTheme.textSecondary)
 
             Text(powerSourceLabel)
               .font(.system(size: 11, weight: .semibold))
               .foregroundColor(AppTheme.textPrimary)
               .lineLimit(1)
           }
-          .padding(.horizontal, 10)
+          .padding(.horizontal, 9)
           .padding(.vertical, 4)
           .background(
-            Capsule()
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
               .fill(AppTheme.badgeBackground)
               .overlay(
-                Capsule()
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                   .stroke(AppTheme.cardBorder, lineWidth: 0.6)
               )
           )
@@ -128,7 +127,7 @@ struct BatteryDrawerView: View {
   }
 
   private var batteryAccentColor: Color {
-    .white
+    batteryMonitor.isCharging ? AppTheme.accentGreen : AppTheme.textPrimary
   }
 
   private var batteryProgressColor: Color {
@@ -267,8 +266,8 @@ struct ClamshellCardView: View {
     .padding(.horizontal, 6)
     .padding(.vertical, 2)
     .background(
-      Capsule()
-        .fill(accentColor.opacity(0.15))
+      RoundedRectangle(cornerRadius: 4, style: .continuous)
+        .fill(accentColor.opacity(0.14))
     )
   }
 

@@ -12,7 +12,7 @@ enum DrawerTab: String, CaseIterable, Identifiable {
         case .battery:
             return L10n.Drawer.batteryTab
         case .media:
-            return "Audio"
+            return L10n.Drawer.mediaTab
         case .prayer:
             return L10n.Drawer.prayerTab
         }
@@ -50,8 +50,9 @@ struct NotchTabBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             ForEach(visibleTabs) { tab in
+                let isSelected = (selectedTab == tab)
                 Button(action: {
                     withAnimation(NotchMotion.content) {
                         selectedTab = tab
@@ -59,22 +60,23 @@ struct NotchTabBar: View {
                 }) {
                     HStack(spacing: 5) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
 
                         Text(tab.title)
-                            .font(.system(size: 11, weight: selectedTab == tab ? .semibold : .medium))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                             .lineLimit(1)
                     }
-                    .foregroundColor(selectedTab == tab ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 4)
+                    .foregroundColor(isSelected ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
                     .background {
-                        if selectedTab == tab {
-                            Capsule()
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .fill(AppTheme.tabActiveBackground)
+                                .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.08), radius: 2, x: 0, y: 1)
                                 .overlay(
-                                    Capsule()
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.7)
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .stroke(AppTheme.surfaceBorder.opacity(0.8), lineWidth: 0.6)
                                 )
                                 .matchedGeometryEffect(id: "ActiveTabIndicator", in: tabAnimation)
                         }
@@ -84,14 +86,14 @@ struct NotchTabBar: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(3)
+        .padding(2.5)
         .animation(NotchMotion.content, value: visibleTabs)
         .background(
-            Capsule()
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(AppTheme.tabBarBackground)
                 .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(AppTheme.cardBorder, lineWidth: 0.6)
                 )
         )
     }

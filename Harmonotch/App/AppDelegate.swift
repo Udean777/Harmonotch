@@ -313,7 +313,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action: nil,
         keyEquivalent: ""
       )
-      updateItem.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
+      updateItem.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
 
       let updateSubmenu = NSMenu()
       let downloadItem = NSMenuItem(

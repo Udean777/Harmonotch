@@ -68,7 +68,6 @@ struct NotchContainerView: View {
 
   var body: some View {
     ZStack(alignment: .top) {
-      // Pure Black Background Silhouette
       HarmonotchSurface(shape: notchShape, isExpanded: notchVM.isExpanded)
         .frame(width: targetWidth, height: targetHeight)
 

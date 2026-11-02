@@ -68,10 +68,10 @@ extension ThemePalette {
     accentGreen: Color(hex: 0x6FCF97),
     accentCyan: Color(hex: 0x6EC6E8),
     accentRed: Color(hex: 0xFF7B87),
-    tabBarBackground: Color(red: 0.06, green: 0.06, blue: 0.06),
-    tabActiveBackground: Color(hex: 0x3A2D10),
-    tabActiveText: Color(hex: 0xF2C14E),
-    tabInactiveText: .white.opacity(0.55)
+    tabBarBackground: Color(red: 0.08, green: 0.08, blue: 0.08),
+    tabActiveBackground: Color(white: 0.20),
+    tabActiveText: .white,
+    tabInactiveText: .white.opacity(0.60)
   )
 
   fileprivate static let monochromeLight = ThemePalette(
@@ -88,9 +88,9 @@ extension ThemePalette {
     accentGreen: Color(hex: 0x2E7D32),
     accentCyan: Color(hex: 0x006D77),
     accentRed: Color(hex: 0xB3261E),
-    tabBarBackground: Color(red: 0.93, green: 0.93, blue: 0.93),
-    tabActiveBackground: Color(hex: 0xF5E8BE),
-    tabActiveText: Color(hex: 0x7A5200),
+    tabBarBackground: Color(red: 0.91, green: 0.91, blue: 0.92),
+    tabActiveBackground: .white,
+    tabActiveText: .black,
     tabInactiveText: .black.opacity(0.55)
   )
 
@@ -111,9 +111,9 @@ extension ThemePalette {
     accentCyan: Color(hex: 0x89DCEB),
     accentRed: Color(hex: 0xF38BA8),
     tabBarBackground: Color(hex: 0x181825),
-    tabActiveBackground: Color(hex: 0x45475A),
-    tabActiveText: Color(hex: 0xF5C2E7),
-    tabInactiveText: Color(hex: 0xA6ADC8)
+    tabActiveBackground: Color(hex: 0x313244),
+    tabActiveText: Color(hex: 0xCDD6F4),
+    tabInactiveText: Color(hex: 0x9399B2)
   )
 
   fileprivate static let catppuccinLatte = ThemePalette(
@@ -131,9 +131,9 @@ extension ThemePalette {
     accentCyan: Color(hex: 0x179299),
     accentRed: Color(hex: 0xD20F39),
     tabBarBackground: Color(hex: 0xE6E9EF),
-    tabActiveBackground: Color(hex: 0xCCD0DA),
-    tabActiveText: Color(hex: 0x8839EF),
-    tabInactiveText: Color(hex: 0x6C6F85)
+    tabActiveBackground: Color(hex: 0xFFFFFF),
+    tabActiveText: Color(hex: 0x4C4F69),
+    tabInactiveText: Color(hex: 0x7C7F93)
   )
 }
 

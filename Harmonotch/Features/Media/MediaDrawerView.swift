@@ -65,28 +65,27 @@ struct MediaDrawerView: View {
       HStack(alignment: .center, spacing: 14) {
         ZStack {
           RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color(red: 0.10, green: 0.10, blue: 0.10))
+            .fill(AppTheme.cardBackground)
             .frame(width: 56, height: 56)
 
           Image(systemName: "speaker.wave.3.fill")
             .font(.system(size: 22, weight: .bold))
-            .foregroundColor(.white)
-            .symbolEffect(.variableColor.iterative.reversing)
+            .foregroundColor(AppTheme.accentAmber)
         }
         .overlay(
           RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .stroke(Color.white.opacity(0.14), lineWidth: 0.8)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.8)
         )
 
         VStack(alignment: .leading, spacing: 3) {
           HStack(spacing: 6) {
             Circle()
-              .fill(Color.white)
+              .fill(AppTheme.accentAmber)
               .frame(width: 6, height: 6)
 
             Text(L10n.Prayer.audioAdzanTitle)
               .font(.system(size: 11, weight: .bold))
-              .foregroundColor(.white)
+              .foregroundColor(AppTheme.accentAmber)
           }
 
           Text(L10n.Prayer.localizedPrayerName(adzanPlayer.playingPrayerName))
@@ -102,11 +101,11 @@ struct MediaDrawerView: View {
           }) {
             Image(systemName: adzanPlayer.isMuted ? "bell.slash.fill" : "bell.fill")
               .font(.system(size: 13, weight: .semibold))
-              .foregroundColor(.white)
+              .foregroundColor(adzanPlayer.isMuted ? AppTheme.textTertiary : AppTheme.accentAmber)
               .frame(width: 34, height: 34)
-              .background(Color.white.opacity(0.10))
+              .background(AppTheme.badgeBackground)
               .clipShape(Circle())
-              .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.6))
+              .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
           }
           .buttonStyle(.plain)
 
@@ -119,19 +118,18 @@ struct MediaDrawerView: View {
               Text(L10n.Prayer.stop)
                 .font(.system(size: 12, weight: .bold))
             }
-            .foregroundColor(.white)
+            .foregroundColor(AppTheme.accentRed)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(Color(white: 0.22))
+            .background(AppTheme.accentRed.opacity(0.14))
             .cornerRadius(8)
             .overlay(
-              RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.15), lineWidth: 0.8))
+              RoundedRectangle(cornerRadius: 8).stroke(AppTheme.accentRed.opacity(0.3), lineWidth: 0.8))
           }
           .buttonStyle(.plain)
         }
       }
 
-      // Prayer times schedule row
       HStack(spacing: 8) {
         ForEach(prayerManager.prayerItems) { item in
           PrayerCardView(item: item)
@@ -145,7 +143,6 @@ struct MediaDrawerView: View {
   private var mediaPlaybackView: some View {
     VStack(spacing: 12) {
       HStack(alignment: .center, spacing: 14) {
-        // Large Artwork
         ZStack {
           if let art = mediaManager.artworkImage {
             Image(nsImage: art)
@@ -169,7 +166,6 @@ struct MediaDrawerView: View {
             .stroke(Color.white.opacity(0.14), lineWidth: 0.8)
         )
 
-        // Track details
         VStack(alignment: .leading, spacing: 3) {
           HStack(spacing: 5) {
             Image(systemName: mediaManager.mediaSource.iconName)
@@ -184,12 +180,12 @@ struct MediaDrawerView: View {
                 .foregroundColor(mediaAccentColor)
             }
           }
-          .foregroundColor(Color.white.opacity(0.65))
+          .foregroundColor(AppTheme.textSecondary)
           .padding(.horizontal, 6)
-          .padding(.vertical, 2)
+          .padding(.vertical, 2.5)
           .background(
-            Capsule()
-              .fill(Color.white.opacity(0.08))
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+              .fill(AppTheme.badgeBackground)
           )
 
           Text(mediaManager.trackTitle)
@@ -207,7 +203,6 @@ struct MediaDrawerView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
 
-        // Controls
         HStack(spacing: 10) {
           Button(action: {
             mediaManager.previousTrack()
@@ -216,9 +211,9 @@ struct MediaDrawerView: View {
               .font(.system(size: 13, weight: .semibold))
               .foregroundColor(mediaAccentColor)
               .frame(width: 34, height: 34)
-              .background(Color.white.opacity(0.10))
+              .background(AppTheme.badgeBackground)
               .clipShape(Circle())
-              .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.6))
+              .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
           }
           .buttonStyle(.plain)
 
@@ -232,7 +227,7 @@ struct MediaDrawerView: View {
               .frame(width: 42, height: 42)
               .background(mediaAccentColor)
               .clipShape(Circle())
-              .shadow(color: mediaAccentColor.opacity(0.25), radius: 6, x: 0, y: 2)
+              .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.12), radius: 2.5, x: 0, y: 1.5)
           }
           .buttonStyle(.plain)
 
@@ -243,15 +238,14 @@ struct MediaDrawerView: View {
               .font(.system(size: 13, weight: .semibold))
               .foregroundColor(mediaAccentColor)
               .frame(width: 34, height: 34)
-              .background(Color.white.opacity(0.10))
+              .background(AppTheme.badgeBackground)
               .clipShape(Circle())
-              .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.6))
+              .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
           }
           .buttonStyle(.plain)
         }
       }
 
-      // Progress bar
       HStack(spacing: 8) {
         Text(mediaManager.formattedPosition)
           .font(.system(size: 9.5, weight: .medium, design: .monospaced))
@@ -261,7 +255,7 @@ struct MediaDrawerView: View {
         GeometryReader { geo in
           ZStack(alignment: .leading) {
             Capsule()
-              .fill(Color.white.opacity(0.14))
+              .fill(AppTheme.cardBorder)
               .frame(height: 5)
 
             Capsule()
@@ -277,7 +271,6 @@ struct MediaDrawerView: View {
           .foregroundColor(AppTheme.textTertiary)
       }
 
-      // Synced lyrics line or Prayer status
       if mediaManager.hasActiveTrack {
         ExpandedLyricsView(mediaAccentColor: mediaAccentColor)
       } else if let next = prayerManager.nextPrayerItem {
@@ -304,13 +297,13 @@ struct MediaDrawerView: View {
         HStack(spacing: 4) {
           Image(systemName: adzanPlayer.isMuted ? "bell.slash.fill" : "bell.fill")
             .font(.system(size: 9))
-          Text(adzanPlayer.isMuted ? "Adzan Muted" : "Adzan Active")
+          Text(adzanPlayer.isMuted ? L10n.Prayer.adzanMuted : L10n.Prayer.adzanActive)
             .font(.system(size: 9.5, weight: .semibold))
         }
-        .foregroundColor(.white)
+        .foregroundColor(adzanPlayer.isMuted ? AppTheme.textSecondary : AppTheme.textPrimary)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
-        .background(Color.white.opacity(0.08))
+        .background(AppTheme.badgeBackground)
         .cornerRadius(5)
       }
       .buttonStyle(.plain)
@@ -319,10 +312,10 @@ struct MediaDrawerView: View {
     .padding(.vertical, 5)
     .background(
       RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .fill(Color.white.opacity(0.05))
+        .fill(AppTheme.cardBackground)
         .overlay(
           RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(Color.white.opacity(0.08), lineWidth: 0.6)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.6)
         )
     )
   }
@@ -334,12 +327,12 @@ struct MediaDrawerView: View {
       HStack(spacing: 12) {
         ZStack {
           Circle()
-            .fill(Color.white.opacity(0.08))
+            .fill(AppTheme.badgeBackground)
             .frame(width: 44, height: 44)
 
           Image(systemName: "music.note")
             .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(.white)
+            .foregroundColor(AppTheme.textPrimary)
         }
 
         VStack(alignment: .leading, spacing: 3) {
@@ -367,13 +360,13 @@ struct MediaDrawerView: View {
             Text("Spotify")
               .font(.system(size: 11.5, weight: .semibold))
           }
-          .foregroundColor(.white)
+          .foregroundColor(AppTheme.textPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 8)
-          .background(Color(white: 0.12))
+          .background(AppTheme.cardBackground)
           .cornerRadius(8)
           .overlay(
-            RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.12), lineWidth: 0.6))
+            RoundedRectangle(cornerRadius: 8).stroke(AppTheme.cardBorder, lineWidth: 0.6))
         }
         .buttonStyle(.plain)
 
@@ -386,13 +379,13 @@ struct MediaDrawerView: View {
             Text("Apple Music")
               .font(.system(size: 11.5, weight: .semibold))
           }
-          .foregroundColor(.white)
+          .foregroundColor(AppTheme.textPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 8)
-          .background(Color(white: 0.12))
+          .background(AppTheme.cardBackground)
           .cornerRadius(8)
           .overlay(
-            RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.12), lineWidth: 0.6))
+            RoundedRectangle(cornerRadius: 8).stroke(AppTheme.cardBorder, lineWidth: 0.6))
         }
         .buttonStyle(.plain)
       }
@@ -458,10 +451,10 @@ struct ExpandedLyricsView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(
       RoundedRectangle(cornerRadius: 12, style: .continuous)
-        .fill(Color.white.opacity(0.04))
+        .fill(AppTheme.cardBackground)
         .overlay(
           RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .stroke(Color.white.opacity(0.08), lineWidth: 0.6)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.6)
         )
     )
   }
@@ -566,7 +559,7 @@ struct ExpandedLyricsView: View {
       .foregroundColor(AppTheme.textTertiary)
       .padding(.horizontal, 5)
       .padding(.vertical, 1.5)
-      .background(Color.white.opacity(0.06))
+      .background(AppTheme.badgeBackground)
       .clipShape(Capsule())
 
     default:
@@ -676,10 +669,10 @@ struct ExpandedLyricsView: View {
           ))
           .foregroundColor(
             isActive
-              ? Color.white
+              ? AppTheme.textPrimary
               : (isHovered
-                ? Color.white.opacity(0.92)
-                : (isPast ? Color.white.opacity(0.35) : Color.white.opacity(0.60)))
+                ? AppTheme.textPrimary
+                : (isPast ? AppTheme.textTertiary : AppTheme.textSecondary))
           )
           .multilineTextAlignment(.leading)
           .lineLimit(2)
@@ -702,8 +695,8 @@ struct ExpandedLyricsView: View {
         RoundedRectangle(cornerRadius: 6, style: .continuous)
           .fill(
             isActive
-              ? Color.white.opacity(0.08)
-              : (isHovered ? Color.white.opacity(0.05) : Color.clear)
+              ? AppTheme.badgeBackground
+              : (isHovered ? AppTheme.badgeBackground.opacity(0.6) : Color.clear)
           )
       )
       .contentShape(Rectangle())
@@ -736,7 +729,7 @@ struct ExpandedLyricsView: View {
 
       Text(mediaManager.currentLyricText)
         .font(.system(size: 12.5, weight: .bold, design: .rounded))
-        .foregroundColor(Color.white)
+        .foregroundColor(AppTheme.textPrimary)
         .multilineTextAlignment(.leading)
         .lineLimit(2)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -776,7 +769,7 @@ struct ExpandedLyricsView: View {
           ForEach(Array(mediaManager.unsyncedLyrics.enumerated()), id: \.offset) { _, line in
             Text(line)
               .font(.system(size: 11.5, weight: .regular, design: .rounded))
-              .foregroundColor(Color.white.opacity(0.88))
+              .foregroundColor(AppTheme.textPrimary)
               .multilineTextAlignment(.leading)
               .frame(maxWidth: .infinity, alignment: .leading)
           }
@@ -819,7 +812,7 @@ struct ExpandedLyricsView: View {
     HStack(spacing: 10) {
       ZStack {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
-          .fill(Color.white.opacity(0.05))
+          .fill(AppTheme.badgeBackground)
           .frame(width: 28, height: 28)
 
         Image(systemName: "quote.bubble")

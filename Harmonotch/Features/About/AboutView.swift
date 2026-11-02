@@ -147,6 +147,26 @@ struct AboutView: View {
             }
 
             AcknowledgementCard(
+              title: L10n.About.vorssaintTitle,
+              author: "Vorssaint",
+              license: "Reference",
+              description: L10n.About.vorssaintDesc,
+              iconName: "music.note",
+              url: URL(string: "https://github.com/vorssaint/vorssaint-utils"),
+              onViewLicense: nil
+            )
+
+            AcknowledgementCard(
+              title: L10n.About.lrclibTitle,
+              author: "Tran Xuan Thang",
+              license: "MIT License",
+              description: L10n.About.lrclibDesc,
+              iconName: "quote.bubble.fill",
+              url: URL(string: "https://github.com/tranxuanthang/lrclib"),
+              onViewLicense: nil
+            )
+
+            AcknowledgementCard(
               title: L10n.About.audioTitle,
               author: "IslamDownload.net",
               license: "Free Audio",

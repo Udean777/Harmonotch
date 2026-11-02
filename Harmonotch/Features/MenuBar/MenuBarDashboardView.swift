@@ -10,11 +10,21 @@ struct MenuBarDashboardView: View {
   @ObservedObject private var languageManager = LanguageManager.shared
 
   var body: some View {
+    GeometryReader { proxy in
+      cardContent
+        .frame(width: proxy.size.width, alignment: .top)
+    }
+    .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
+      viewModel.onCardHeightChanged?(height)
+    }
+    .onExitCommand(perform: onClose)
+  }
+
+  private var cardContent: some View {
     VStack(spacing: 10) {
       headerBar
 
-      Divider()
-        .background(AppTheme.divider)
+      tabSelectorBar
 
       currentTabContent
 
@@ -40,28 +50,19 @@ struct MenuBarDashboardView: View {
         Color.clear.preference(key: DashboardHeightPreferenceKey.self, value: geo.size.height)
       }
     )
-    .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
-      viewModel.onCardHeightChanged?(height)
-    }
-    .onExitCommand(perform: onClose)
   }
 
   private var headerBar: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: 8) {
       brandIdentity
 
-      Spacer(minLength: 4)
+      Spacer(minLength: 8)
 
-      tabSelector
-
-      Button(action: onClose) {
-        Image(systemName: "xmark.circle.fill")
-          .font(.system(size: 14, weight: .semibold))
-          .foregroundColor(AppTheme.textTertiary)
+      if updateManager.hasUpdate {
+        updateBadgeButton
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(L10n.Dashboard.closeDashboard)
-      .help(L10n.Dashboard.closeDashboard)
+
+      DashboardCloseButton(action: onClose)
     }
   }
 
@@ -88,140 +89,111 @@ struct MenuBarDashboardView: View {
       .accessibilityHidden(true)
 
       VStack(alignment: .leading, spacing: 1) {
-        HStack(spacing: 4) {
-          Text("Harmonotch")
-            .font(.system(size: 12.5, weight: .bold))
-            .foregroundColor(AppTheme.textPrimary)
-            .lineLimit(1)
+        Text("Harmonotch")
+          .font(.system(size: 13, weight: .bold))
+          .foregroundColor(AppTheme.textPrimary)
+          .lineLimit(1)
 
-          if updateManager.hasUpdate {
-            Image(systemName: "sparkles")
-              .font(.system(size: 8.5, weight: .bold))
-              .foregroundColor(AppTheme.accentAmber)
-              .accessibilityHidden(true)
-          }
-        }
-
-        Text(tabLabel(for: viewModel.selectedTab))
-          .font(.system(size: 9.5, weight: .semibold))
+        Text(L10n.Menu.headerSubtitle)
+          .font(.system(size: 9.5, weight: .medium))
           .foregroundColor(AppTheme.textTertiary)
           .lineLimit(1)
       }
     }
   }
 
-  private var tabSelector: some View {
-    HStack(spacing: 2) {
+  private var updateBadgeButton: some View {
+    Button(action: { updateManager.checkForUpdates(isUserInitiated: true) }) {
+      HStack(spacing: 4) {
+        Image(systemName: "arrow.down.circle.fill")
+          .font(.system(size: 9.5, weight: .bold))
+        Text(L10n.Update.available)
+          .font(.system(size: 8.5, weight: .semibold))
+      }
+      .foregroundColor(AppTheme.accentAmber)
+      .padding(.horizontal, 7)
+      .padding(.vertical, 3.5)
+      .background(AppTheme.accentAmber.opacity(0.12))
+      .clipShape(Capsule())
+      .overlay(
+        Capsule()
+          .stroke(AppTheme.accentAmber.opacity(0.35), lineWidth: 0.6)
+      )
+    }
+    .buttonStyle(.plain)
+    .help(L10n.Menu.checkForUpdates)
+  }
+
+  private var tabSelectorBar: some View {
+    HStack(spacing: 3) {
       ForEach(DashboardTab.allCases) { tab in
-        tabButton(tab)
+        DashboardTabItemButton(
+          tab: tab,
+          isSelected: viewModel.selectedTab == tab,
+          label: tabLabel(for: tab),
+          action: {
+            viewModel.selectedTab = tab
+          }
+        )
       }
     }
     .padding(2.5)
-    .frame(height: 29)
     .background(
-      Capsule()
-        .fill(AppTheme.cardBackground)
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .fill(AppTheme.tabBarBackground)
         .overlay(
-          Capsule()
+          RoundedRectangle(cornerRadius: 8, style: .continuous)
             .stroke(AppTheme.cardBorder, lineWidth: 0.6)
         )
     )
   }
 
-  private func tabButton(_ tab: DashboardTab) -> some View {
-    let isSelected = (viewModel.selectedTab == tab)
-    let label = tabLabel(for: tab)
-    return Button(action: {
-      viewModel.selectedTab = tab
-    }) {
-      ZStack {
-        if isSelected {
-          Capsule()
-            .fill(AppTheme.tabActiveBackground)
-            .overlay(
-              Capsule()
-                .stroke(AppTheme.accentAmber.opacity(0.35), lineWidth: 0.7)
-            )
-            .transition(.opacity)
-        }
-
-        Image(systemName: tab.icon)
-          .font(.system(size: 11, weight: isSelected ? .bold : .semibold))
-          .foregroundColor(isSelected ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
-          .frame(width: 28, height: 24)
-      }
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .animation(.easeInOut(duration: 0.16), value: isSelected)
-    .accessibilityLabel(label)
-    .help(label)
-  }
-
   @ViewBuilder
   private var currentTabContent: some View {
-    Group {
-      switch viewModel.selectedTab {
-      case .now:
-        DashboardNowSection(
-          onSelectTab: { tab in
-            viewModel.selectedTab = tab
-          }
-        )
-      case .battery:
-        DashboardBatterySection()
-      case .process:
-        DashboardProcessSection()
-      case .prayer:
-        DashboardPrayerSection()
-      case .utilities:
-        DashboardUtilitiesSection()
-      }
+    switch viewModel.selectedTab {
+    case .now:
+      DashboardNowSection(
+        onSelectTab: { tab in
+          viewModel.selectedTab = tab
+        }
+      )
+    case .battery:
+      DashboardBatterySection()
+    case .process:
+      DashboardProcessSection()
+    case .prayer:
+      DashboardPrayerSection()
+    case .utilities:
+      DashboardUtilitiesSection()
     }
-    .transition(.opacity)
-    .id(viewModel.selectedTab)
   }
 
   private var footerBar: some View {
     HStack(spacing: 8) {
-      Text("v\(updateManager.currentVersion)")
-        .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+      Text("Harmonotch v\(updateManager.currentVersion)")
+        .font(.system(size: 9.5, weight: .medium, design: .rounded))
         .foregroundColor(AppTheme.textTertiary)
 
       Spacer()
 
-      Button(action: { updateManager.checkForUpdates(isUserInitiated: true) }) {
-        Image(systemName: "arrow.clockwise")
-          .font(.system(size: 10, weight: .semibold))
-          .foregroundColor(AppTheme.textSecondary)
-          .frame(width: 24, height: 24)
-          .background(AppTheme.badgeBackground)
-          .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-      }
-      .buttonStyle(.plain)
-      .help(L10n.Menu.checkForUpdates)
+      DashboardIconButton(
+        icon: "arrow.clockwise",
+        helpText: L10n.Menu.checkForUpdates,
+        action: { updateManager.checkForUpdates(isUserInitiated: true) }
+      )
 
-      Button(action: { AboutWindowController.shared.show() }) {
-        Image(systemName: "info.circle")
-          .font(.system(size: 10, weight: .semibold))
-          .foregroundColor(AppTheme.textSecondary)
-          .frame(width: 24, height: 24)
-          .background(AppTheme.badgeBackground)
-          .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-      }
-      .buttonStyle(.plain)
-      .help(L10n.Menu.aboutHarmonotch)
+      DashboardIconButton(
+        icon: "info.circle",
+        helpText: L10n.Menu.aboutHarmonotch,
+        action: { AboutWindowController.shared.show() }
+      )
 
-      Button(action: { NSApplication.shared.terminate(nil) }) {
-        Image(systemName: "power")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundColor(AppTheme.accentRed)
-          .frame(width: 24, height: 24)
-          .background(AppTheme.badgeBackground)
-          .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-      }
-      .buttonStyle(.plain)
-      .help(L10n.Menu.quit)
+      DashboardIconButton(
+        icon: "power",
+        helpText: L10n.Menu.quit,
+        isDestructive: true,
+        action: { NSApplication.shared.terminate(nil) }
+      )
     }
   }
 
@@ -236,12 +208,147 @@ struct MenuBarDashboardView: View {
   }
 }
 
+private struct DashboardTabItemButton: View {
+  let tab: DashboardTab
+  let isSelected: Bool
+  let label: String
+  let action: () -> Void
+
+  @State private var isHovered = false
+
+  var body: some View {
+    Button(action: action) {
+      VStack(spacing: 2.5) {
+        Image(systemName: tab.icon)
+          .font(.system(size: 12.5, weight: isSelected ? .semibold : .regular))
+          .frame(height: 15)
+
+        Text(label)
+          .font(.system(size: 9, weight: isSelected ? .semibold : .medium))
+          .lineLimit(1)
+          .minimumScaleFactor(0.85)
+      }
+      .foregroundColor(
+        isSelected
+          ? AppTheme.tabActiveText
+          : (isHovered ? AppTheme.textPrimary : AppTheme.tabInactiveText)
+      )
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 5)
+      .padding(.horizontal, 2)
+      .background(
+        Group {
+          if isSelected {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+              .fill(AppTheme.tabActiveBackground)
+              .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.08), radius: 1.5, x: 0, y: 1)
+              .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .stroke(AppTheme.surfaceBorder.opacity(0.8), lineWidth: 0.5)
+              )
+          } else if isHovered {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+              .fill(AppTheme.tabActiveBackground.opacity(0.4))
+          } else {
+            Color.clear
+          }
+        }
+      )
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .onHover { hovering in
+      withAnimation(.easeInOut(duration: 0.12)) {
+        isHovered = hovering
+      }
+    }
+    .accessibilityLabel(label)
+    .help(label)
+  }
+}
+
+private struct DashboardIconButton: View {
+  let icon: String
+  let helpText: String
+  var isDestructive: Bool = false
+  let action: () -> Void
+
+  @State private var isHovered = false
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: icon)
+        .font(.system(size: 10.5, weight: isDestructive ? .bold : .semibold))
+        .foregroundColor(foregroundColor)
+        .frame(width: 24, height: 24)
+        .background(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(
+              isHovered
+                ? (isDestructive ? AppTheme.accentRed.opacity(0.15) : AppTheme.badgeBackground.opacity(1.3))
+                : AppTheme.badgeBackground
+            )
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .stroke(
+              isHovered
+                ? (isDestructive ? AppTheme.accentRed.opacity(0.35) : AppTheme.cardBorder)
+                : Color.clear,
+              lineWidth: 0.6
+            )
+        )
+    }
+    .buttonStyle(.plain)
+    .onHover { hovering in
+      withAnimation(.easeInOut(duration: 0.12)) {
+        isHovered = hovering
+      }
+    }
+    .help(helpText)
+    .accessibilityLabel(helpText)
+  }
+
+  private var foregroundColor: Color {
+    if isDestructive {
+      return isHovered ? AppTheme.accentRed : AppTheme.textSecondary
+    }
+    return isHovered ? AppTheme.textPrimary : AppTheme.textSecondary
+  }
+}
+
+private struct DashboardCloseButton: View {
+  let action: () -> Void
+  @State private var isHovered = false
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: "xmark")
+        .font(.system(size: 9.5, weight: .bold))
+        .foregroundColor(isHovered ? AppTheme.textPrimary : AppTheme.textTertiary)
+        .frame(width: 22, height: 22)
+        .background(
+          Circle()
+            .fill(isHovered ? AppTheme.badgeBackground : Color.clear)
+        )
+    }
+    .buttonStyle(.plain)
+    .onHover { hovering in
+      withAnimation(.easeInOut(duration: 0.12)) {
+        isHovered = hovering
+      }
+    }
+    .help(L10n.Dashboard.closeDashboard)
+    .accessibilityLabel(L10n.Dashboard.closeDashboard)
+  }
+}
+
 /// Reports the dashboard card's natural rendered height so the controller can
 /// resize the panel while keeping its top edge anchored below the menu bar.
 struct DashboardHeightPreferenceKey: PreferenceKey {
-  static var defaultValue: CGFloat = 400
+  static var defaultValue: CGFloat = 0
   static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-    value = nextValue()
+    value = max(value, nextValue())
   }
 }
 

@@ -20,7 +20,7 @@ struct DashboardPrayerSection: View {
             if !prayerManager.imsakTimeString.isEmpty {
               row(
                 name: L10n.Prayer.imsak,
-                icon: "sparkles",
+                icon: "moon.haze.fill",
                 time: prayerManager.imsakTimeString,
                 isCurrent: false,
                 isNext: false
