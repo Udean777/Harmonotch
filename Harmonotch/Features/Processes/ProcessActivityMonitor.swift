@@ -29,7 +29,7 @@ final class ProcessActivityMonitor: ObservableObject {
     }
     let sampler = sampler
     let interval = interval
-    task = Task { [weak self] in
+    task = Task { @MainActor [weak self] in
       var previous: ProcessCounterSample
       do {
         previous = try await Task.detached(priority: .utility) { try sampler.sample() }.value
