@@ -13,4 +13,7 @@ enum UserDefaultsKeys {
     static let sudoConfigured = "Harmonotch_SudoConfigured"
     static let appLanguage = "Harmonotch_AppLanguage"
     static let companionEnabled = "Harmonotch_CompanionEnabled"
+    static let chargeLimitEnabled = "Harmonotch_ChargeLimitEnabled"
+    static let chargeLimitThreshold = "Harmonotch_ChargeLimitThreshold"
+    static let chargeLimitSudoConfigured = "Harmonotch_ChargeLimitSudoConfigured"
 }

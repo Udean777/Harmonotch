@@ -29,8 +29,8 @@ enum NotchLayout {
   static let expandedAdzanHeight: CGFloat = 205
   static let expandedBatteryHeight: CGFloat = 200
   static let expandedMediaHeight: CGFloat = 180
-  static let expandedMediaTrackHeight: CGFloat = 230
-  static let expandedHitAreaHeight: CGFloat = 260
+  static let expandedMediaTrackHeight: CGFloat = 275
+  static let expandedHitAreaHeight: CGFloat = 295
 
   static func shoulder(height: CGFloat) -> CGFloat {
     min(maxShoulder, max(0, height * 0.16))

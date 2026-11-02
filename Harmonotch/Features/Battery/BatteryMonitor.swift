@@ -3,35 +3,19 @@ import IOKit
 import IOKit.ps
 import Combine
 
-private enum TimeRemaining {
-    case toEmpty(hours: Int, mins: Int)
-    case toFull(hours: Int, mins: Int)
-    case fullChargeAC
-    case connectedCharger
-    case onBattery
-
-    var localized: String {
-        switch self {
-        case let .toEmpty(hours, mins):
-            return L10n.Battery.timeRemaining(hours: hours, mins: mins)
-        case let .toFull(hours, mins):
-            return L10n.Battery.timeToFull(hours: hours, mins: mins)
-        case .fullChargeAC:
-            return L10n.Battery.fullChargeAc
-        case .connectedCharger:
-            return L10n.Battery.connectedCharger
-        case .onBattery:
-            return L10n.Battery.onBattery
-        }
-    }
-}
-
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
 
     private static let healthCacheDuration: TimeInterval = 300
-    private static let fullChargeACThreshold = 95
 
+    /// Dashboard-facing state. Stays `.loading` until the first read finishes, so
+    /// no number is shown before it is real.
+    @Published private(set) var state: DashboardDataState<BatteryReading> = .loading
+    /// Set when the latest refresh failed while an earlier reading is still shown.
+    @Published private(set) var refreshError: String? = nil
+    @Published private(set) var isRefreshing = false
+
+    // Legacy fields consumed by the notch pill, drawer and companion views.
     @Published var currentCapacity: Int = 100
     @Published var isCharging: Bool = false
     @Published var isPluggedIn: Bool = false
@@ -43,23 +27,64 @@ final class BatteryMonitor: ObservableObject {
     @Published var designCapacity: Int = 0
     @Published var timeRemainingFormatted: String = ""
     @Published var adapterWatts: Int? = nil
+    @Published private(set) var hasBattery: Bool? = nil
+    @Published private(set) var lastBatteryUpdate: Date? = nil
 
     private var refreshTimer: AnyCancellable?
     private var languageCancellable: AnyCancellable?
+    private var powerSourceRunLoopSource: CFRunLoopSource?
+
+    /// Probe work runs on one serial queue, so the health cache below needs no lock.
+    private let probeQueue = DispatchQueue(label: "harmonotch.battery.probe", qos: .utility)
     private var lastHealthQueryTime: Date?
     private var cachedOfficialHealth: Int?
+    private var pendingRefresh = false
 
     init() {
         refreshBatteryInfo()
         startPeriodicRefresh()
+        observePowerSourceChanges()
 
         languageCancellable = NotificationCenter.default.publisher(for: .languageDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.refreshBatteryInfo()
+                self?.applyLegacyFields()
             }
     }
 
+    deinit {
+        if let source = powerSourceRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
+        }
+    }
+
+    static func localizedTimeEstimate(_ estimate: BatteryReading.TimeEstimate) -> String {
+        switch estimate {
+        case let .toEmpty(minutes):
+            return L10n.Battery.timeRemaining(hours: minutes / 60, mins: minutes % 60)
+        case let .toFull(minutes):
+            return L10n.Battery.timeToFull(hours: minutes / 60, mins: minutes % 60)
+        case .fullyCharged:
+            return L10n.Battery.fullChargeAc
+        case .pluggedIn:
+            return L10n.Battery.connectedCharger
+        case .onBattery:
+            return L10n.Battery.onBattery
+        }
+    }
+
+    private func observePowerSourceChanges() {
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        guard let source = IOPSNotificationCreateRunLoopSource({ context in
+            guard let context else { return }
+            let monitor = Unmanaged<BatteryMonitor>.fromOpaque(context).takeUnretainedValue()
+            monitor.refreshBatteryInfo()
+        }, context)?.takeRetainedValue() else { return }
+        powerSourceRunLoopSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
+    }
+
+    /// Expensive probe; the caller must go through `fetchOfficialHealthIfNeeded`.
     private func queryOfficialBatteryHealth() -> Int? {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/sbin/system_profiler")
@@ -68,8 +93,8 @@ final class BatteryMonitor: ObservableObject {
         proc.standardOutput = pipe
         do {
             try proc.run()
-            proc.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            proc.waitUntilExit()
             if let str = String(data: data, encoding: .utf8) {
                 let pattern = "Maximum Capacity:\\s*(\\d+)%"
                 if let regex = try? NSRegularExpression(pattern: pattern),
@@ -81,26 +106,25 @@ final class BatteryMonitor: ObservableObject {
             }
         } catch {
             NSLog("[Harmonotch:Battery] Failed to query battery health: %@", error.localizedDescription)
-            return nil
         }
         return nil
     }
 
+    /// Cached for `healthCacheDuration`, including failed probes, so a missing
+    /// value never causes `system_profiler` to run on every refresh.
     private func fetchOfficialHealthIfNeeded() -> Int? {
-        if let cached = cachedOfficialHealth,
-           let last = lastHealthQueryTime,
+        if let last = lastHealthQueryTime,
            Date().timeIntervalSince(last) < Self.healthCacheDuration {
-            return cached
+            return cachedOfficialHealth
         }
-        if let official = queryOfficialBatteryHealth() {
-            cachedOfficialHealth = official
-            lastHealthQueryTime = Date()
-            return official
-        }
+        let official = queryOfficialBatteryHealth()
+        lastHealthQueryTime = Date()
+        if let official { cachedOfficialHealth = official }
         return cachedOfficialHealth
     }
 
     func startPeriodicRefresh() {
+        guard refreshTimer == nil else { return }
         refreshTimer = Timer.publish(every: 30, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
@@ -108,107 +132,177 @@ final class BatteryMonitor: ObservableObject {
             }
     }
 
+    func stopPeriodicRefresh() {
+        refreshTimer?.cancel()
+        refreshTimer = nil
+    }
+
+    private enum ProbeResult {
+        case reading(BatteryReading)
+        case noBattery
+        case failure(String)
+    }
+
     func refreshBatteryInfo() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self = self else { return }
+        if Thread.isMainThread {
+            beginRefresh()
+        } else {
+            DispatchQueue.main.async { [weak self] in self?.beginRefresh() }
+        }
+    }
 
-            var newCurrentCapacity: Int?
-            var newIsCharging: Bool?
-            var newIsPluggedIn: Bool?
-            var newPowerSourceState: String?
-            var newTimeRemaining: TimeRemaining?
-
-            var newCycleCount: Int?
-            var newMaxCycleCount: Int?
-            var newNominalCapacity: Int?
-            var newDesignCapacity: Int?
-            var newHealthPercent: Int?
-            var newAdapterWatts: Int?
-
-            if let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-               let sources = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] {
-                for source in sources {
-                    if let desc = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any] {
-                        if let cap = desc[kIOPSCurrentCapacityKey] as? Int {
-                            newCurrentCapacity = cap
-                        }
-                        if let charging = desc[kIOPSIsChargingKey] as? Bool {
-                            newIsCharging = charging
-                        } else if let chargingInt = desc[kIOPSIsChargingKey] as? Int {
-                            newIsCharging = chargingInt == 1
-                        }
-                        if let state = desc[kIOPSPowerSourceStateKey] as? String {
-                            newPowerSourceState = state
-                            newIsPluggedIn = (state == kIOPSACPowerValue)
-                        }
-
-                        let cap = newCurrentCapacity ?? self.currentCapacity
-                        let plugged = newIsPluggedIn ?? self.isPluggedIn
-                        let charging = newIsCharging ?? self.isCharging
-
-                        // Only capture numbers here; L10n state must be read on the main thread.
-                        if let timeToEmpty = desc[kIOPSTimeToEmptyKey] as? Int, timeToEmpty > 0, !plugged {
-                            newTimeRemaining = .toEmpty(hours: timeToEmpty / 60, mins: timeToEmpty % 60)
-                        } else if let timeToFull = desc[kIOPSTimeToFullChargeKey] as? Int, timeToFull > 0, charging {
-                            newTimeRemaining = .toFull(hours: timeToFull / 60, mins: timeToFull % 60)
-                        } else if plugged && !charging && cap >= Self.fullChargeACThreshold {
-                            newTimeRemaining = .fullChargeAC
-                        } else {
-                            newTimeRemaining = plugged ? .connectedCharger : .onBattery
-                        }
-                    }
-                }
-            }
-
-            let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
-            if service != 0 {
-                var props: Unmanaged<CFMutableDictionary>?
-                if IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-                   let dict = props?.takeRetainedValue() as? [String: Any] {
-
-                    if let cycle = dict["CycleCount"] as? Int {
-                        newCycleCount = cycle
-                    }
-                    if let designCycle = dict["DesignCycleCount9C"] as? Int {
-                        newMaxCycleCount = designCycle
-                    }
-
-                    if let bData = dict["BatteryData"] as? [String: Any] {
-                        let nominal = (bData["NominalChargeCapacity"] as? Int) ?? (bData["FullChargeCapacity"] as? Int) ?? 0
-                        let design = bData["DesignCapacity"] as? Int ?? 0
-
-                        if nominal > 0 && design > 0 {
-                            newNominalCapacity = nominal
-                            newDesignCapacity = design
-                            let calculatedHealth = Int(round((Double(nominal) / Double(design)) * 100.0))
-                            newHealthPercent = min(100, max(0, calculatedHealth))
-                        }
-                    }
-
-                    if let official = self.fetchOfficialHealthIfNeeded() {
-                        newHealthPercent = official
-                    }
-
-                    if let adapter = dict["AdapterDetails"] as? [String: Any], let watts = adapter["Watts"] as? Int {
-                        newAdapterWatts = watts
-                    }
-                }
-                IOObjectRelease(service)
-            }
-
+    private func beginRefresh() {
+        // Collapse overlapping triggers into at most one follow-up probe.
+        guard !isRefreshing else {
+            pendingRefresh = true
+            return
+        }
+        isRefreshing = true
+        probeQueue.async { [weak self] in
+            guard let self else { return }
+            let result = self.probe()
             DispatchQueue.main.async {
-                if let cap = newCurrentCapacity { self.currentCapacity = cap }
-                if let charging = newIsCharging { self.isCharging = charging }
-                if let plugged = newIsPluggedIn { self.isPluggedIn = plugged }
-                if let state = newPowerSourceState { self.powerSourceState = state }
-                if let tr = newTimeRemaining { self.timeRemainingFormatted = tr.localized }
-                if let cycle = newCycleCount { self.cycleCount = cycle }
-                if let maxCycle = newMaxCycleCount { self.maxCycleCount = maxCycle }
-                if let nominal = newNominalCapacity { self.nominalCapacity = nominal }
-                if let design = newDesignCapacity { self.designCapacity = design }
-                if let health = newHealthPercent { self.healthPercent = health }
-                if let watts = newAdapterWatts { self.adapterWatts = watts }
+                self.apply(result)
+                self.isRefreshing = false
+                if self.pendingRefresh {
+                    self.pendingRefresh = false
+                    self.beginRefresh()
+                }
             }
         }
+    }
+
+    private func probe() -> ProbeResult {
+        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] else {
+            return .failure(L10n.Dashboard.batteryReadFailed)
+        }
+
+        var capacity: Int?
+        var isCharging = false
+        var powerState: String?
+        var timeToEmpty: Int?
+        var timeToFull: Int?
+        var sawBattery = false
+
+        for source in sources {
+            guard let desc = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any],
+                  (desc[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType else { continue }
+            sawBattery = true
+            capacity = desc[kIOPSCurrentCapacityKey] as? Int
+            if let charging = desc[kIOPSIsChargingKey] as? Bool {
+                isCharging = charging
+            } else if let chargingInt = desc[kIOPSIsChargingKey] as? Int {
+                isCharging = chargingInt == 1
+            }
+            powerState = desc[kIOPSPowerSourceStateKey] as? String
+            timeToEmpty = desc[kIOPSTimeToEmptyKey] as? Int
+            timeToFull = desc[kIOPSTimeToFullChargeKey] as? Int
+        }
+
+        guard sawBattery else { return .noBattery }
+        guard let capacity else { return .failure(L10n.Dashboard.batteryReadFailed) }
+
+        let source: BatteryReading.PowerSource
+        switch powerState {
+        case kIOPSACPowerValue: source = .ac
+        case kIOPSBatteryPowerValue: source = .battery
+        default: source = .unknown
+        }
+        let plugged = source == .ac
+
+        var reading = BatteryReading(
+            capacity: capacity,
+            isCharging: isCharging,
+            powerSource: source,
+            timeEstimate: BatteryReading.timeEstimate(
+                capacity: capacity,
+                isCharging: isCharging,
+                isPluggedIn: plugged,
+                timeToEmptyMinutes: timeToEmpty,
+                timeToFullMinutes: timeToFull
+            ),
+            refreshedAt: Date()
+        )
+
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        if service != 0 {
+            defer { IOObjectRelease(service) }
+            var props: Unmanaged<CFMutableDictionary>?
+            if IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+               let dict = props?.takeRetainedValue() as? [String: Any] {
+                reading.cycleCount = dict["CycleCount"] as? Int
+                reading.designCycleCount = dict["DesignCycleCount9C"] as? Int
+
+                if let bData = dict["BatteryData"] as? [String: Any] {
+                    reading.nominalCapacity = (bData["NominalChargeCapacity"] as? Int) ?? (bData["FullChargeCapacity"] as? Int)
+                    reading.designCapacity = bData["DesignCapacity"] as? Int
+                }
+                reading.healthPercent = BatteryReading.healthPercent(
+                    nominal: reading.nominalCapacity,
+                    design: reading.designCapacity
+                )
+                if let official = fetchOfficialHealthIfNeeded() {
+                    reading.healthPercent = official
+                }
+
+                if let adapter = dict["AdapterDetails"] as? [String: Any],
+                   let watts = adapter["Watts"] as? Int, watts > 0 {
+                    reading.adapterWatts = watts
+                }
+
+                if let millivolts = (dict["Voltage"] as? NSNumber)?.intValue, millivolts > 0 {
+                    reading.voltageVolts = Double(millivolts) / 1000
+                }
+                if let raw = dict["Amperage"] as? NSNumber {
+                    reading.amperageAmps = Double(BatteryReading.signedMilliamps(raw.uint64Value)) / 1000
+                }
+                // Reported in hundredths of a degree Celsius.
+                if let centi = (dict["Temperature"] as? NSNumber)?.intValue, centi > 0 {
+                    reading.temperatureCelsius = Double(centi) / 100
+                }
+            }
+        }
+
+        return .reading(reading)
+    }
+
+    private func apply(_ result: ProbeResult) {
+        switch result {
+        case let .reading(reading):
+            hasBattery = true
+            refreshError = nil
+            lastBatteryUpdate = reading.refreshedAt
+            state = .loaded(reading, refreshedAt: reading.refreshedAt)
+        case .noBattery:
+            hasBattery = false
+            refreshError = nil
+            state = .unavailable(L10n.Dashboard.noInternalBattery)
+        case let .failure(message):
+            // Keep the last known reading visible; the UI marks it with the error.
+            if case .loaded = state {
+                refreshError = message
+            } else {
+                state = .failed(message)
+            }
+        }
+        applyLegacyFields()
+    }
+
+    private func applyLegacyFields() {
+        guard case let .loaded(reading, _) = state else { return }
+        if currentCapacity != reading.capacity { currentCapacity = reading.capacity }
+        if isCharging != reading.isCharging { isCharging = reading.isCharging }
+        if isPluggedIn != reading.isPluggedIn { isPluggedIn = reading.isPluggedIn }
+        let newPowerSourceState = reading.isPluggedIn ? "AC Power" : "Battery Power"
+        if powerSourceState != newPowerSourceState { powerSourceState = newPowerSourceState }
+        let newTimeFormatted = Self.localizedTimeEstimate(reading.timeEstimate)
+        if timeRemainingFormatted != newTimeFormatted { timeRemainingFormatted = newTimeFormatted }
+        if let health = reading.healthPercent, healthPercent != health { healthPercent = health }
+        if let cycles = reading.cycleCount, cycleCount != cycles { cycleCount = cycles }
+        if let maxCycles = reading.designCycleCount, maxCycleCount != maxCycles { maxCycleCount = maxCycles }
+        if let nominal = reading.nominalCapacity, nominalCapacity != nominal { nominalCapacity = nominal }
+        if let design = reading.designCapacity, designCapacity != design { designCapacity = design }
+        if adapterWatts != reading.adapterWatts { adapterWatts = reading.adapterWatts }
     }
 }

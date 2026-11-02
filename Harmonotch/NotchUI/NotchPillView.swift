@@ -5,7 +5,6 @@ struct NotchPillView: View {
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var notchVM = NotchViewModel.shared
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
-  @ObservedObject var languageManager = LanguageManager.shared
   @ObservedObject var mediaManager = MediaManager.shared
   @State private var isLeftHovered = false
 
@@ -95,7 +94,8 @@ struct NotchPillView: View {
             .layoutPriority(1)
             .frame(alignment: .trailing)
         }
-        .padding(.horizontal, outerInset)
+        .padding(.leading, isMediaPlaying && !geometry.hasHardwareNotch ? 0 : outerInset)
+        .padding(.trailing, outerInset)
         .frame(width: noNotchWidth, height: height)
         .clipped()
         .onContinuousHover(coordinateSpace: .local) { phase in
@@ -235,12 +235,24 @@ struct NotchPillView: View {
 
   private var mediaLeft: some View {
     HStack(spacing: 5) {
+      // On a virtual notch, the artwork forms the rounded left end of the pill.
+      if !geometry.hasHardwareNotch {
+        thumbnail
+      }
+
       if notchVM.isCompanionEnabled {
         PrayerCompanionView()
       }
-      thumbnail
+
+      if geometry.hasHardwareNotch {
+        thumbnail
+      }
     }
     .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
+  }
+
+  private var thumbnailDiameter: CGFloat {
+    geometry.hasHardwareNotch ? 19 : height
   }
 
   @ViewBuilder
@@ -250,7 +262,7 @@ struct NotchPillView: View {
         Image(nsImage: art)
           .resizable()
           .aspectRatio(contentMode: .fill)
-          .frame(width: 19, height: 19)
+          .frame(width: thumbnailDiameter, height: thumbnailDiameter)
           .clipShape(Circle())
           .overlay(
             Circle()
@@ -259,7 +271,7 @@ struct NotchPillView: View {
       } else {
         Circle()
           .fill(Color(white: 0.16))
-          .frame(width: 19, height: 19)
+          .frame(width: thumbnailDiameter, height: thumbnailDiameter)
           .overlay(
             Image(systemName: mediaManager.mediaSource.iconName)
               .font(.system(size: 9.5, weight: .semibold))

@@ -53,6 +53,8 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     @Published var qiblaHeading: Double = 0.0
     @Published var qiblaString: String = ""
     @Published var imsakTimeString: String = ""
+    /// Name of the calculation method behind the displayed times.
+    let calculationMethodName = "Singapore (MUIS)"
 
     private let locationManager = CLLocationManager()
     private var customGPSCoordinates: CLLocationCoordinate2D?
@@ -152,6 +154,11 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
         params.methodAdjustments = PrayerAdjustments(fajr: 2, sunrise: -2, dhuhr: 2, asr: 2, maghrib: 2, isha: 2)
 
         guard let prayers = PrayerTimes(coordinates: coords, date: dateComponents, calculationParameters: params) else {
+            // Never keep showing a schedule that belongs to a previous location or method.
+            self.prayerItems = []
+            self.nextPrayerItem = nil
+            self.currentPrayerItem = nil
+            self.imsakTimeString = ""
             return
         }
 
@@ -181,90 +188,62 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
             ("isya", L10n.Prayer.localizedPrayerName("isha"), "العشاء", "moon.stars.fill", prayers.isha)
         ]
 
-        let now = Date()
-        var current: PrayerScheduleItem?
-        var next: PrayerScheduleItem?
+        func item(_ id: String, _ name: String, _ ar: String, _ icon: String, _ date: Date) -> PrayerScheduleItem {
+            PrayerScheduleItem(
+                id: id,
+                name: name,
+                arabicName: ar,
+                iconName: icon,
+                time: date,
+                timeString: timeFormatter.string(from: date),
+                isCurrent: false,
+                isNext: false
+            )
+        }
 
         let mainPrayers = rawList.filter { $0.id != "terbit" }
-        for (index, p) in mainPrayers.enumerated() {
-            if now < p.date {
-                next = PrayerScheduleItem(
-                    id: p.id,
-                    name: p.name,
-                    arabicName: p.ar,
-                    iconName: p.icon,
-                    time: p.date,
-                    timeString: timeFormatter.string(from: p.date),
-                    isCurrent: false,
-                    isNext: true
-                )
-                if index > 0 {
-                    let prev = mainPrayers[index - 1]
-                    current = PrayerScheduleItem(
-                        id: prev.id,
-                        name: prev.name,
-                        arabicName: prev.ar,
-                        iconName: prev.icon,
-                        time: prev.date,
-                        timeString: timeFormatter.string(from: prev.date),
-                        isCurrent: true,
-                        isNext: false
-                    )
-                } else if let last = mainPrayers.last {
-                    current = PrayerScheduleItem(
-                        id: last.id,
-                        name: last.name,
-                        arabicName: last.ar,
-                        iconName: last.icon,
-                        time: last.date,
-                        timeString: timeFormatter.string(from: last.date),
-                        isCurrent: true,
-                        isNext: false
-                    )
-                }
-                break
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today) ?? today
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: today) ?? today
+        let yesterdayIsha = PrayerTimes(
+            coordinates: coords,
+            date: cal.dateComponents([.year, .month, .day], from: yesterday),
+            calculationParameters: params
+        ).map { PrayerMoment(id: "isya", date: $0.isha) }
+        let tomorrowFajr = PrayerTimes(
+            coordinates: coords,
+            date: cal.dateComponents([.year, .month, .day], from: tomorrow),
+            calculationParameters: params
+        ).map { PrayerMoment(id: "subuh", date: $0.fajr) }
+
+        let position = PrayerScheduleResolver.position(
+            now: Date(),
+            yesterdayIsha: yesterdayIsha,
+            today: mainPrayers.map { PrayerMoment(id: $0.id, date: $0.date) },
+            tomorrowFajr: tomorrowFajr
+        )
+
+        func label(for moment: PrayerMoment) -> PrayerScheduleItem {
+            if let known = rawList.first(where: { $0.id == moment.id }) {
+                return item(known.id, known.name, known.ar, known.icon, moment.date)
             }
+            return item("subuh", L10n.Prayer.localizedPrayerName("fajr"), "الفجر", "sunrise.fill", moment.date)
         }
 
-        if next == nil, let first = mainPrayers.first {
-            next = PrayerScheduleItem(
-                id: first.id,
-                name: first.name,
-                arabicName: first.ar,
-                iconName: first.icon,
-                time: first.date,
-                timeString: timeFormatter.string(from: first.date),
-                isCurrent: false,
-                isNext: true
-            )
-            if let isya = mainPrayers.last {
-                current = PrayerScheduleItem(
-                    id: isya.id,
-                    name: isya.name,
-                    arabicName: isya.ar,
-                    iconName: isya.icon,
-                    time: isya.date,
-                    timeString: timeFormatter.string(from: isya.date),
-                    isCurrent: true,
-                    isNext: false
-                )
-            }
-        }
+        var next = position.next.map(label(for:))
+        next?.isNext = true
+        var current = position.current.map(label(for:))
+        current?.isCurrent = true
 
         self.nextPrayerItem = next
         self.currentPrayerItem = current
 
-        self.prayerItems = rawList.map { item in
-            PrayerScheduleItem(
-                id: item.id,
-                name: item.name,
-                arabicName: item.ar,
-                iconName: item.icon,
-                time: item.date,
-                timeString: timeFormatter.string(from: item.date),
-                isCurrent: item.id == current?.id,
-                isNext: item.id == next?.id
-            )
+        // Rows keep today's times; Current/Next are matched by id so that
+        // yesterday's Isha or tomorrow's Fajr still highlight the right row.
+        self.prayerItems = rawList.map { raw in
+            var row = item(raw.id, raw.name, raw.ar, raw.icon, raw.date)
+            row.isCurrent = raw.id == current?.id
+            row.isNext = raw.id == next?.id
+            return row
         }
     }
 

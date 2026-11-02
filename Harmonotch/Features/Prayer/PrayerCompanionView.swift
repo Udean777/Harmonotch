@@ -236,14 +236,18 @@ struct PrayerCompanionView: View {
   }
 
   private var companionAccessibilityLabel: String {
-    let battery = "Baterai \(batteryMonitor.currentCapacity) persen"
+    let capacity = batteryMonitor.currentCapacity
     if isCelebrating, let prayer = prayerManager.activeAdzanAlertPrayer {
-      return "Adzan untuk \(prayer). \(battery)"
+      return L10n.Prayer.companionAdzanLabel(prayer: prayer, battery: capacity)
     }
     if let nextPrayer = prayerManager.nextPrayerItem {
-      return "Salat berikutnya \(nextPrayer.name), pukul \(nextPrayer.timeString). \(battery)"
+      return L10n.Prayer.companionNextPrayerLabel(
+        prayer: nextPrayer.name,
+        time: nextPrayer.timeString,
+        battery: capacity
+      )
     }
-    return battery
+    return L10n.Prayer.companionBatteryLabel(capacity: capacity)
   }
 
   private func runMoodReaction() async {
@@ -305,18 +309,6 @@ struct PrayerCompanionView: View {
     case happy
     case warning
     case danger
-  }
-}
-
-private struct CompanionHeadShape: Shape {
-  func path(in rect: CGRect) -> Path {
-    var path = Path(); path.addRoundedRect(in: rect, cornerSize: CGSize(width: 3.5, height: 3.5)); return path
-  }
-}
-
-private struct CompanionBodyShape: Shape {
-  func path(in rect: CGRect) -> Path {
-    var path = Path(); path.addRoundedRect(in: CGRect(x: rect.minX + 1.2, y: rect.minY, width: rect.width - 2.4, height: rect.height), cornerSize: CGSize(width: 3.2, height: 3.2)); return path
   }
 }
 

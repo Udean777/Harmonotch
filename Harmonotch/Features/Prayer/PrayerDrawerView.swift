@@ -4,7 +4,6 @@ struct PrayerDrawerView: View {
     @ObservedObject var prayerManager = PrayerManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @ObservedObject var languageManager = LanguageManager.shared
-    @ObservedObject var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(spacing: 12) {

@@ -12,8 +12,8 @@ enum WebMediaScripts {
     if (!v) return ''; \
     const md = navigator.mediaSession && navigator.mediaSession.metadata; \
     const art = md && md.artwork && md.artwork.length ? md.artwork[md.artwork.length - 1].src : ''; \
-    return JSON.stringify({paused: v.paused, t: v.currentTime, \
-    d: isFinite(v.duration) ? v.duration : 0, \
+    return JSON.stringify({paused: v.paused, t: v.currentTime, \\
+    d: isFinite(v.duration) ? v.duration : 0, \\
     title: (md && md.title) || document.title, artist: (md && md.artist) || '', art: art}); })()
     """
 

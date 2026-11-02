@@ -30,11 +30,17 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 - Reads percentage, charging state, and power source from IOKit (`AppleSmartBattery`).
 - Computes battery health aligned with macOS System Settings (`NominalChargeCapacity` / `AppleRawMaxCapacity` against `DesignCapacity`) alongside cycle count, temperature, and voltage.
 - Shows time to full or time to empty, and the connected adapter wattage.
+- **Hardware Charge Limiter (80% Cap / AC Bypass)**:
+  - Caps charging at 80% (or custom 70% / 90% / 100%) to preserve battery chemistry and extend lifespan.
+  - Controls hardware SMC registers (`CH0B` for Apple Silicon M1–M4 in bypass mode; `BCLM` for Intel Macs) across macOS versions (Tahoe / Golden Gate, Sequoia, Sonoma, and Ventura).
+  - Smart hysteresis (2% buffer) prevents rapid charging on/off cycles when hovering at the threshold.
+  - Automatic fail-safe: restores normal charging state when quitting the app or unplugging the power cable.
+  - One-click privilege setup via `/etc/sudoers.d/harmonotch`, with fallbacks to CLI tools (`battery`, `smc`) and smart audio/visual notifications.
 - Includes Clamshell Awake policy control and shortcuts to refresh telemetry or open macOS Battery settings.
 
 ### Media and lyrics
 
-- Playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) for Apple Music, Spotify, QuickTime, Podcasts, and browsers through a MediaRemote bridge: a small adapter loaded into Apple's `/usr/bin/perl` because macOS no longer answers MediaRemote directly from third-party apps. The approach was inspired by [Vorssaint](https://github.com/vorssaint/vorssaint-utils) and is used with the author's permission; the adapter itself is an independent implementation. When the bridge is unavailable, the app falls back to AppleScript and Safari/Chromium Apple Events.
+- Playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) for Apple Music, Spotify, QuickTime, Podcasts, and browsers through a MediaRemote bridge: a small adapter loaded into Apple's `/usr/bin/perl` because macOS no longer answers MediaRemote directly from third-party apps. The technique was inspired by [Vorssaint](https://github.com/vorssaint/vorssaint-utils), licensed GPL-3.0-or-later, and is used with the author's written permission. Harmonotch's adapter is an independent implementation and contains no Vorssaint source code. When the bridge is unavailable, the app falls back to AppleScript and Safari/Chromium Apple Events.
 - Collapsed notch narrows toward the hardware notch while playing, showing the interactive companion and artwork thumbnail on the expanded left wing with a live equalizer waveform on the right, then restores the battery layout when playback ends.
 - Expanded 560pt notch drawer displays high-resolution 64×64 artwork, track metadata, interactive progress scrubber, playback transport controls, and time-synchronized karaoke lyrics from [LRCLIB](https://lrclib.net/).
 - Lets you click any lyric line to seek directly to its timestamp.
@@ -116,10 +122,10 @@ Harmonotch/
 - [Adhan-Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps (MIT License) for astronomical prayer calculations.
 - [LRCLIB](https://lrclib.net/) for synced lyrics.
 - [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html) for the adhan recordings.
-- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0) for the MediaRemote-through-perl technique, used with permission. Harmonotch's adapter is written independently, so no GPL code is included.
+- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique and for product-level research into demand-driven monitoring and modular utility panels. Harmonotch's implementations are written independently from Apple documentation and original testing; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
 - Apple for the iTunes Search API, `MediaRemote`, SF Symbols, and IOKit.
 
-Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
+Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Engineering provenance and clean-room boundaries are documented in [docs/IMPLEMENTATION_PROVENANCE.md](docs/IMPLEMENTATION_PROVENANCE.md).
 
 ## License
 
