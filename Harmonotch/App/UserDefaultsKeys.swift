@@ -16,7 +16,4 @@ enum UserDefaultsKeys {
     static let chargeLimitEnabled = "Harmonotch_ChargeLimitEnabled"
     static let chargeLimitThreshold = "Harmonotch_ChargeLimitThreshold"
     static let chargeLimitSudoConfigured = "Harmonotch_ChargeLimitSudoConfigured"
-    static let replaceVolumeHUD = "Harmonotch_ReplaceVolumeHUD"
-    static let volumeFeedbackSound = "Harmonotch_VolumeFeedbackSound"
-    static let replaceBrightnessHUD = "Harmonotch_ReplaceBrightnessHUD"
 }

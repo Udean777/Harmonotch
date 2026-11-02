@@ -9,7 +9,7 @@ struct DashboardUtilitiesSection: View {
   @ObservedObject private var clamshellManager = ClamshellManager.shared
   @ObservedObject private var languageManager = LanguageManager.shared
   @ObservedObject private var themeManager = ThemeManager.shared
-  @ObservedObject private var volumeManager = VolumeManager.shared
+  @ObservedObject private var keyboardBacklight = KeyboardBacklightManager.shared
   @State private var isLaunchAtLogin = (SMAppService.mainApp.status == .enabled)
 
   var body: some View {
@@ -32,10 +32,13 @@ struct DashboardUtilitiesSection: View {
           launchAtLoginRow
           Divider().background(AppTheme.divider)
           companionRow
-          Divider().background(AppTheme.divider)
-          volumeFeedbackRow
+          if keyboardBacklight.isSupported {
+            Divider().background(AppTheme.divider)
+            keyboardBacklightRow
+          }
         }
       }
+      .onAppear { keyboardBacklight.refresh() }
     }
   }
 
@@ -417,25 +420,33 @@ struct DashboardUtilitiesSection: View {
     }
   }
 
-  private var volumeFeedbackRow: some View {
-    HStack(spacing: 6) {
+  private var keyboardBacklightRow: some View {
+    VStack(spacing: 4) {
       HStack(spacing: 5) {
-        Image(systemName: "speaker.wave.2")
+        Image(systemName: "keyboard")
           .font(.system(size: 9.5))
           .foregroundColor(AppTheme.textSecondary)
           .accessibilityHidden(true)
-        Text(L10n.Volume.feedbackSound)
+        Text(L10n.Menu.keyboardBacklight)
           .font(.system(size: 10, weight: .medium))
           .foregroundColor(AppTheme.textSecondary)
+
+        Spacer()
+
+        Text("\(Int((keyboardBacklight.brightness * 100).rounded()))%")
+          .font(.system(size: 9, weight: .medium, design: .monospaced))
+          .monospacedDigit()
+          .foregroundColor(AppTheme.textTertiary)
       }
 
-      Spacer()
-
-      Toggle("", isOn: $volumeManager.isFeedbackSoundEnabled)
-        .toggleStyle(.switch)
-        .labelsHidden()
-        .scaleEffect(0.72)
-        .accessibilityLabel(L10n.Volume.feedbackSound)
+      Slider(
+        value: Binding(
+          get: { keyboardBacklight.brightness },
+          set: { keyboardBacklight.setBrightness($0) }
+        ), in: 0...1
+      )
+      .controlSize(.small)
+      .accessibilityLabel(L10n.Menu.keyboardBacklight)
     }
   }
 

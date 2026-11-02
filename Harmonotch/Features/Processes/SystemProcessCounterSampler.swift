@@ -5,9 +5,9 @@ import Foundation
 /// Reads per-process CPU time with `proc_pid_rusage`. Helper processes are
 /// attributed to the user-facing application they descend from.
 struct SystemProcessCounterSampler: ProcessCounterSampling {
-  private static let maxParentDepth = 8
+  nonisolated private static let maxParentDepth = 8
 
-  func sample() throws -> ProcessCounterSample {
+  nonisolated func sample() throws -> ProcessCounterSample {
     let apps = Self.runningApplications()
     guard !apps.isEmpty else { throw ProcessActivityError.sampleFailed }
 
@@ -61,7 +61,7 @@ struct SystemProcessCounterSampler: ProcessCounterSampling {
     let name: String
   }
 
-  private static func runningApplications() -> [pid_t: AppRoot] {
+  nonisolated private static func runningApplications() -> [pid_t: AppRoot] {
     let read = {
       var result: [pid_t: AppRoot] = [:]
       for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
@@ -76,7 +76,7 @@ struct SystemProcessCounterSampler: ProcessCounterSampling {
     return Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)
   }
 
-  private static func rootApp(for pid: pid_t, parents: [pid_t: pid_t], apps: [pid_t: AppRoot]) -> AppRoot? {
+  nonisolated private static func rootApp(for pid: pid_t, parents: [pid_t: pid_t], apps: [pid_t: AppRoot]) -> AppRoot? {
     var current = pid
     for _ in 0...maxParentDepth {
       if let app = apps[current] { return app }
@@ -86,7 +86,7 @@ struct SystemProcessCounterSampler: ProcessCounterSampling {
     return nil
   }
 
-  private static func allPIDs() throws -> [pid_t] {
+  nonisolated private static func allPIDs() throws -> [pid_t] {
     let estimate = proc_listallpids(nil, 0)
     guard estimate > 0 else { throw ProcessActivityError.sampleFailed }
     var buffer = [pid_t](repeating: 0, count: Int(estimate) + 64)
@@ -95,7 +95,7 @@ struct SystemProcessCounterSampler: ProcessCounterSampling {
     return buffer.prefix(Int(count)).filter { $0 > 0 }
   }
 
-  private static func rusage(_ pid: pid_t) -> rusage_info_v4? {
+  nonisolated private static func rusage(_ pid: pid_t) -> rusage_info_v4? {
     var info = rusage_info_v4()
     let status = withUnsafeMutablePointer(to: &info) {
       $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) {

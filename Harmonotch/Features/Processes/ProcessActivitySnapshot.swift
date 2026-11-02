@@ -42,5 +42,5 @@ struct ProcessActivitySnapshot: Equatable {
 }
 
 protocol ProcessCounterSampling: Sendable {
-  func sample() throws -> ProcessCounterSample
+  nonisolated func sample() throws -> ProcessCounterSample
 }

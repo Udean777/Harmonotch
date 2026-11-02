@@ -29,12 +29,12 @@ final class ProcessActivityMonitor: ObservableObject {
     }
     let sampler = sampler
     let interval = interval
-    task = Task { [weak self] in
+    task = Task { @MainActor [weak self] in
       var previous: ProcessCounterSample
       do {
         previous = try await Task.detached(priority: .utility) { try sampler.sample() }.value
       } catch {
-        await self?.publish(.failed(Self.message(for: error)), generation: current)
+        self?.publish(.failed(Self.message(for: error)), generation: current)
         return
       }
       while !Task.isCancelled {
@@ -45,9 +45,9 @@ final class ProcessActivityMonitor: ObservableObject {
           if Task.isCancelled { return }
           let result = Self.makeState(previous: previous, current: sample)
           previous = sample
-          await self?.publish(result, generation: current)
+          self?.publish(result, generation: current)
         } catch {
-          await self?.publish(.failed(Self.message(for: error)), generation: current)
+          self?.publish(.failed(Self.message(for: error)), generation: current)
         }
       }
     }
