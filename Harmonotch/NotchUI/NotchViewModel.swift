@@ -13,7 +13,7 @@ final class NotchViewModel: ObservableObject {
       if !isCompanionEnabled { isLeftCompanionVisible = false }
     }
   }
-  @Published var selectedTab: DrawerTab = .battery  // Default / main view is Battery
+  @Published var selectedTab: DrawerTab = .battery
   @Published var geometry: NotchGeometry = NotchGeometry.current()
 
   private var cancellables = Set<AnyCancellable>()

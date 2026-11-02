@@ -341,7 +341,6 @@ struct DashboardBatterySection: View {
   private func chargeLimitCard(_ reading: BatteryReading) -> some View {
     DashboardCard {
       VStack(alignment: .leading, spacing: 9) {
-        // Header row
         HStack(alignment: .center, spacing: 8) {
           Image(systemName: chargeLimiter.isLimitActive ? "bolt.badge.checkmark" : "bolt.shield")
             .font(.system(size: 13, weight: .semibold))
@@ -363,7 +362,6 @@ struct DashboardBatterySection: View {
           chargeLimitStatusBadge(reading: reading)
         }
 
-        // Custom Percentage Selector: 80% to 100% (Full)
         HStack(spacing: 5) {
           ForEach(ChargeLimitPolicy.availableThresholds, id: \.self) { threshold in
             let isSelected = chargeLimiter.targetThreshold == threshold
@@ -403,7 +401,6 @@ struct DashboardBatterySection: View {
           }
         }
 
-        // Native limit indicator or Helper setup if needed
         if chargeLimiter.hasNativeLimit && chargeLimiter.targetThreshold == (chargeLimiter.nativeLimitValue ?? 80) {
           HStack(spacing: 6) {
             Image(systemName: "checkmark.shield.fill")

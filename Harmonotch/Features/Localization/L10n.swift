@@ -7,13 +7,13 @@ enum L10n {
 
     enum Drawer {
         static var prayerTab: String {
-            isEnglish ? "Prayer Times" : "Jadwal Sholat"
+            isEnglish ? "Prayer" : "Sholat"
         }
         static var batteryTab: String {
-            isEnglish ? "Battery Status" : "Status Baterai"
+            isEnglish ? "Battery" : "Baterai"
         }
         static var mediaTab: String {
-            isEnglish ? "Music & Lyrics" : "Musik & Lirik"
+            isEnglish ? "Audio" : "Audio"
         }
     }
 

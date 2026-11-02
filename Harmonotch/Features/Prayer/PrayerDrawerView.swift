@@ -49,13 +49,13 @@ struct PrayerDrawerView: View {
                     }
                 } label: {
                     NotchChip(cornerRadius: 7, horizontalPadding: 8, verticalPadding: 4) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 5) {
                             Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppTheme.accentAmber)
 
                             Text(prayerManager.currentLocationName)
-                                .font(.system(size: 11.5, weight: .bold))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(AppTheme.textPrimary)
                                 .lineLimit(1)
 
@@ -80,12 +80,12 @@ struct PrayerDrawerView: View {
                                 .font(.system(size: 10, weight: .semibold))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(AppTheme.accentRed)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(white: 0.22))
+                        .background(AppTheme.accentRed.opacity(0.14))
                         .cornerRadius(6)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(AppTheme.cardBorder, lineWidth: 0.5))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(AppTheme.accentRed.opacity(0.3), lineWidth: 0.6))
                     }
                     .buttonStyle(.plain)
                 }
@@ -96,7 +96,7 @@ struct PrayerDrawerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: adzanPlayer.isMuted ? "bell.slash.fill" : "bell.fill")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(adzanPlayer.isMuted ? AppTheme.textTertiary : AppTheme.accentAmber)
 
                         Text(L10n.Prayer.audioAdzanTitle)
                             .font(.system(size: 10, weight: .semibold))
@@ -117,10 +117,10 @@ struct PrayerDrawerView: View {
                 Button(action: {
                     adzanPlayer.testPlay()
                 }) {
-                    Image(systemName: adzanPlayer.isPlaying ? "stop.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 24, height: 24)
+                    Image(systemName: adzanPlayer.isPlaying ? "stop.fill" : "play.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .frame(width: 26, height: 26)
                         .background(AppTheme.badgeBackground)
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
@@ -129,6 +129,7 @@ struct PrayerDrawerView: View {
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
+                .help(adzanPlayer.isPlaying ? L10n.Prayer.stopAudio : L10n.Prayer.testAudio)
             }
 
             HStack(spacing: 8) {
