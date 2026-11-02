@@ -84,7 +84,7 @@ The release workflow signs with a stable certificate when these secrets are set:
 | `SIGNING_CERT_P12` | base64 of the `.p12` (single line) |
 | `SIGNING_CERT_PASSWORD` | password used when exporting the `.p12` |
 
-Without them the workflow falls back to ad-hoc signing. Do not ship that way: an ad-hoc signature makes the Accessibility grant cdhash-based, so the replacement HUDs stop working after every update until the app is removed and re-added in System Settings.
+Without them the workflow falls back to ad-hoc signing. Do not ship that way: an ad-hoc signature makes every TCC grant (microphone, Automation, Input Monitoring) cdhash-based, so each update resets them until the app is removed and re-added in System Settings.
 
 To create a free self-signed certificate:
 
@@ -100,7 +100,7 @@ codesign -d -r- /Applications/Harmonotch.app
 # not:    cdhash H"..."
 ```
 
-Users upgrading from an ad-hoc build must remove and re-add the app in System Settings → Privacy & Security → Accessibility once.
+Users upgrading from an ad-hoc build must remove and re-add the app in System Settings → Privacy & Security once.
 
 ## Test
 
@@ -133,6 +133,7 @@ Harmonotch/
 │   ├── Localization/                 // Language state and strings
 │   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
 │   ├── Battery/                      // IOKit monitor and clamshell mode
+│   ├── KeyboardBacklight/            // Built-in keyboard light level
 │   ├── Media/                        // MediaRemote bridge, lyrics, and metadata
 │   ├── Update/                       // GitHub release checks
 │   └── About/                        // About window and credits
