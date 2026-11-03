@@ -218,7 +218,7 @@ final class MediaManager: ObservableObject {
     let center = DistributedNotificationCenter.default()
 
     center.addObserver(
-      forName: NSNotification.Name("com.spotify.client.PlaybackStateChanged"),
+      forName: .spotifyPlaybackStateChanged,
       object: nil,
       queue: .main
     ) { [weak self] notification in
@@ -226,7 +226,7 @@ final class MediaManager: ObservableObject {
     }
 
     center.addObserver(
-      forName: NSNotification.Name("com.apple.Music.playerInfo"),
+      forName: .appleMusicPlayerInfo,
       object: nil,
       queue: .main
     ) { [weak self] notification in
@@ -885,11 +885,9 @@ final class MediaManager: ObservableObject {
   /// Sends a command to the MediaRemote bridge; falls back to AppleScript only
   /// when the bridge is missing or does not answer.
   private func sendBridge(
-    _ command: String, position: TimeInterval? = nil, fallback: @escaping () -> Void
+    _ command: NowPlayingCommand, fallback: @escaping () -> Void
   ) {
-    var payload: [String: Any] = ["id": UUID().uuidString, "cmd": command]
-    if let position = position { payload["position"] = position }
-    nowPlayingBridge.send(payload) { ok in
+    nowPlayingBridge.send(command) { ok in
       guard !ok else { return }
       DispatchQueue.main.async(execute: fallback)
     }
@@ -903,7 +901,7 @@ final class MediaManager: ObservableObject {
     isPlaying = !wasPlaying
     updatePlaybackTimerState()
 
-    sendBridge("toggle") { [weak self] in
+    sendBridge(.toggle) { [weak self] in
       self?.fallbackPlayPause(wasPlaying: wasPlaying)
     }
 
@@ -914,7 +912,7 @@ final class MediaManager: ObservableObject {
     lastCommandAt = Date()
     expectedPlayingState = isPlaying
 
-    sendBridge("next") { [weak self] in
+    sendBridge(.next) { [weak self] in
       self?.fallbackNext()
     }
 
@@ -925,7 +923,7 @@ final class MediaManager: ObservableObject {
     lastCommandAt = Date()
     expectedPlayingState = isPlaying
 
-    sendBridge("previous") { [weak self] in
+    sendBridge(.previous) { [weak self] in
       self?.fallbackPrevious()
     }
 
@@ -934,7 +932,7 @@ final class MediaManager: ObservableObject {
 
   func seek(to position: TimeInterval) {
     playbackPosition = position
-    sendBridge("seek", position: position) { [weak self] in
+    sendBridge(.seek(position: position)) { [weak self] in
       self?.fallbackSeek(position)
     }
   }
@@ -1216,32 +1214,39 @@ final class MediaManager: ObservableObject {
         return
       }
 
-      var matchedItem: [String: Any]? = nil
+      struct LRCLIBTrackRecord: Decodable {
+        let syncedLyrics: String?
+        let plainLyrics: String?
+        let instrumental: Bool?
+        let duration: Double?
+      }
 
-      if let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+      var matchedItem: LRCLIBTrackRecord? = nil
+
+      if let array = try? JSONDecoder().decode([LRCLIBTrackRecord].self, from: data) {
         let currentDuration = self.duration
         if currentDuration > 0 {
           matchedItem = array.first(where: { item in
-            guard let s = item["syncedLyrics"] as? String,
+            guard let s = item.syncedLyrics,
               !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-            let itemDur = self.extractDouble(from: item["duration"]) ?? 0
+            let itemDur = item.duration ?? 0
             return itemDur > 0 ? abs(itemDur - currentDuration) <= 15 : true
           })
         }
         if matchedItem == nil {
           matchedItem = array.first(where: {
-            guard let s = $0["syncedLyrics"] as? String else { return false }
+            guard let s = $0.syncedLyrics else { return false }
             return !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
           })
         }
         if matchedItem == nil {
           matchedItem = array.first(where: {
-            let plain = $0["plainLyrics"] as? String ?? ""
-            let instrumental = $0["instrumental"] as? Bool ?? false
+            let plain = $0.plainLyrics ?? ""
+            let instrumental = $0.instrumental ?? false
             return !plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || instrumental
           }) ?? array.first
         }
-      } else if let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+      } else if let dict = try? JSONDecoder().decode(LRCLIBTrackRecord.self, from: data) {
         matchedItem = dict
       }
 
@@ -1250,10 +1255,10 @@ final class MediaManager: ObservableObject {
         return
       }
 
-      let instrumental = item["instrumental"] as? Bool ?? false
-      let syncedLRC = item["syncedLyrics"] as? String ?? ""
-      let plainLyrics = item["plainLyrics"] as? String ?? ""
-      let trackDuration = self.extractDouble(from: item["duration"]) ?? 0
+      let instrumental = item.instrumental ?? false
+      let syncedLRC = item.syncedLyrics ?? ""
+      let plainLyrics = item.plainLyrics ?? ""
+      let trackDuration = item.duration ?? 0
 
       var verifiedSyncedLyrics: [LyricLine] = []
       if !syncedLRC.isEmpty {
@@ -1467,4 +1472,10 @@ final class MediaManager: ObservableObject {
     }
     return String(format: "%d:%02d", mins, secs)
   }
+}
+
+
+extension Notification.Name {
+  static let spotifyPlaybackStateChanged = Notification.Name("com.spotify.client.PlaybackStateChanged")
+  static let appleMusicPlayerInfo = Notification.Name("com.apple.Music.playerInfo")
 }

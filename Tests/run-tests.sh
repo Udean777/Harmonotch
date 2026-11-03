@@ -26,6 +26,7 @@ SOURCES+=(
     "Harmonotch/Features/Media/NowPlaying/NowPlayingState.swift"
     "Harmonotch/Features/Update/Version.swift"
     "Harmonotch/Features/Update/UpdateInstallerSupport.swift"
+    "Harmonotch/NotchUI/NotchGeometryHelper.swift"
     "Harmonotch/Features/MenuBar/MenuBarPanelLayout.swift"
     "Harmonotch/Features/MenuBar/MenuBarDashboardViewModel.swift"
     "Harmonotch/Features/MenuBar/DashboardDataState.swift"

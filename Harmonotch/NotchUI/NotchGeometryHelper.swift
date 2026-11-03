@@ -1,3 +1,8 @@
+
+struct NotchWingWidths: Equatable {
+  var left: CGFloat = 0
+  var right: CGFloat = 0
+}
 import AppKit
 import SwiftUI
 
@@ -17,6 +22,7 @@ enum NotchLayout {
   static let floatingTopInset: CGFloat = 2
   /// Slimmer pill height used on displays without a hardware notch.
   static let floatingPillHeight: CGFloat = 24
+  static let floatingWingSpacing: CGFloat = 12
 
   static func floatingRadius(height: CGFloat, isExpanded: Bool) -> CGFloat {
     isExpanded ? 22 : height / 2
@@ -28,9 +34,32 @@ enum NotchLayout {
   static let expandedPrayerHeight: CGFloat = 195
   static let expandedAdzanHeight: CGFloat = 205
   static let expandedBatteryHeight: CGFloat = 200
+  static let expandedAIHeight: CGFloat = 240
+  static let minAIHeight: CGFloat = 180
+  static let maxAIHeight: CGFloat = 340
   static let expandedMediaHeight: CGFloat = 180
   static let expandedMediaTrackHeight: CGFloat = 275
-  static let expandedHitAreaHeight: CGFloat = 295
+  static let expandedHitAreaHeight: CGFloat = 420
+
+  static func dynamicAIHeight(
+    modelCount: Int,
+    hasMultipleProviders: Bool = true
+  ) -> CGFloat {
+    let headerHeight: CGFloat = 34
+    let selectorHeight: CGFloat = hasMultipleProviders ? 32 : 0
+    let cardPadding: CGFloat = 20
+    let cardHeaderHeight: CGFloat = 26
+
+    if modelCount == 0 {
+      return headerHeight + selectorHeight + 115
+    }
+
+    let clampedRows = min(max(modelCount, 1), 5)
+    let rowHeight: CGFloat = 36
+    let modelsHeight = CGFloat(clampedRows) * rowHeight
+    let total = headerHeight + selectorHeight + cardPadding + cardHeaderHeight + modelsHeight + 10
+    return min(max(total, minAIHeight), maxAIHeight)
+  }
 
   static func shoulder(height: CGFloat) -> CGFloat {
     min(maxShoulder, max(0, height * 0.16))
@@ -195,24 +224,45 @@ struct NotchGeometry: Equatable {
       ? physicalNotchHeight : NotchLayout.floatingPillHeight
   }
 
+  func collapsedWingWidths(
+    isHovered: Bool,
+    isMediaPlaying: Bool = false,
+    leftExtra: CGFloat = 0,
+    measured: NotchWingWidths = NotchWingWidths()
+  ) -> (left: CGFloat, right: CGFloat) {
+    let hoverExtra = isHovered ? NotchLayout.hoverWingExpansion : 0
+    let baseWing = isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
+    let left = max(baseWing + leftExtra, measured.left) + hoverExtra
+    let right = max(baseWing, measured.right) + hoverExtra
+    return (left, right)
+  }
+
   func collapsedWidth(
     isHovered: Bool,
-    isMediaPlaying: Bool = false
+    isMediaPlaying: Bool = false,
+    leftExtra: CGFloat = 0,
+    measured: NotchWingWidths = NotchWingWidths()
   ) -> CGFloat {
+    let wings = collapsedWingWidths(
+      isHovered: isHovered,
+      isMediaPlaying: isMediaPlaying,
+      leftExtra: leftExtra,
+      measured: measured
+    )
     let hoverExtra = isHovered ? NotchLayout.hoverWingExpansion : 0
-    let wingWidth =
-      isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
     if hasHardwareNotch {
-      return physicalNotchWidth + 2 * (wingWidth + hoverExtra)
+      return physicalNotchWidth + wings.left + wings.right
     } else {
+      let contentWidth = wings.left + wings.right + NotchLayout.floatingWingSpacing
       let baseWidth: CGFloat =
         isMediaPlaying
         ? NotchLayout.noNotchPillWidth - 2
           * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
         : NotchLayout.noNotchPillWidth
-      return baseWidth + 2 * hoverExtra
+      return max(baseWidth + 2 * hoverExtra, contentWidth)
     }
   }
+
 
   static func current(for screen: NSScreen? = NSScreen.main) -> NotchGeometry {
     guard let screen = screen else {

@@ -22,13 +22,13 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
 
     @Published var selectedCity: CityPreset {
         didSet {
-            UserDefaults.standard.set(selectedCity.id, forKey: UserDefaultsKeys.selectedCityId)
+            UserDefaults.standard[UserDefaultsKeys.selectedCityId] = selectedCity.id
             recalculatePrayerTimes()
         }
     }
     @Published var useGPS: Bool {
         didSet {
-            UserDefaults.standard.set(useGPS, forKey: UserDefaultsKeys.useGPS)
+            UserDefaults.standard[UserDefaultsKeys.useGPS] = useGPS
             if useGPS {
                 locationManager.requestWhenInUseAuthorization()
                 locationManager.startUpdatingLocation()
@@ -40,7 +40,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }
     @Published var jumatOffsetMinutes: Int {
         didSet {
-            UserDefaults.standard.set(jumatOffsetMinutes, forKey: UserDefaultsKeys.jumatOffsetMinutes)
+            UserDefaults.standard[UserDefaultsKeys.jumatOffsetMinutes] = jumatOffsetMinutes
             recalculatePrayerTimes()
         }
     }
@@ -78,11 +78,11 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }()
 
     override init() {
-        let savedCityId = UserDefaults.standard.string(forKey: UserDefaultsKeys.selectedCityId) ?? CityPreset.defaultCity.id
+        let savedCityId = UserDefaults.standard[UserDefaultsKeys.selectedCityId]
         let initialCity = CityPreset.presets.first(where: { $0.id == savedCityId }) ?? CityPreset.defaultCity
         self.selectedCity = initialCity
-        self.useGPS = UserDefaults.standard.bool(forKey: UserDefaultsKeys.useGPS)
-        self.jumatOffsetMinutes = UserDefaults.standard.integer(forKey: UserDefaultsKeys.jumatOffsetMinutes)
+        self.useGPS = UserDefaults.standard[UserDefaultsKeys.useGPS]
+        self.jumatOffsetMinutes = UserDefaults.standard[UserDefaultsKeys.jumatOffsetMinutes]
 
         super.init()
 

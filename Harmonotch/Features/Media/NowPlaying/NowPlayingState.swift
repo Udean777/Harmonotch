@@ -1,5 +1,46 @@
 import Foundation
 
+/// Strongly-typed playback commands sent to the MediaRemote bridge.
+nonisolated enum NowPlayingCommand: Equatable, Sendable {
+  case play
+  case pause
+  case toggle
+  case next
+  case previous
+  case seek(position: TimeInterval)
+
+  var commandName: String {
+    switch self {
+    case .play: return "play"
+    case .pause: return "pause"
+    case .toggle: return "toggle"
+    case .next: return "next"
+    case .previous: return "previous"
+    case .seek: return "seek"
+    }
+  }
+
+  var position: Double? {
+    switch self {
+    case .seek(let pos): return max(0, pos)
+    default: return nil
+    }
+  }
+}
+
+/// Wire payload sent over stdin to the adapter helper.
+nonisolated struct NowPlayingCommandMessage: Encodable, Sendable {
+  let id: String
+  let cmd: String
+  let position: Double?
+
+  init(id: String = UUID().uuidString, command: NowPlayingCommand) {
+    self.id = id
+    self.cmd = command.commandName
+    self.position = command.position
+  }
+}
+
 /// One `{"event":"state",…}` line from the now-playing adapter.
 nonisolated struct NowPlayingState: Decodable, Equatable {
   var source: String

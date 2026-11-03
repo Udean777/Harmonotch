@@ -369,6 +369,11 @@ struct DashboardBatterySection: View {
               withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
                 chargeLimiter.targetThreshold = threshold
               }
+              if threshold == 100 && chargeLimiter.hasNativeLimit {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension") {
+                  NSWorkspace.shared.open(url)
+                }
+              }
             }) {
               VStack(spacing: 2) {
                 Text(threshold == 100 ? "100%" : "\(threshold)%")
@@ -401,7 +406,42 @@ struct DashboardBatterySection: View {
           }
         }
 
-        if chargeLimiter.hasNativeLimit && chargeLimiter.targetThreshold == (chargeLimiter.nativeLimitValue ?? 80) {
+        if chargeLimiter.isNativeHoldingAtLimit {
+          HStack(alignment: .top, spacing: 7) {
+            Image(systemName: "exclamationmark.circle.fill")
+              .font(.system(size: 11))
+              .foregroundColor(AppTheme.accentAmber)
+
+            VStack(alignment: .leading, spacing: 3) {
+              Text(L10n.Battery.macOSHoldingCharge(capacity: reading.capacity))
+                .font(.system(size: 9.5))
+                .foregroundColor(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+              Button(action: {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension") {
+                  NSWorkspace.shared.open(url)
+                }
+              }) {
+                HStack(spacing: 4) {
+                  Image(systemName: "arrow.up.forward.app")
+                    .font(.system(size: 8))
+                  Text(L10n.Battery.openBatterySettings)
+                    .font(.system(size: 8.5, weight: .semibold))
+                }
+                .foregroundColor(AppTheme.accentAmber)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(AppTheme.accentAmber.opacity(0.12))
+                .cornerRadius(4)
+              }
+              .buttonStyle(.plain)
+              .padding(.top, 2)
+            }
+          }
+          .padding(.horizontal, 4)
+          .padding(.top, 1)
+        } else if chargeLimiter.hasNativeLimit && chargeLimiter.targetThreshold == (chargeLimiter.nativeLimitValue ?? 80) {
           HStack(spacing: 6) {
             Image(systemName: "checkmark.shield.fill")
               .font(.system(size: 10))

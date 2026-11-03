@@ -15,6 +15,10 @@ enum L10n {
         static var mediaTab: String {
             isEnglish ? "Audio" : "Audio"
         }
+        static var aiTab: String {
+            isEnglish ? "AI Agents" : "AI Agen"
+        }
+
     }
 
     enum Prayer {
@@ -193,6 +197,14 @@ enum L10n {
         }
         static var nativeLimitActive: String {
             isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
+        }
+        static func macOSHoldingCharge(capacity: Int) -> String {
+            isEnglish
+                ? "macOS is holding charge at \(capacity)%. Turn off '80% Limit' in Battery Settings to charge to 100%."
+                : "macOS menahan pengisian daya di \(capacity)%. Nonaktifkan 'Batas 80%' di Pengaturan Baterai untuk mengisi hingga 100%."
+        }
+        static var openBatterySettings: String {
+            isEnglish ? "Open Battery Settings" : "Buka Pengaturan Baterai"
         }
         static var chargeLimitStatusBypass: String {
             isEnglish ? "AC Bypass Active" : "Bypass AC Aktif"
@@ -723,6 +735,30 @@ enum L10n {
         }
         static var later: String {
             isEnglish ? "Later" : "Nanti"
+        }
+    }
+
+    enum AI {
+        static var title: String {
+            isEnglish ? "AI Quota Telemetry" : "Telemetri Kuota AI"
+        }
+        static var connected: String {
+            isEnglish ? "Loopback Active" : "Loopback Aktif"
+        }
+        static var offline: String {
+            isEnglish ? "Standby" : "Standby"
+        }
+        static var remaining: String {
+            isEnglish ? "Remaining" : "Tersisa"
+        }
+        static var resetsIn: String {
+            isEnglish ? "Resets in" : "Reset dlm"
+        }
+        static var noActiveAgent: String {
+            isEnglish ? "No active AI agent or language server detected" : "Tidak ada agen AI atau language server yang aktif"
+        }
+        static var refresh: String {
+            isEnglish ? "Refresh Quota" : "Segarkan Kuota"
         }
     }
 }

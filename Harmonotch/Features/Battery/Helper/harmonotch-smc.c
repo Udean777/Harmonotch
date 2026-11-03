@@ -28,7 +28,7 @@ typedef struct {
 } SMCPLimitData;
 
 typedef struct {
-    IOByteCount dataSize;
+    uint32_t dataSize;
     uint32_t dataType;
     uint8_t dataAttributes;
 } SMCKeyInfoData;
@@ -44,6 +44,8 @@ typedef struct {
     uint32_t data32;
     uint8_t bytes[32];
 } SMCParamStruct;
+
+_Static_assert(sizeof(SMCParamStruct) == 80, "SMCParamStruct must be exactly 80 bytes");
 
 static uint32_t str_to_key(const char *str) {
     uint32_t k = 0;
@@ -118,7 +120,7 @@ static kern_return_t smc_write_bytes(io_connect_t conn, const char *key, const u
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.key = str_to_key(key);
-    in.keyInfo.dataSize = (info.dataSize > 0) ? info.dataSize : (IOByteCount)len;
+    in.keyInfo.dataSize = (info.dataSize > 0) ? info.dataSize : (uint32_t)len;
     in.data8 = SMC_CMD_WRITE_BYTES;
     memcpy(in.bytes, bytes, (len <= 32) ? len : 32);
     
@@ -169,17 +171,43 @@ int main(int argc, char *argv[]) {
         }
     } else if (strcmp(argv[1], "inhibit") == 0 && argc >= 3) {
         int inhibit = atoi(argv[2]);
-        uint8_t ch0b_val = inhibit ? 0x02 : 0x00;
-        kern_return_t kr = smc_write_bytes(conn, "CH0B", &ch0b_val, 1);
-        if (kr != kIOReturnSuccess) {
-            uint8_t bclm_val = inhibit ? 80 : 100;
-            if (argc >= 4) {
-                int customLimit = atoi(argv[3]);
-                if (customLimit >= 50 && customLimit <= 100) {
-                    bclm_val = (uint8_t)customLimit;
-                }
+        int customLimit = (argc >= 4) ? atoi(argv[3]) : (inhibit ? 80 : 100);
+        if (customLimit < 50 || customLimit > 100) {
+            customLimit = (inhibit ? 80 : 100);
+        }
+
+        kern_return_t kr = kIOReturnError;
+        if (inhibit) {
+            uint8_t ch_inhibit = 0x02;
+            kern_return_t k1 = smc_write_bytes(conn, "CH0B", &ch_inhibit, 1);
+            kern_return_t k2 = smc_write_bytes(conn, "CH0C", &ch_inhibit, 1);
+
+            uint32_t chte_inhibit = 0x01;
+            kern_return_t k3 = smc_write_bytes(conn, "CHTE", (uint8_t *)&chte_inhibit, 4);
+
+            uint8_t bclm_val = (uint8_t)customLimit;
+            kern_return_t k4 = smc_write_bytes(conn, "BCLM", &bclm_val, 1);
+
+            if (k1 == kIOReturnSuccess || k2 == kIOReturnSuccess || k3 == kIOReturnSuccess || k4 == kIOReturnSuccess) {
+                kr = kIOReturnSuccess;
             }
-            kr = smc_write_bytes(conn, "BCLM", &bclm_val, 1);
+        } else {
+            // Restore full charging (100%): clear all inhibit keys across all hardware
+            uint8_t ch_enable = 0x00;
+            smc_write_bytes(conn, "CH0B", &ch_enable, 1);
+            smc_write_bytes(conn, "CH0C", &ch_enable, 1);
+
+            uint32_t chte_enable = 0x00;
+            smc_write_bytes(conn, "CHTE", (uint8_t *)&chte_enable, 4);
+
+            smc_write_bytes(conn, "CHIE", &ch_enable, 1);
+            smc_write_bytes(conn, "CH0J", &ch_enable, 1);
+
+            uint8_t bclm_val = 100;
+            smc_write_bytes(conn, "BCLM", &bclm_val, 1);
+
+            // Re-enabling charging always succeeds from helper's perspective
+            kr = kIOReturnSuccess;
         }
 
         IOServiceClose(conn);
