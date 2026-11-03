@@ -26,19 +26,22 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
+extension UserDefaultsKeys {
+    static let appLanguage = UserDefaultsKey<AppLanguage>(name: "Harmonotch_AppLanguage", defaultValue: .english)
+}
+
 final class LanguageManager: ObservableObject {
     static let shared = LanguageManager()
 
     @Published var currentLanguage: AppLanguage {
         didSet {
-            UserDefaults.standard.set(currentLanguage.rawValue, forKey: UserDefaultsKeys.appLanguage)
+            UserDefaults.standard[UserDefaultsKeys.appLanguage] = currentLanguage
             NotificationCenter.default.post(name: .languageDidChange, object: currentLanguage)
         }
     }
 
     init() {
-        let savedCode = UserDefaults.standard.string(forKey: UserDefaultsKeys.appLanguage) ?? AppLanguage.english.rawValue
-        self.currentLanguage = AppLanguage(rawValue: savedCode) ?? .english
+        self.currentLanguage = UserDefaults.standard[UserDefaultsKeys.appLanguage]
     }
 
     func setLanguage(_ language: AppLanguage) {

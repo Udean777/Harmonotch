@@ -189,3 +189,81 @@ if case .state(let state)? = decodeNowPlayingEvent(artworkJSON) {
 } else {
     check(false, "now-playing state with artwork decodes")
 }
+
+// MARK: - Notch geometry
+
+let notched = NotchGeometry(
+    hasHardwareNotch: true, physicalNotchWidth: 200, physicalNotchHeight: 32,
+    leftMargin: 0, rightMargin: 0, screenFrame: .zero)
+checkEqual(notched.collapsedWidth(isHovered: false), 336, "default notched width")
+checkEqual(
+    notched.collapsedWidth(
+        isHovered: false, measured: NotchWingWidths(left: 90, right: 70)),
+    360, "notch expands to fit wider content")
+
+let floating = NotchGeometry(
+    hasHardwareNotch: false, physicalNotchWidth: 154, physicalNotchHeight: 24,
+    leftMargin: 0, rightMargin: 0, screenFrame: .zero)
+checkEqual(floating.collapsedWidth(isHovered: false), 154, "floating pill keeps base width")
+check(
+    floating.collapsedWidth(
+        isHovered: false, measured: NotchWingWidths(left: 300, right: 300)) > 154,
+    "floating pill grows past base width when content needs it")
+
+
+// MARK: - Type Safety Tests
+
+// Version Comparable & Hashable
+checkEqual(Version("1.2.3") > Version("1.2.2"), true, "Version > patch")
+checkEqual(Version("1.2") == Version("1.2.0"), true, "Version == trailing zero")
+checkEqual(Version("2.0.0-beta") > Version("1.9.0"), true, "Version > with prerelease")
+checkEqual(Version("v1.3.0") == Version("1.3.0"), true, "Version == leading v")
+checkEqual(Set([Version("1.2"), Version("1.2.0")]).count, 1, "Version Set deduplication via Hashable")
+
+// NowPlayingCommand
+checkEqual(NowPlayingCommand.play.commandName, "play", "play command name")
+checkEqual(NowPlayingCommand.seek(position: 42.5).position, 42.5, "seek command position")
+let testCmdMsg = NowPlayingCommandMessage(id: "test-id-123", command: .seek(position: 10.0))
+checkEqual(testCmdMsg.id, "test-id-123", "command message id")
+checkEqual(testCmdMsg.cmd, "seek", "command message cmd")
+checkEqual(testCmdMsg.position, 10.0, "command message position")
+
+// UserDefaultsKey
+let defaults = UserDefaults.standard
+let testKey = UserDefaultsKey<Int>("typeSafetyTestKey", defaultValue: 99)
+defaults.remove(testKey)
+checkEqual(defaults[testKey], 99, "UserDefaultsKey defaultValue when unset")
+defaults[testKey] = 42
+checkEqual(defaults[testKey], 42, "UserDefaultsKey stored value")
+checkEqual(defaults.contains(testKey), true, "UserDefaults.contains stored key")
+defaults.remove(testKey)
+checkEqual(defaults[testKey], 99, "UserDefaultsKey restored to defaultValue after removal")
+
+
+// MARK: - Charge Limit Policy Tests (100% Unrestricting)
+checkEqual(ChargeLimitPolicy.isLimitActive(threshold: 100), false, "Limit is not active at 100%")
+checkEqual(ChargeLimitPolicy.isLimitActive(threshold: 80), true, "Limit is active at 80%")
+checkEqual(ChargeLimitPolicy.clampThreshold(100), 100, "Clamp threshold allows 100%")
+checkEqual(ChargeLimitPolicy.clampThreshold(105), 100, "Clamp threshold caps at 100%")
+checkEqual(
+    ChargeLimitPolicy.shouldInhibit(
+        capacity: 85,
+        isPluggedIn: true,
+        isEnabled: false,
+        targetThreshold: 100,
+        currentlyInhibited: true
+    ),
+    false,
+    "shouldInhibit is false when limit is set to 100%"
+)
+checkEqual(
+    ChargeLimitPolicy.shouldInhibit(
+        capacity: 80,
+        isPluggedIn: true,
+        isEnabled: true,
+        targetThreshold: 80,
+        currentlyInhibited: false
+    ),
+    true,
+    "shouldInhibit is true when capacity hits threshold"
+)

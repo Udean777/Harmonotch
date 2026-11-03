@@ -20,12 +20,6 @@ struct NotchPillView: View {
     mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
   }
 
-  private var wingWidth: CGFloat {
-    let base: CGFloat =
-      isMediaPlaying ? NotchLayout.mediaWingWidth : NotchLayout.collapsedWingWidth
-    return base + (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
-  }
-
   private var leftContentExpansion: CGFloat {
     if isMediaPlaying {
       return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
@@ -33,19 +27,13 @@ struct NotchPillView: View {
     return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
   }
 
-  private var leftWingWidth: CGFloat {
-    wingWidth + leftContentExpansion
-  }
-
-  private var noNotchWidth: CGFloat {
-    let baseWidth: CGFloat =
-      isMediaPlaying
-      ? NotchLayout.noNotchPillWidth - 2
-        * (NotchLayout.collapsedWingWidth - NotchLayout.mediaWingWidth)
-      : NotchLayout.noNotchPillWidth
-    return baseWidth
-      + 2 * (notchVM.isHovered ? NotchLayout.hoverWingExpansion : 0)
-      + leftContentExpansion
+  private var wings: (left: CGFloat, right: CGFloat) {
+    geometry.collapsedWingWidths(
+      isHovered: notchVM.isHovered,
+      isMediaPlaying: isMediaPlaying,
+      leftExtra: leftContentExpansion,
+      measured: notchVM.collapsedWingWidths
+    )
   }
 
   private var outerInset: CGFloat {
@@ -69,43 +57,16 @@ struct NotchPillView: View {
     Group {
       if geometry.hasHardwareNotch {
         HStack(spacing: 0) {
-          leftContent
-            .padding(.leading, outerInset)
-            .padding(.trailing, innerInset)
-            .frame(width: leftWingWidth, height: height, alignment: .leading)
-            .clipped()
-            .onHover { updateLeftHover($0) }
-
+          leftWing
           Color.clear
             .frame(width: geometry.physicalNotchWidth, height: height)
-
-          rightContent
-            .padding(.leading, innerInset)
-            .padding(.trailing, outerInset)
-            .frame(width: wingWidth, height: height, alignment: .trailing)
-            .clipped()
+          rightWing
         }
       } else {
-        HStack(spacing: 8) {
-          leftContent
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .clipped()
-
-          rightContent
-            .layoutPriority(1)
-            .frame(alignment: .trailing)
-        }
-        .padding(.leading, isMediaPlaying && !geometry.hasHardwareNotch ? 0 : outerInset)
-        .padding(.trailing, outerInset)
-        .frame(width: noNotchWidth, height: height)
-        .clipped()
-        .onContinuousHover(coordinateSpace: .local) { phase in
-          switch phase {
-          case .active(let location):
-            updateLeftHover(location.x < noNotchWidth * NotchLayout.leftHoverFraction)
-          case .ended:
-            updateLeftHover(false)
-          }
+        HStack(spacing: NotchLayout.floatingWingSpacing) {
+          leftWing
+          Spacer(minLength: 0)
+          rightWing
         }
       }
     }
@@ -114,8 +75,45 @@ struct NotchPillView: View {
       notchVM.toggleExpanded()
     }
     .onHover { notchVM.setHovered($0) }
+    .onPreferenceChange(NotchWingWidthsKey.self) { widths in
+      if notchVM.collapsedWingWidths != widths {
+        notchVM.collapsedWingWidths = widths
+      }
+    }
     .onChange(of: isBatteryMode) { _, _ in
       updateLeftHover(isLeftHovered)
+    }
+  }
+
+  private var leftWing: some View {
+    leftContent
+      .fixedSize(horizontal: true, vertical: false)
+      .padding(.leading, outerInset)
+      .padding(.trailing, innerInset)
+      .background(wingWidthProbe(isLeft: true))
+      .frame(width: wings.left, height: height, alignment: .leading)
+      .clipped()
+      .onHover { updateLeftHover($0) }
+  }
+
+  private var rightWing: some View {
+    rightContent
+      .fixedSize(horizontal: true, vertical: false)
+      .padding(.leading, innerInset)
+      .padding(.trailing, outerInset)
+      .background(wingWidthProbe(isLeft: false))
+      .frame(width: wings.right, height: height, alignment: .trailing)
+      .clipped()
+  }
+
+  private func wingWidthProbe(isLeft: Bool) -> some View {
+    GeometryReader { proxy in
+      Color.clear.preference(
+        key: NotchWingWidthsKey.self,
+        value: isLeft
+          ? NotchWingWidths(left: proxy.size.width)
+          : NotchWingWidths(right: proxy.size.width)
+      )
     }
   }
 
@@ -305,6 +303,17 @@ struct NotchPillView: View {
     }
     .animation(NotchMotion.content, value: mediaManager.isPlaying)
     .animation(NotchMotion.fade, value: mediaAccentColor)
+  }
+}
+
+/// Merges the two wing probes into one measured value.
+private struct NotchWingWidthsKey: PreferenceKey {
+  static let defaultValue = NotchWingWidths()
+
+  static func reduce(value: inout NotchWingWidths, nextValue: () -> NotchWingWidths) {
+    let next = nextValue()
+    if next.left > 0 { value.left = next.left }
+    if next.right > 0 { value.right = next.right }
   }
 }
 

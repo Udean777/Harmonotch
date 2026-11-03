@@ -57,18 +57,23 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
   }
 }
 
+extension UserDefaultsKeys {
+  static let themeStyle = UserDefaultsKey<ThemeStyle>(name: "Harmonotch_ThemeStyle", defaultValue: .monochrome)
+  static let themeMode = UserDefaultsKey<AppThemeMode>(name: "Harmonotch_AppTheme", defaultValue: .system)
+}
+
 final class ThemeManager: ObservableObject {
   static let shared = ThemeManager()
 
   @Published var currentStyle: ThemeStyle {
     didSet {
-      UserDefaults.standard.set(currentStyle.rawValue, forKey: UserDefaultsKeys.themeStyle)
+      UserDefaults.standard[UserDefaultsKeys.themeStyle] = currentStyle
     }
   }
 
   @Published var currentMode: AppThemeMode {
     didSet {
-      UserDefaults.standard.set(currentMode.rawValue, forKey: UserDefaultsKeys.themeMode)
+      UserDefaults.standard[UserDefaultsKeys.themeMode] = currentMode
       updateEffectiveAppearance()
     }
   }
@@ -81,12 +86,8 @@ final class ThemeManager: ObservableObject {
     // Monochrome is the only user-facing style. Keep the persisted key for a
     // future style system without allowing an old selection to change the UI.
     self.currentStyle = .monochrome
-    UserDefaults.standard.set(ThemeStyle.monochrome.rawValue, forKey: UserDefaultsKeys.themeStyle)
-
-    let saved =
-      UserDefaults.standard.string(forKey: UserDefaultsKeys.themeMode)
-      ?? AppThemeMode.system.rawValue
-    self.currentMode = AppThemeMode(rawValue: saved) ?? .system
+    UserDefaults.standard[UserDefaultsKeys.themeStyle] = .monochrome
+    self.currentMode = UserDefaults.standard[UserDefaultsKeys.themeMode]
 
     updateEffectiveAppearance()
     observeSystemThemeChanges()
@@ -103,37 +104,33 @@ final class ThemeManager: ObservableObject {
     }
   }
 
-  func setThemeStyle(_ style: ThemeStyle) {
-    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-      self.currentStyle = style
-    }
+  func setStyle(_ style: ThemeStyle) {
+    currentStyle = style
   }
 
-  func setTheme(_ mode: AppThemeMode) {
-    withAnimation(.easeInOut(duration: 0.25)) {
-      self.currentMode = mode
-    }
-  }
-
-  func toggleTheme() {
-    switch currentMode {
-    case .system:
-      setTheme(.dark)
-    case .dark:
-      setTheme(.light)
-    case .light:
-      setTheme(.system)
-    }
+  func setMode(_ mode: AppThemeMode) {
+    currentMode = mode
   }
 
   private func updateEffectiveAppearance() {
     switch currentMode {
+    case .system:
+      isDarkMode = detectSystemDarkMode()
     case .dark:
       isDarkMode = true
     case .light:
       isDarkMode = false
-    case .system:
-      isDarkMode = detectSystemDarkMode()
+    }
+
+    if let app = NSApp {
+      switch currentMode {
+      case .system:
+        app.appearance = nil
+      case .dark:
+        app.appearance = NSAppearance(named: .darkAqua)
+      case .light:
+        app.appearance = NSAppearance(named: .aqua)
+      }
     }
   }
 
@@ -148,7 +145,7 @@ final class ThemeManager: ObservableObject {
   private func observeSystemThemeChanges() {
     // System Settings posts this when the user changes Dark / Light mode
     DistributedNotificationCenter.default().addObserver(
-      forName: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
+      forName: .appleInterfaceThemeChanged,
       object: nil,
       queue: .main
     ) { [weak self] _ in
@@ -160,4 +157,8 @@ final class ThemeManager: ObservableObject {
       }
     }
   }
+}
+
+extension Notification.Name {
+  static let appleInterfaceThemeChanged = Notification.Name("AppleInterfaceThemeChangedNotification")
 }

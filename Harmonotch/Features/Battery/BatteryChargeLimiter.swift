@@ -14,15 +14,19 @@ final class BatteryChargeLimiter: ObservableObject {
                 targetThreshold = clamped
                 return
             }
-            UserDefaults.standard.set(targetThreshold, forKey: UserDefaultsKeys.chargeLimitThreshold)
-            UserDefaults.standard.set(isLimitActive, forKey: UserDefaultsKeys.chargeLimitEnabled)
+            UserDefaults.standard[UserDefaultsKeys.chargeLimitThreshold] = targetThreshold
+            UserDefaults.standard[UserDefaultsKeys.chargeLimitEnabled] = isLimitActive
 
-            // If user selects 80% on macOS with native support, sync preference
-            if targetThreshold <= 80 {
-                Self.writeNativeChargeLimit(targetThreshold)
+            // Sync macOS preference domain
+            Self.writeNativeChargeLimit(targetThreshold)
+
+            if targetThreshold >= 100 {
+                isChargingInhibited = false
+                lastErrorMessage = nil
+                applyInhibit(false, targetLimit: 100, isNativeHandled: false)
+            } else {
+                evaluateLimit()
             }
-
-            evaluateLimit()
         }
     }
 
@@ -41,6 +45,22 @@ final class BatteryChargeLimiter: ObservableObject {
                 targetThreshold = nativeLimitValue ?? ChargeLimitPolicy.defaultThreshold
             }
         }
+    }
+
+    static var sharedHelperPath: String? {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        guard let binDir = appSupport?.appendingPathComponent("Harmonotch/bin", isDirectory: true) else { return nil }
+        return binDir.appendingPathComponent("harmonotch-smc").path
+    }
+
+    /// Returns true if macOS native battery management appears to be holding charging at 80% (or native limit)
+    /// while the user has requested full 100% charge.
+    var isNativeHoldingAtLimit: Bool {
+        let capacity = BatteryMonitor.shared.currentCapacity
+        let isPluggedIn = BatteryMonitor.shared.isPluggedIn
+        let isCharging = BatteryMonitor.shared.isCharging
+        let limit = nativeLimitValue ?? 80
+        return targetThreshold >= 100 && isPluggedIn && !isCharging && capacity >= (limit - 2) && capacity < 100
     }
 
     @Published private(set) var hasNativeLimit: Bool = false
@@ -64,12 +84,12 @@ final class BatteryChargeLimiter: ObservableObject {
         // Priority 2: Detected native macOS charge limit (e.g. 80%)
         // Priority 3: Default 80%
         let initialThreshold: Int
-        if let savedLimit = UserDefaults.standard.object(forKey: UserDefaultsKeys.chargeLimitThreshold) as? Int {
-            initialThreshold = ChargeLimitPolicy.clampThreshold(savedLimit)
+        if UserDefaults.standard.contains(UserDefaultsKeys.chargeLimitThreshold) {
+            initialThreshold = ChargeLimitPolicy.clampThreshold(UserDefaults.standard[UserDefaultsKeys.chargeLimitThreshold])
         } else if let native = nativeLimit, native < 100 {
             initialThreshold = native
-            UserDefaults.standard.set(initialThreshold, forKey: UserDefaultsKeys.chargeLimitThreshold)
-            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.chargeLimitEnabled)
+            UserDefaults.standard[UserDefaultsKeys.chargeLimitThreshold] = initialThreshold
+            UserDefaults.standard[UserDefaultsKeys.chargeLimitEnabled] = true
         } else {
             initialThreshold = ChargeLimitPolicy.defaultThreshold
         }
@@ -143,15 +163,27 @@ final class BatteryChargeLimiter: ObservableObject {
     }
 
     private func applyInhibit(_ inhibit: Bool, targetLimit: Int, isNativeHandled: Bool) {
+        if !inhibit {
+            DispatchQueue.main.async {
+                self.isChargingInhibited = false
+                self.lastErrorMessage = nil
+            }
+        }
+
         executionQueue.async { [weak self] in
             guard let self else { return }
             let success = self.executeInhibitCommand(inhibit: inhibit, targetLimit: targetLimit)
             DispatchQueue.main.async {
-                if success || isNativeHandled {
-                    self.isChargingInhibited = inhibit
+                if inhibit {
+                    if success || isNativeHandled {
+                        self.isChargingInhibited = true
+                        self.lastErrorMessage = nil
+                    } else if self.isLimitActive {
+                        self.lastErrorMessage = "Helper execution failed or requires sudo configuration."
+                    }
+                } else {
+                    self.isChargingInhibited = false
                     self.lastErrorMessage = nil
-                } else if self.isLimitActive {
-                    self.lastErrorMessage = "Helper execution failed or requires sudo configuration."
                 }
             }
         }
@@ -196,6 +228,10 @@ final class BatteryChargeLimiter: ObservableObject {
 
         // Fallback: check if standard third-party tools are installed (battery / smc)
         if executeThirdPartyFallback(inhibit: inhibit, targetLimit: targetLimit) {
+            return true
+        }
+
+        if !inhibit {
             return true
         }
 
@@ -311,7 +347,7 @@ final class BatteryChargeLimiter: ObservableObject {
     // MARK: - Sudo Configuration
 
     func checkSudoConfiguration() {
-        if UserDefaults.standard.bool(forKey: UserDefaultsKeys.chargeLimitSudoConfigured) {
+        if UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] {
             isSudoConfigured = true
             return
         }
@@ -334,7 +370,7 @@ final class BatteryChargeLimiter: ObservableObject {
 
             DispatchQueue.main.async {
                 if configured {
-                    UserDefaults.standard.set(true, forKey: UserDefaultsKeys.chargeLimitSudoConfigured)
+                    UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] = true
                 }
                 self.isSudoConfigured = configured
             }
@@ -369,7 +405,7 @@ final class BatteryChargeLimiter: ObservableObject {
             DispatchQueue.main.async {
                 self.isPerformingSetup = false
                 self.isSudoConfigured = success
-                UserDefaults.standard.set(success, forKey: UserDefaultsKeys.chargeLimitSudoConfigured)
+                UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] = success
                 if success {
                     self.evaluateLimit()
                 }

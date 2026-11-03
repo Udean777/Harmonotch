@@ -15,6 +15,10 @@ enum L10n {
         static var mediaTab: String {
             isEnglish ? "Audio" : "Audio"
         }
+        static var aiTab: String {
+            isEnglish ? "AI Agents" : "AI Agen"
+        }
+
     }
 
     enum Prayer {
@@ -193,6 +197,14 @@ enum L10n {
         }
         static var nativeLimitActive: String {
             isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
+        }
+        static func macOSHoldingCharge(capacity: Int) -> String {
+            isEnglish
+                ? "macOS is holding charge at \(capacity)%. Turn off '80% Limit' in Battery Settings to charge to 100%."
+                : "macOS menahan pengisian daya di \(capacity)%. Nonaktifkan 'Batas 80%' di Pengaturan Baterai untuk mengisi hingga 100%."
+        }
+        static var openBatterySettings: String {
+            isEnglish ? "Open Battery Settings" : "Buka Pengaturan Baterai"
         }
         static var chargeLimitStatusBypass: String {
             isEnglish ? "AC Bypass Active" : "Bypass AC Aktif"
@@ -723,6 +735,61 @@ enum L10n {
         }
         static var later: String {
             isEnglish ? "Later" : "Nanti"
+        }
+    }
+
+    enum AI {
+        static var title: String {
+            isEnglish ? "AI Quota Telemetry" : "Telemetri Kuota AI"
+        }
+        static var connected: String {
+            isEnglish ? "Loopback Active" : "Loopback Aktif"
+        }
+        static var offline: String {
+            isEnglish ? "Standby" : "Standby"
+        }
+        static var remaining: String {
+            isEnglish ? "Remaining" : "Tersisa"
+        }
+        static var resetsIn: String {
+            isEnglish ? "Resets in" : "Reset dlm"
+        }
+        static var noActiveAgent: String {
+            isEnglish ? "No active AI agent or language server detected" : "Tidak ada agen AI atau language server yang aktif"
+        }
+        static var refresh: String {
+            isEnglish ? "Refresh Quota" : "Segarkan Kuota"
+        }
+        static var antigravityNotDetectedTitle: String {
+            isEnglish ? "Antigravity CLI Not Detected" : "Antigravity CLI Belum Terdeteksi"
+        }
+        static var antigravityNotDetectedDesc: String {
+            isEnglish
+                ? "Install Antigravity CLI and log in with your Google account to track live quotas."
+                : "Pasang Antigravity CLI dan login dengan akun Google Anda untuk memantau kuota real-time."
+        }
+        static var antigravityStep1: String {
+            isEnglish ? "1. Install Antigravity CLI or desktop app" : "1. Pasang Antigravity CLI atau aplikasi desktop"
+        }
+        static var antigravityStep2: String {
+            isEnglish ? "2. Run \"agy\" in Terminal to log in" : "2. Jalankan \"agy\" di Terminal untuk login"
+        }
+        static var antigravityStep3: String {
+            isEnglish ? "3. Check quota via \"/usage\" command" : "3. Cek kuota via perintah \"/usage\""
+        }
+        static var openDocs: String {
+            isEnglish ? "Documentation" : "Dokumentasi"
+        }
+        static var copyLoginCommand: String {
+            isEnglish ? "Copy \"agy\"" : "Salin \"agy\""
+        }
+        static var copied: String {
+            isEnglish ? "Copied!" : "Tersalin!"
+        }
+        static var safeReadNote: String {
+            isEnglish
+                ? "Passive read-only inspection. Safe & private."
+                : "Inspeksi pasif baca-saja. Aman & privat."
         }
     }
 }

@@ -111,17 +111,34 @@ final class NowPlayingBridge {
     }
   }
 
-  /// Sends one command and calls `completion` with the adapter's answer, or
+  /// Sends a strongly-typed command to the adapter.
+  func send(_ command: NowPlayingCommand, completion: ((Bool) -> Void)? = nil) {
+    let message = NowPlayingCommandMessage(command: command)
+    guard let payload = try? JSONEncoder().encode(message) else {
+      completion?(false)
+      return
+    }
+    sendPayload(payload, id: message.id, completion: completion)
+  }
+
+  /// Sends one command dictionary and calls `completion` with the adapter's answer, or
   /// `false` after 400 ms or when the process is not running.
   func send(_ command: [String: Any], completion: ((Bool) -> Void)? = nil) {
+    guard let payload = try? JSONSerialization.data(withJSONObject: command) else {
+      completion?(false)
+      return
+    }
+    let id = command["id"] as? String ?? ""
+    sendPayload(payload, id: id, completion: completion)
+  }
+
+  private func sendPayload(_ payload: Data, id: String, completion: ((Bool) -> Void)?) {
     queue.async { [weak self] in
       guard let self = self else {
         completion?(false)
         return
       }
-      guard let payload = try? JSONSerialization.data(withJSONObject: command),
-        self.process?.isRunning == true, let stdinHandle = self.stdinHandle
-      else {
+      guard self.process?.isRunning == true, let stdinHandle = self.stdinHandle else {
         completion?(false)
         return
       }
@@ -135,7 +152,7 @@ final class NowPlayingBridge {
         return
       }
 
-      guard let id = command["id"] as? String, let completion = completion else { return }
+      guard !id.isEmpty, let completion = completion else { return }
       self.pending[id] = completion
       self.queue.asyncAfter(deadline: .now() + 0.4) { [weak self] in
         guard let self = self, let callback = self.pending.removeValue(forKey: id) else { return }

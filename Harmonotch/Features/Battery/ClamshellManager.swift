@@ -9,7 +9,7 @@ final class ClamshellManager: ObservableObject {
 
     @Published var isArmed: Bool {
         didSet {
-            UserDefaults.standard.set(isArmed, forKey: UserDefaultsKeys.clamshellArmed)
+            UserDefaults.standard[UserDefaultsKeys.clamshellArmed] = isArmed
             recalculateState()
         }
     }
@@ -31,7 +31,7 @@ final class ClamshellManager: ObservableObject {
     private var hasWarnedAt60: Bool = false
 
     private init() {
-        self.isArmed = UserDefaults.standard.bool(forKey: UserDefaultsKeys.clamshellArmed)
+        self.isArmed = UserDefaults.standard[UserDefaultsKeys.clamshellArmed]
 
         checkSudoConfiguration()
         setupObservers()
@@ -203,7 +203,7 @@ final class ClamshellManager: ObservableObject {
 
 
     func checkSudoConfiguration() {
-        if UserDefaults.standard.bool(forKey: UserDefaultsKeys.sudoConfigured) {
+        if UserDefaults.standard[UserDefaultsKeys.sudoConfigured] {
             isSudoConfigured = true
             return
         }
@@ -227,7 +227,7 @@ final class ClamshellManager: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 if configured {
-                    UserDefaults.standard.set(true, forKey: UserDefaultsKeys.sudoConfigured)
+                    UserDefaults.standard[UserDefaultsKeys.sudoConfigured] = true
                 }
                 self.isSudoConfigured = configured
             }
@@ -285,7 +285,8 @@ final class ClamshellManager: ObservableObject {
     func setupPasswordlessSudo(completion: @escaping (Bool) -> Void) {
         isPerformingSetup = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let ruleContent = "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep *"
+            let helperRule = BatteryChargeLimiter.sharedHelperPath.map { ", \($0.replacingOccurrences(of: " ", with: "\\ ")) *" } ?? ""
+            let ruleContent = "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep *\(helperRule)"
             // Validate with visudo before installing to prevent breaking sudo.
             let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 440 \"$tmp\" "
                 + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" /etc/sudoers.d/harmonotch"
@@ -302,7 +303,7 @@ final class ClamshellManager: ObservableObject {
                 guard let self else { return }
                 self.isPerformingSetup = false
                 self.isSudoConfigured = success
-                UserDefaults.standard.set(success, forKey: UserDefaultsKeys.sudoConfigured)
+                UserDefaults.standard[UserDefaultsKeys.sudoConfigured] = success
                 if success {
                     self.recalculateState()
                 }

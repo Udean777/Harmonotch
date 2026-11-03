@@ -9,12 +9,14 @@ final class NotchViewModel: ObservableObject {
   @Published var isLeftCompanionVisible: Bool = false
   @Published var isCompanionEnabled: Bool {
     didSet {
-      UserDefaults.standard.set(isCompanionEnabled, forKey: UserDefaultsKeys.companionEnabled)
+      UserDefaults.standard[UserDefaultsKeys.companionEnabled] = isCompanionEnabled
       if !isCompanionEnabled { isLeftCompanionVisible = false }
     }
   }
   @Published var selectedTab: DrawerTab = .battery
   @Published var geometry: NotchGeometry = NotchGeometry.current()
+  /// Content-driven wing widths reported by the collapsed pill.
+  @Published var collapsedWingWidths = NotchWingWidths()
 
   private var cancellables = Set<AnyCancellable>()
 
@@ -26,8 +28,7 @@ final class NotchViewModel: ObservableObject {
   }
 
   init() {
-    self.isCompanionEnabled = UserDefaults.standard.bool(
-      forKey: UserDefaultsKeys.companionEnabled)
+    self.isCompanionEnabled = UserDefaults.standard[UserDefaultsKeys.companionEnabled]
 
     // Switch to Media tab when Adzan starts playing
     AdzanPlayer.shared.$isPlaying

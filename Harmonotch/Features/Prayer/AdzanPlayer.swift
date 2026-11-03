@@ -9,7 +9,7 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var playingPrayerName: String = ""
     @Published var isMuted: Bool {
         didSet {
-            UserDefaults.standard.set(isMuted, forKey: UserDefaultsKeys.adzanMuted)
+            UserDefaults.standard[UserDefaultsKeys.adzanMuted] = isMuted
             if isMuted && isPlaying {
                 stop()
             }
@@ -18,18 +18,15 @@ final class AdzanPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var volume: Float {
         didSet {
             audioPlayer?.volume = volume
-            UserDefaults.standard.set(volume, forKey: UserDefaultsKeys.adzanVolume)
+            UserDefaults.standard[UserDefaultsKeys.adzanVolume] = volume
         }
     }
 
     private var audioPlayer: AVAudioPlayer?
 
     override init() {
-        self.isMuted = UserDefaults.standard.bool(forKey: UserDefaultsKeys.adzanMuted)
-        // float(forKey:) cannot tell "unset" from a saved 0, so check the key explicitly.
-        self.volume = UserDefaults.standard.object(forKey: UserDefaultsKeys.adzanVolume) == nil
-            ? 0.85
-            : UserDefaults.standard.float(forKey: UserDefaultsKeys.adzanVolume)
+        self.isMuted = UserDefaults.standard[UserDefaultsKeys.adzanMuted]
+        self.volume = UserDefaults.standard[UserDefaultsKeys.adzanVolume]
         super.init()
     }
 

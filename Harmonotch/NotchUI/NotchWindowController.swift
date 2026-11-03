@@ -47,23 +47,30 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     let topY = bounds.height
     let currentWidth: CGFloat
     let currentHeight: CGFloat
+    let collapsedWings = geometry.collapsedWingWidths(
+      isHovered: notchVM.isHovered,
+      isMediaPlaying: isMediaPlaying,
+      leftExtra: leftContentExpansion,
+      measured: notchVM.collapsedWingWidths
+    )
 
     if isExpanded {
       currentWidth = NotchLayout.expandedWidth
       let topClearance = geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 4) : 8
       currentHeight = topClearance + NotchLayout.expandedHitAreaHeight
     } else {
-      currentWidth =
-        geometry.collapsedWidth(
-          isHovered: notchVM.isHovered,
-          isMediaPlaying: isMediaPlaying
-        ) + leftContentExpansion
+      currentWidth = geometry.collapsedWidth(
+        isHovered: notchVM.isHovered,
+        isMediaPlaying: isMediaPlaying,
+        leftExtra: leftContentExpansion,
+        measured: notchVM.collapsedWingWidths
+      )
       currentHeight = geometry.collapsedHeight
     }
 
     let leftExpansionOffset =
-      !isExpanded && leftContentExpansion > 0
-      ? -(leftContentExpansion / 2)
+      !isExpanded && geometry.hasHardwareNotch
+      ? -(collapsedWings.left - collapsedWings.right) / 2
       : 0
     let minX = (bounds.width - currentWidth) / 2 + leftExpansionOffset
     let maxX = minX + currentWidth
@@ -200,7 +207,7 @@ final class NotchWindowController: ObservableObject {
 
   @Published var isNotchHidden: Bool {
     didSet {
-      UserDefaults.standard.set(isNotchHidden, forKey: UserDefaultsKeys.isNotchHidden)
+      UserDefaults.standard[UserDefaultsKeys.isNotchHidden] = isNotchHidden
     }
   }
 
@@ -214,7 +221,7 @@ final class NotchWindowController: ObservableObject {
   static let canvasHeight: CGFloat = 620
 
   init() {
-    self.isNotchHidden = UserDefaults.standard.bool(forKey: UserDefaultsKeys.isNotchHidden)
+    self.isNotchHidden = UserDefaults.standard[UserDefaultsKeys.isNotchHidden]
   }
 
   func setupAndShowWindow() {

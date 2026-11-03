@@ -5,6 +5,7 @@ struct NotchContainerView: View {
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var mediaManager = MediaManager.shared
   @ObservedObject var themeManager = ThemeManager.shared
+  @ObservedObject var aiUsageManager = AIUsageManager.shared
 
   private var geometry: NotchGeometry {
     notchVM.geometry
@@ -21,13 +22,24 @@ struct NotchContainerView: View {
     return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
   }
 
+  private var collapsedWings: (left: CGFloat, right: CGFloat) {
+    geometry.collapsedWingWidths(
+      isHovered: notchVM.isHovered,
+      isMediaPlaying: isMediaPlaying,
+      leftExtra: leftContentExpansion,
+      measured: notchVM.collapsedWingWidths
+    )
+  }
+
   private var targetWidth: CGFloat {
     guard !notchVM.isExpanded else { return NotchLayout.expandedWidth }
 
     return geometry.collapsedWidth(
       isHovered: notchVM.isHovered,
-      isMediaPlaying: isMediaPlaying
-    ) + leftContentExpansion
+      isMediaPlaying: isMediaPlaying,
+      leftExtra: leftContentExpansion,
+      measured: notchVM.collapsedWingWidths
+    )
   }
 
   private var topClearance: CGFloat {
@@ -55,6 +67,17 @@ struct NotchContainerView: View {
         + (adzanPlayer.isPlaying
           ? NotchLayout.expandedAdzanHeight
           : NotchLayout.expandedPrayerHeight)
+    case .ai:
+      let modelCount = aiUsageManager.currentSnapshot?.models.count ?? 0
+      let hasMultiple = aiUsageManager.availableProviders.count > 1
+      let isAntigravitySetup = aiUsageManager.selectedProvider == .antigravity
+        && aiUsageManager.currentSnapshot == nil
+        && (!aiUsageManager.isMonitoring || !aiUsageManager.snapshots.isEmpty)
+      return topClearance + NotchLayout.dynamicAIHeight(
+        modelCount: modelCount,
+        hasMultipleProviders: hasMultiple,
+        isAntigravitySetup: isAntigravitySetup
+      )
     }
   }
 
@@ -85,6 +108,9 @@ struct NotchContainerView: View {
                 .transition(NotchMotion.drawer)
             case .prayer:
               PrayerDrawerView()
+                .transition(NotchMotion.drawer)
+            case .ai:
+              AIUsageDrawerView()
                 .transition(NotchMotion.drawer)
             }
           }
@@ -123,8 +149,8 @@ struct NotchContainerView: View {
     .frame(width: targetWidth, height: targetHeight, alignment: .top)
     .clipShape(notchShape)
     .offset(
-      x: !notchVM.isExpanded && leftContentExpansion > 0
-        ? -(leftContentExpansion / 2)
+      x: !notchVM.isExpanded && geometry.hasHardwareNotch
+        ? -(collapsedWings.left - collapsedWings.right) / 2
         : 0,
       y: geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset
     )
@@ -142,5 +168,19 @@ struct NotchContainerView: View {
     .animation(NotchMotion.content, value: targetWidth)
     .animation(NotchMotion.content, value: targetHeight)
     .preferredColorScheme(themeManager.colorScheme)
+    .onChange(of: notchVM.isExpanded) { _, isExpanded in
+      if isExpanded && notchVM.selectedTab == .ai {
+        AIUsageManager.shared.startMonitoring()
+      } else if !isExpanded {
+        AIUsageManager.shared.stopMonitoring(keepCache: true)
+      }
+    }
+    .onChange(of: notchVM.selectedTab) { _, tab in
+      if notchVM.isExpanded && tab == .ai {
+        AIUsageManager.shared.startMonitoring()
+      } else if tab != .ai {
+        AIUsageManager.shared.stopMonitoring(keepCache: true)
+      }
+    }
   }
 }
