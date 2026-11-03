@@ -11,7 +11,7 @@
 
 </div>
 
-Harmonotch turns the camera cutout on a MacBook into a small control surface. Hover the notch to open a drawer with three tabs: prayer times, battery status, and media with synced lyrics. On a Mac without a notch, the same controls live in the menu bar.
+Harmonotch turns the camera cutout on a MacBook into a small control surface. Hover the notch to open a drawer with four tabs: prayer times, battery status, media with synced lyrics, and AI agent quota telemetry. On a Mac without a notch, the same controls live in the menu bar.
 
 Prayer times are calculated on device. The app has no account, no analytics, and no server for prayer or battery data. Lyrics and update checks use the network.
 
@@ -46,6 +46,14 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 - Lets you click any lyric line to seek directly to its timestamp.
 
 The MediaRemote bridge uses an undocumented Apple framework, so it can change or disappear in a future macOS release. That is why the AppleScript path stays in place, and why this app ships outside the Mac App Store.
+
+### AI agent quota telemetry
+
+- Live tracking of quota remaining and reset countdowns across active coding agents: **Google Antigravity**, **Claude Code**, **Ollama**, **Cursor**, and **GitHub Copilot**.
+- Non-interactive local CLI evaluation (e.g. `agy -p "/usage"`), querying authorized quotas without storing API keys, passwords, or personal credentials (100% passive & ban-safe).
+- In-memory 30-second cache prevents excessive subshell calls and eliminates CPU overhead.
+- Dynamic notch drawer height: the drawer dynamically expands (between ~180pt and ~350pt) to fit discovered model tiers, and provides smooth vertical scrolling when more than 5 models are present.
+- Built-in Antigravity onboarding guide: if `agy` is not installed or logged in, a clean onboarding card provides 3-step setup guidance, a direct link to documentation (`https://antigravity.google`), and a one-click copy button for `agy`.
 
 ### Interface
 
@@ -133,6 +141,16 @@ Harmonotch/
 │   ├── Localization/                 // Language state and strings
 │   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
 │   ├── Battery/                      // IOKit monitor and clamshell mode
+│   ├── AI/                           // Multi-provider AI agent quota monitoring and telemetry
+│   │   ├── AIModelQuota.swift        // Model quota and countdown data models
+│   │   ├── AIUsageDrawerView.swift   // Dynamic scrollable notch drawer card & CLI onboarding
+│   │   ├── AIUsageManager.swift      // Multi-provider telemetry coordinator
+│   │   ├── AntigravityProcessDetector.swift // Safe local process and socket scanner
+│   │   ├── AntigravityQuotaService.swift    // Antigravity CLI `/usage` integration
+│   │   ├── ClaudeCodeQuotaService.swift
+│   │   ├── CopilotQuotaService.swift
+│   │   ├── CursorQuotaService.swift
+│   │   └── OllamaQuotaService.swift
 │   ├── KeyboardBacklight/            // Built-in keyboard light level
 │   ├── Media/                        // MediaRemote bridge, lyrics, and metadata
 │   ├── Update/                       // GitHub release checks
