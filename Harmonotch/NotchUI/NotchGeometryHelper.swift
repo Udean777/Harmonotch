@@ -36,19 +36,22 @@ enum NotchLayout {
   static let expandedBatteryHeight: CGFloat = 200
   static let expandedAIHeight: CGFloat = 240
   static let minAIHeight: CGFloat = 180
-  static let maxAIHeight: CGFloat = 340
+  static let maxAIHeight: CGFloat = 350
   static let expandedMediaHeight: CGFloat = 180
   static let expandedMediaTrackHeight: CGFloat = 275
-  static let expandedHitAreaHeight: CGFloat = 420
+  static let expandedHitAreaHeight: CGFloat = 430
 
   static func dynamicAIHeight(
     modelCount: Int,
-    hasMultipleProviders: Bool = true
+    hasMultipleProviders: Bool = true,
+    isAntigravitySetup: Bool = false
   ) -> CGFloat {
     let headerHeight: CGFloat = 34
     let selectorHeight: CGFloat = hasMultipleProviders ? 32 : 0
-    let cardPadding: CGFloat = 20
-    let cardHeaderHeight: CGFloat = 26
+
+    if isAntigravitySetup {
+      return min(headerHeight + selectorHeight + 205, maxAIHeight)
+    }
 
     if modelCount == 0 {
       return headerHeight + selectorHeight + 115
@@ -57,6 +60,8 @@ enum NotchLayout {
     let clampedRows = min(max(modelCount, 1), 5)
     let rowHeight: CGFloat = 36
     let modelsHeight = CGFloat(clampedRows) * rowHeight
+    let cardPadding: CGFloat = 20
+    let cardHeaderHeight: CGFloat = 26
     let total = headerHeight + selectorHeight + cardPadding + cardHeaderHeight + modelsHeight + 10
     return min(max(total, minAIHeight), maxAIHeight)
   }

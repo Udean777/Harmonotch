@@ -1,8 +1,10 @@
+import AppKit
 import SwiftUI
 
 struct AIUsageDrawerView: View {
     @ObservedObject var usageManager = AIUsageManager.shared
     @ObservedObject var languageManager = LanguageManager.shared
+    @State private var hasCopiedAgy: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -245,7 +247,149 @@ struct AIUsageDrawerView: View {
 
     // MARK: - Unavailable View
 
+    @ViewBuilder
     private func unavailableView(for provider: AIProviderType) -> some View {
+        if provider == .antigravity {
+            antigravitySetupView
+        } else {
+            genericUnavailableView(for: provider)
+        }
+    }
+
+    private var antigravitySetupView: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppTheme.accentCyan)
+
+                Text(L10n.AI.antigravityNotDetectedTitle)
+                    .font(.system(size: 11.5, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+
+                Spacer()
+
+                Text("CLI Setup")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(AppTheme.accentAmber)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(AppTheme.accentAmber.opacity(0.14))
+                    )
+            }
+
+            Text(L10n.AI.antigravityNotDetectedDesc)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 3.5) {
+                stepRow(icon: "1.circle.fill", text: L10n.AI.antigravityStep1)
+                stepRow(icon: "2.circle.fill", text: L10n.AI.antigravityStep2)
+                stepRow(icon: "3.circle.fill", text: L10n.AI.antigravityStep3)
+            }
+            .padding(.vertical, 2)
+
+            HStack(spacing: 8) {
+                Button(action: {
+                    if let url = URL(string: "https://antigravity.google") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 9.5))
+                        Text(L10n.AI.openDocs)
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(AppTheme.textPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(AppTheme.badgeBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: {
+                    copyToClipboard("agy")
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hasCopiedAgy = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation {
+                            hasCopiedAgy = false
+                        }
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: hasCopiedAgy ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 9.5))
+                        Text(hasCopiedAgy ? L10n.AI.copied : L10n.AI.copyLoginCommand)
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(hasCopiedAgy ? AppTheme.accentGreen : AppTheme.accentCyan)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(hasCopiedAgy ? AppTheme.accentGreen.opacity(0.12) : AppTheme.accentCyan.opacity(0.12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke((hasCopiedAgy ? AppTheme.accentGreen : AppTheme.accentCyan).opacity(0.4), lineWidth: 0.6)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+
+            Divider()
+                .background(AppTheme.divider)
+
+            HStack(spacing: 5) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 9.5))
+                    .foregroundColor(AppTheme.accentGreen)
+
+                Text(L10n.AI.safeReadNote)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(AppTheme.textTertiary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(10)
+        .background(cardBackground)
+    }
+
+    private func stepRow(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 9.5))
+                .foregroundColor(AppTheme.accentCyan.opacity(0.85))
+
+            Text(text)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundColor(AppTheme.textPrimary.opacity(0.9))
+                .lineLimit(1)
+        }
+    }
+
+    private func copyToClipboard(_ string: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(string, forType: .string)
+    }
+
+    private func genericUnavailableView(for provider: AIProviderType) -> some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: provider.iconName)
@@ -273,7 +417,7 @@ struct AIUsageDrawerView: View {
                     .font(.system(size: 10))
                     .foregroundColor(AppTheme.accentGreen)
 
-                Text("Passive read-only inspection. Safe & private.")
+                Text(L10n.AI.safeReadNote)
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundColor(AppTheme.textTertiary)
 
@@ -284,7 +428,7 @@ struct AIUsageDrawerView: View {
         .background(cardBackground)
     }
 
-    // MARK: - Loading & Failed Views
+    // MARK: - Loading View
 
     private var loadingView: some View {
         VStack(spacing: 8) {

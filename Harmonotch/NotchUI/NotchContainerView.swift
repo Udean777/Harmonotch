@@ -70,9 +70,13 @@ struct NotchContainerView: View {
     case .ai:
       let modelCount = aiUsageManager.currentSnapshot?.models.count ?? 0
       let hasMultiple = aiUsageManager.availableProviders.count > 1
+      let isAntigravitySetup = aiUsageManager.selectedProvider == .antigravity
+        && aiUsageManager.currentSnapshot == nil
+        && (!aiUsageManager.isMonitoring || !aiUsageManager.snapshots.isEmpty)
       return topClearance + NotchLayout.dynamicAIHeight(
         modelCount: modelCount,
-        hasMultipleProviders: hasMultiple
+        hasMultipleProviders: hasMultiple,
+        isAntigravitySetup: isAntigravitySetup
       )
     }
   }

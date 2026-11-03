@@ -760,5 +760,36 @@ enum L10n {
         static var refresh: String {
             isEnglish ? "Refresh Quota" : "Segarkan Kuota"
         }
+        static var antigravityNotDetectedTitle: String {
+            isEnglish ? "Antigravity CLI Not Detected" : "Antigravity CLI Belum Terdeteksi"
+        }
+        static var antigravityNotDetectedDesc: String {
+            isEnglish
+                ? "Install Antigravity CLI and log in with your Google account to track live quotas."
+                : "Pasang Antigravity CLI dan login dengan akun Google Anda untuk memantau kuota real-time."
+        }
+        static var antigravityStep1: String {
+            isEnglish ? "1. Install Antigravity CLI or desktop app" : "1. Pasang Antigravity CLI atau aplikasi desktop"
+        }
+        static var antigravityStep2: String {
+            isEnglish ? "2. Run \"agy\" in Terminal to log in" : "2. Jalankan \"agy\" di Terminal untuk login"
+        }
+        static var antigravityStep3: String {
+            isEnglish ? "3. Check quota via \"/usage\" command" : "3. Cek kuota via perintah \"/usage\""
+        }
+        static var openDocs: String {
+            isEnglish ? "Documentation" : "Dokumentasi"
+        }
+        static var copyLoginCommand: String {
+            isEnglish ? "Copy \"agy\"" : "Salin \"agy\""
+        }
+        static var copied: String {
+            isEnglish ? "Copied!" : "Tersalin!"
+        }
+        static var safeReadNote: String {
+            isEnglish
+                ? "Passive read-only inspection. Safe & private."
+                : "Inspeksi pasif baca-saja. Aman & privat."
+        }
     }
 }
