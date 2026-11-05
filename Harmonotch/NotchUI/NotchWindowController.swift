@@ -56,7 +56,7 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
 
     if isExpanded {
       currentWidth = NotchLayout.expandedWidth
-      // Ikuti tinggi konten terukur agar seluruh area lirik/antrean tetap bisa diinteraksi.
+      // Follow measured content height so entire lyrics/queue area remains interactable.
       currentHeight = notchVM.expandedContentHeight > 0
         ? notchVM.expandedContentHeight
         : (geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 4) : 8)
@@ -319,20 +319,18 @@ final class NotchWindowController: ObservableObject {
       let mouseLocation = NSEvent.mouseLocation
       let windowPoint = panel.convertPoint(fromScreen: mouseLocation)
 
-      // Jika klik di luar area konten aktual notch (bawah expanded content), tutup.
       if !self.isPointInsideExpandedNotch(windowPoint, in: panel) {
         NotchViewModel.shared.collapse()
         return
       }
 
-      // Jika di dalam area konten namun tidak mengenai elemen interaktif apa pun, tetap tutup.
       if let contentView = panel.contentView, contentView.hitTest(windowPoint) == nil {
         NotchViewModel.shared.collapse()
       }
     }
   }
 
-  /// Apakah titik berada di dalam frame konten aktual notch saat expanded.
+  /// Whether the point is inside the expanded notch content frame.
   private func isPointInsideExpandedNotch(_ point: NSPoint, in panel: NotchPanel) -> Bool {
     let notchVM = NotchViewModel.shared
     let geometry = notchVM.geometry
@@ -340,7 +338,7 @@ final class NotchWindowController: ObservableObject {
       ? (geometry.physicalNotchHeight + 4)
       : 8
 
-    // Pakai tinggi konten terukur bila tersedia; fallback ke konstanta per tab.
+    // Use measured content height when available; fallback to per-tab constant.
     let measured = notchVM.expandedContentHeight
     let contentHeight: CGFloat
     if measured > 0 {

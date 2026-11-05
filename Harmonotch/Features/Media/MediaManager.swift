@@ -135,7 +135,7 @@ enum ArtworkPalette {
   }
 }
 
-/// Item antrean media yang ditampilkan saat pengguna membuka antrean dari notch.
+/// Queue item shown when user opens the queue from the notch.
 struct QueueItem: Identifiable, Hashable {
   let id = UUID()
   let title: String
@@ -168,7 +168,7 @@ final class MediaManager: ObservableObject {
   @Published var isInstrumental: Bool = false
   @Published var lyricsStatus: LyricsStatus = .idle
 
-  /// Antrean lagu yang sedang diputar. Diisi otomatis saat track aktif.
+  /// Play queue for the currently playing track. Filled automatically when track is active.
   @Published var queue: [QueueItem] = []
 
   var hasActiveTrack: Bool {

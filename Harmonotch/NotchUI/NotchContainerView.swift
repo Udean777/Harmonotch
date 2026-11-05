@@ -6,7 +6,7 @@ struct NotchContainerView: View {
   @ObservedObject var mediaManager = MediaManager.shared
   @ObservedObject var themeManager = ThemeManager.shared
 
-  /// Tinggi konten expanded aktual yang diukur dari layout; 0 sebelum pengukuran pertama.
+  /// Measured expanded content height from layout; 0 before first measurement.
   @State private var measuredExpandedHeight: CGFloat = 0
 
   private var geometry: NotchGeometry {
@@ -50,7 +50,7 @@ struct NotchContainerView: View {
 
   private var targetHeight: CGFloat {
     guard notchVM.isExpanded else { return geometry.collapsedHeight }
-    // Pakai tinggi konten terukur agar pas per tab; fallback sebelum pengukuran pertama.
+    // Use measured content height per tab; fallback before first measurement.
     return measuredExpandedHeight > 0 ? measuredExpandedHeight : fallbackExpandedHeight
   }
 
@@ -150,7 +150,7 @@ struct NotchContainerView: View {
     }
   }
 
-  /// Konten expanded dengan tinggi alami (mengikuti isi tiap tab).
+  /// Expanded content with natural height (follows content of each tab).
   private var expandedContent: some View {
     VStack(spacing: 10) {
       NotchTabBar(selectedTab: $notchVM.selectedTab)
@@ -185,7 +185,7 @@ struct NotchContainerView: View {
   }
 }
 
-/// Tinggi total konten expanded (termasuk padding atas/bawah) untuk penyesuaian panel.
+/// Total expanded content height (including top/bottom padding) for panel sizing.
 private struct ExpandedContentHeightKey: PreferenceKey {
   static var defaultValue: CGFloat = 0
   static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {

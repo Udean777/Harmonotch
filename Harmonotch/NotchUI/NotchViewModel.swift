@@ -17,7 +17,7 @@ final class NotchViewModel: ObservableObject {
   @Published var geometry: NotchGeometry = NotchGeometry.current()
   /// Content-driven wing widths reported by the collapsed pill.
   @Published var collapsedWingWidths = NotchWingWidths()
-  /// Tinggi konten expanded terukur (termasuk padding) untuk hit-test di luar notch.
+  /// Measured expanded content height (including padding) for hit-test outside notch.
   @Published var expandedContentHeight: CGFloat = 0
 
   private var cancellables = Set<AnyCancellable>()

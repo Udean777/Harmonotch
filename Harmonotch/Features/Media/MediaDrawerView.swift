@@ -21,7 +21,7 @@ struct MediaDrawerView: View {
     mediaManager.artworkAccentColor.map(Color.init(nsColor:)) ?? .white
   }
 
-  /// Apakah lirik tersedia untuk ditampilkan (sudah sinkron atau teks biasa).
+  /// Whether lyrics are available for display (synced or plain text).
   private var lyricsAvailable: Bool {
     switch mediaManager.lyricsStatus {
     case .synced(let lines): return !lines.isEmpty
@@ -60,7 +60,7 @@ struct MediaDrawerView: View {
   }
 
   private func autoShowLyricsIfAvailable() {
-    // Hanya auto-pilih lirik bila pengguna belum memilih panel apa pun.
+    // Auto-select lyrics only if user hasn't chosen a panel yet.
     if activePanel == nil && lyricsAvailable {
       activePanel = .lyrics
     }
@@ -282,7 +282,6 @@ struct MediaDrawerView: View {
           .buttonStyle(.plain)
         }
 
-        // Tombol toggle Lirik dan Antrean (hanya ikon).
         HStack(spacing: 8) {
           Button(action: {
             selectPanel(.lyrics)
@@ -349,7 +348,6 @@ struct MediaDrawerView: View {
           .foregroundColor(AppTheme.textTertiary)
       }
 
-      // Panel lirik/antrean bergantian seperti tab (tidak menumpuk).
       switch activePanel {
       case .some(.lyrics):
         lyricsContent.transition(NotchMotion.drawer)
@@ -361,8 +359,8 @@ struct MediaDrawerView: View {
     }
   }
 
-  /// Tampilan lirik: menunjukkan lirik jika tersedia, tombol sinkronisasi jika gagal,
-  /// atau UI jujur jika lirik tidak bisa ditunjukkan.
+  /// Lyrics view: shows lyrics when available, sync button on failure,
+  /// honest empty state when lyrics cannot be shown.
   @ViewBuilder
   private var lyricsContent: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -432,7 +430,7 @@ struct MediaDrawerView: View {
     )
   }
 
-  /// UI lirik tidak tersedia dengan tombol sinkronisasi dan pesan jujur.
+  /// Unavailable lyrics UI with sync button and honest message.
   @ViewBuilder
   private var unavailableLyricsUI: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -478,7 +476,7 @@ struct MediaDrawerView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 
-  /// Tampilan antrean: daftar lagu jika ada, atau UI kosong jika antrean tidak ditemukan.
+  /// Queue view: song list when present, empty UI when queue not found.
   @ViewBuilder
   private var queueContent: some View {
     VStack(alignment: .leading, spacing: 8) {
