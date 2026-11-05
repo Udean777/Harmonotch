@@ -5,7 +5,9 @@ struct NotchContainerView: View {
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var mediaManager = MediaManager.shared
   @ObservedObject var themeManager = ThemeManager.shared
-  @ObservedObject var aiUsageManager = AIUsageManager.shared
+
+  /// Tinggi konten expanded aktual yang diukur dari layout; 0 sebelum pengukuran pertama.
+  @State private var measuredExpandedHeight: CGFloat = 0
 
   private var geometry: NotchGeometry {
     notchVM.geometry
@@ -48,7 +50,11 @@ struct NotchContainerView: View {
 
   private var targetHeight: CGFloat {
     guard notchVM.isExpanded else { return geometry.collapsedHeight }
+    // Pakai tinggi konten terukur agar pas per tab; fallback sebelum pengukuran pertama.
+    return measuredExpandedHeight > 0 ? measuredExpandedHeight : fallbackExpandedHeight
+  }
 
+  private var fallbackExpandedHeight: CGFloat {
     switch notchVM.selectedTab {
     case .battery:
       return topClearance + NotchLayout.expandedBatteryHeight
@@ -67,17 +73,6 @@ struct NotchContainerView: View {
         + (adzanPlayer.isPlaying
           ? NotchLayout.expandedAdzanHeight
           : NotchLayout.expandedPrayerHeight)
-    case .ai:
-      let modelCount = aiUsageManager.currentSnapshot?.models.count ?? 0
-      let hasMultiple = aiUsageManager.availableProviders.count > 1
-      let isAntigravitySetup = aiUsageManager.selectedProvider == .antigravity
-        && aiUsageManager.currentSnapshot == nil
-        && (!aiUsageManager.isMonitoring || !aiUsageManager.snapshots.isEmpty)
-      return topClearance + NotchLayout.dynamicAIHeight(
-        modelCount: modelCount,
-        hasMultipleProviders: hasMultiple,
-        isAntigravitySetup: isAntigravitySetup
-      )
     }
   }
 
@@ -91,51 +86,21 @@ struct NotchContainerView: View {
 
   var body: some View {
     ZStack(alignment: .top) {
-      HarmonotchSurface(shape: notchShape, isExpanded: notchVM.isExpanded)
-        .frame(width: targetWidth, height: targetHeight)
-
       if notchVM.isExpanded {
-        VStack(spacing: 10) {
-          NotchTabBar(selectedTab: $notchVM.selectedTab)
-
-          ZStack(alignment: .top) {
-            switch notchVM.selectedTab {
-            case .battery:
-              BatteryDrawerView()
-                .transition(NotchMotion.drawer)
-            case .media:
-              MediaDrawerView()
-                .transition(NotchMotion.drawer)
-            case .prayer:
-              PrayerDrawerView()
-                .transition(NotchMotion.drawer)
-            case .ai:
-              AIUsageDrawerView()
-                .transition(NotchMotion.drawer)
-            }
-          }
-          .frame(width: NotchLayout.expandedContentWidth)
-          .frame(maxHeight: .infinity, alignment: .top)
-          .clipped()
-        }
-        .padding(.top, topClearance)
-        .padding(.horizontal, NotchLayout.expandedHorizontalInset)
-        .padding(.bottom, NotchLayout.expandedBottomInset)
-        .frame(width: targetWidth, height: targetHeight, alignment: .top)
-        .clipped()
-        .transition(
-          .asymmetric(
-            insertion: .scale(scale: 0.86, anchor: .top)
-              .combined(with: .opacity)
-              .combined(with: .offset(y: -6)),
-            removal: .scale(scale: 0.70, anchor: .top)
-              .combined(with: .opacity)
-              .combined(with: .offset(y: -8))
+        expandedContent
+          .transition(
+            .asymmetric(
+              insertion: .scale(scale: 0.86, anchor: .top)
+                .combined(with: .opacity)
+                .combined(with: .offset(y: -6)),
+              removal: .scale(scale: 0.70, anchor: .top)
+                .combined(with: .opacity)
+                .combined(with: .offset(y: -8))
+            )
           )
-        )
       } else {
         NotchPillView()
-          .frame(width: targetWidth, height: targetHeight, alignment: .top)
+          .frame(width: targetWidth, height: geometry.collapsedHeight, alignment: .top)
           .transition(
             .asymmetric(
               insertion: .scale(scale: 0.85, anchor: .top)
@@ -146,8 +111,16 @@ struct NotchContainerView: View {
           )
       }
     }
-    .frame(width: targetWidth, height: targetHeight, alignment: .top)
+    .frame(width: targetWidth, alignment: .top)
+    .background(
+      HarmonotchSurface(shape: notchShape, isExpanded: notchVM.isExpanded)
+    )
     .clipShape(notchShape)
+    .overlay(
+      notchShape.openBorder
+        .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
+        .allowsHitTesting(false)
+    )
     .offset(
       x: !notchVM.isExpanded && geometry.hasHardwareNotch
         ? -(collapsedWings.left - collapsedWings.right) / 2
@@ -166,21 +139,56 @@ struct NotchContainerView: View {
     )
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
     .animation(NotchMotion.content, value: targetWidth)
-    .animation(NotchMotion.content, value: targetHeight)
+    .animation(NotchMotion.content, value: notchVM.selectedTab)
     .preferredColorScheme(themeManager.colorScheme)
-    .onChange(of: notchVM.isExpanded) { _, isExpanded in
-      if isExpanded && notchVM.selectedTab == .ai {
-        AIUsageManager.shared.startMonitoring()
-      } else if !isExpanded {
-        AIUsageManager.shared.stopMonitoring(keepCache: true)
-      }
+    .onPreferenceChange(ExpandedContentHeightKey.self) { height in
+      guard height > 0 else { return }
+      measuredExpandedHeight = height
     }
-    .onChange(of: notchVM.selectedTab) { _, tab in
-      if notchVM.isExpanded && tab == .ai {
-        AIUsageManager.shared.startMonitoring()
-      } else if tab != .ai {
-        AIUsageManager.shared.stopMonitoring(keepCache: true)
-      }
+    .onChange(of: measuredExpandedHeight) { _, newValue in
+      notchVM.expandedContentHeight = newValue
     }
+  }
+
+  /// Konten expanded dengan tinggi alami (mengikuti isi tiap tab).
+  private var expandedContent: some View {
+    VStack(spacing: 10) {
+      NotchTabBar(selectedTab: $notchVM.selectedTab)
+
+      ZStack(alignment: .top) {
+        switch notchVM.selectedTab {
+        case .battery:
+          BatteryDrawerView()
+            .transition(NotchMotion.drawer)
+        case .media:
+          MediaDrawerView()
+            .transition(NotchMotion.drawer)
+        case .prayer:
+          PrayerDrawerView()
+            .transition(NotchMotion.drawer)
+        }
+      }
+      .frame(width: NotchLayout.expandedContentWidth)
+    }
+    .padding(.top, topClearance)
+    .padding(.horizontal, NotchLayout.expandedHorizontalInset)
+    .padding(.bottom, NotchLayout.expandedBottomInset)
+    .frame(width: targetWidth, alignment: .top)
+    .background(
+      GeometryReader { proxy in
+        Color.clear.preference(
+          key: ExpandedContentHeightKey.self,
+          value: proxy.size.height
+        )
+      }
+    )
+  }
+}
+
+/// Tinggi total konten expanded (termasuk padding atas/bawah) untuk penyesuaian panel.
+private struct ExpandedContentHeightKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = nextValue()
   }
 }

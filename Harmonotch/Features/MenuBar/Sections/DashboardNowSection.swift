@@ -6,7 +6,6 @@ struct DashboardNowSection: View {
   @ObservedObject private var prayerManager = PrayerManager.shared
   @ObservedObject private var adzanPlayer = AdzanPlayer.shared
   @ObservedObject private var mediaManager = MediaManager.shared
-  @ObservedObject private var clamshellManager = ClamshellManager.shared
   @ObservedObject private var updateManager = UpdateManager.shared
   @ObservedObject private var themeManager = ThemeManager.shared
   @ObservedObject private var languageManager = LanguageManager.shared
@@ -20,8 +19,6 @@ struct DashboardNowSection: View {
       }
 
       heroCard
-
-      clamshellQuickRow
 
       if adzanPlayer.isPlaying {
         adzanBannerRow
@@ -205,61 +202,6 @@ struct DashboardNowSection: View {
     )
   }
 
-  private var clamshellQuickRow: some View {
-    DashboardCard {
-      HStack(spacing: 8) {
-        ZStack {
-          RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(AppTheme.badgeBackground)
-            .frame(width: 26, height: 26)
-
-          Image(systemName: "display.2")
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(clamshellAccentColor)
-            .accessibilityHidden(true)
-        }
-
-        VStack(alignment: .leading, spacing: 1.5) {
-          HStack(spacing: 5) {
-            Text(L10n.Clamshell.title)
-              .font(.system(size: 11, weight: .bold))
-              .foregroundColor(AppTheme.textPrimary)
-
-            HStack(spacing: 3) {
-              Image(systemName: clamshellStatusIcon)
-                .font(.system(size: 7, weight: .bold))
-                .accessibilityHidden(true)
-              Text(clamshellStatusTitle)
-                .font(.system(size: 8, weight: .bold))
-            }
-            .foregroundColor(clamshellAccentColor)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1.5)
-            .background(Capsule().fill(clamshellAccentColor.opacity(0.14)))
-          }
-
-          Text(
-            clamshellManager.hasExternalDisplay
-              ? (clamshellManager.externalDisplayName.isEmpty
-                ? L10n.Clamshell.externalDisplayLabel : clamshellManager.externalDisplayName)
-              : L10n.Clamshell.noExternalDisplay
-          )
-          .font(.system(size: 9, weight: .medium))
-          .foregroundColor(AppTheme.textSecondary)
-          .lineLimit(1)
-        }
-
-        Spacer(minLength: 4)
-
-        Toggle("", isOn: $clamshellManager.isArmed)
-          .toggleStyle(.switch)
-          .labelsHidden()
-          .scaleEffect(0.75)
-          .accessibilityLabel(L10n.Menu.clamshellToggle)
-      }
-    }
-  }
-
   private var adzanBannerRow: some View {
     DashboardCard {
       HStack(spacing: 8) {
@@ -383,33 +325,6 @@ struct DashboardNowSection: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(label)
-  }
-
-  private var clamshellAccentColor: Color {
-    switch clamshellManager.currentState {
-    case .active: return AppTheme.accentGreen
-    case .standby: return AppTheme.accentAmber
-    case .pausedLowBattery: return AppTheme.accentRed
-    case .off: return AppTheme.textTertiary
-    }
-  }
-
-  private var clamshellStatusIcon: String {
-    switch clamshellManager.currentState {
-    case .active: return "checkmark.circle.fill"
-    case .standby: return "clock.badge.fill"
-    case .pausedLowBattery: return "exclamationmark.triangle.fill"
-    case .off: return "circle"
-    }
-  }
-
-  private var clamshellStatusTitle: String {
-    switch clamshellManager.currentState {
-    case .active: return L10n.Clamshell.active
-    case .standby: return L10n.Clamshell.standby
-    case .pausedLowBattery: return L10n.Clamshell.pausedLowBattery
-    case .off: return L10n.Clamshell.off
-    }
   }
 
   private var prayerState: DashboardDataState<PrayerScheduleItem> {

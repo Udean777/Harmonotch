@@ -248,7 +248,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }
 
     private func startPeriodicTimer() {
-        checkTimer = Timer.publish(every: 15, on: .main, in: .common)
+        checkTimer = Timer.publish(every: 30, tolerance: 5.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.checkTimeAndTriggerAdzanIfNeeded()

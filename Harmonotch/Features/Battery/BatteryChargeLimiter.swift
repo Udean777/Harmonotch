@@ -2,6 +2,7 @@ import Foundation
 import AppKit
 import Combine
 import UserNotifications
+import ApplicationServices
 
 final class BatteryChargeLimiter: ObservableObject {
     static let shared = BatteryChargeLimiter()
@@ -24,6 +25,7 @@ final class BatteryChargeLimiter: ObservableObject {
                 isChargingInhibited = false
                 lastErrorMessage = nil
                 applyInhibit(false, targetLimit: 100, isNativeHandled: false)
+                evaluateLimit()
             } else {
                 evaluateLimit()
             }
@@ -33,6 +35,107 @@ final class BatteryChargeLimiter: ObservableObject {
     /// Whether charging is actively capped (< 100%). When 100%, charge to full is enabled.
     var isLimitActive: Bool {
         ChargeLimitPolicy.isLimitActive(threshold: targetThreshold)
+    }
+
+    /// Whether the user can currently configure or change custom charge limits.
+    @Published private(set) var canConfigureCustomLimit: Bool = false
+
+    /// Whether the battery is currently holding at or near the target limit.
+    @Published private(set) var isHoldingAtLimit: Bool = false
+
+    /// Whether the "Charge to Full Now" button should be displayed in the UI.
+    var shouldShowChargeToFullNow: Bool {
+        let capacity = BatteryMonitor.shared.currentCapacity
+        let isPluggedIn = BatteryMonitor.shared.isPluggedIn
+        return ChargeLimitPolicy.shouldShowChargeToFullNow(
+            capacity: capacity,
+            isPluggedIn: isPluggedIn,
+            targetThreshold: targetThreshold
+        )
+    }
+
+    /// Action triggered by user to charge battery to full (100%).
+    func chargeToFullNow() {
+        targetThreshold = 100
+        Self.writeNativeChargeLimit(100)
+        applyInhibit(false, targetLimit: 100, isNativeHandled: false)
+        evaluateLimit()
+
+        if AXIsProcessTrusted() {
+            triggerNativeChargeToFullInBackground()
+        } else {
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            _ = AXIsProcessTrustedWithOptions(options)
+            if let url = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+
+    /// Triggers macOS native "Charge to Full Now" in the background if system power daemon is holding at 80%
+    private func triggerNativeChargeToFullInBackground() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let script = """
+            tell application "System Events"
+                tell application process "ControlCenter"
+                    set batteryItem to missing value
+                    repeat with anItem in menu bar items of menu bar 1
+                        try
+                            set axId to value of attribute "AXIdentifier" of anItem
+                            set d to description of anItem
+                            if axId is "com.apple.menuextra.battery" or d contains "Battery" or d contains "Baterai" or d contains "battery" or d contains "baterai" then
+                                set batteryItem to anItem
+                                exit repeat
+                            end if
+                        end try
+                    end repeat
+
+                    if batteryItem is not missing value then
+                        tell batteryItem to click
+                        delay 0.35
+                        set clicked to false
+                        try
+                            tell menu 1 of batteryItem
+                                repeat with mItem in menu items
+                                    set t to title of mItem
+                                    if t contains "Full" or t contains "Penuh" then
+                                        click mItem
+                                        set clicked to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                            end tell
+                        end try
+                        if not clicked then
+                            try
+                                repeat with w in (every window)
+                                    repeat with elem in (entire contents of w)
+                                        try
+                                            set nm to name of elem
+                                            set tt to title of elem
+                                            if nm contains "Full" or tt contains "Full" or nm contains "Penuh" or tt contains "Penuh" then
+                                                click elem
+                                                set clicked to true
+                                                exit repeat
+                                            end if
+                                        end try
+                                    end repeat
+                                    if clicked then exit repeat
+                                end repeat
+                            end try
+                        end if
+                        if not clicked then
+                            key code 53
+                        end if
+                    end if
+                end tell
+            end tell
+            """
+            if let appleScript = NSAppleScript(source: script) {
+                var errorDict: NSDictionary?
+                appleScript.executeAndReturnError(&errorDict)
+            }
+        }
     }
 
     /// Backwards-compatibility alias for views that check isEnabled
@@ -95,6 +198,16 @@ final class BatteryChargeLimiter: ObservableObject {
         }
 
         self.targetThreshold = initialThreshold
+        let initialCap = BatteryMonitor.shared.currentCapacity
+        let initialPlugged = BatteryMonitor.shared.isPluggedIn
+        let initialCharging = BatteryMonitor.shared.isCharging
+        self.canConfigureCustomLimit = ChargeLimitPolicy.canConfigureCustomLimit(capacity: initialCap, isPluggedIn: initialPlugged)
+        self.isHoldingAtLimit = ChargeLimitPolicy.isHoldingAtLimit(
+            capacity: initialCap,
+            isPluggedIn: initialPlugged,
+            targetThreshold: initialThreshold,
+            isCharging: initialCharging
+        )
 
         checkSudoConfiguration()
         setupObservers()
@@ -123,6 +236,13 @@ final class BatteryChargeLimiter: ObservableObject {
                 self.evaluateLimit()
             }
             .store(in: &cancellables)
+
+        BatteryMonitor.shared.$isCharging
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.evaluateLimit()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Core Limit Evaluation
@@ -131,6 +251,21 @@ final class BatteryChargeLimiter: ObservableObject {
         let capacity = BatteryMonitor.shared.currentCapacity
         let isPluggedIn = BatteryMonitor.shared.isPluggedIn
         let isCharging = BatteryMonitor.shared.isCharging
+
+        let canConfigure = ChargeLimitPolicy.canConfigureCustomLimit(capacity: capacity, isPluggedIn: isPluggedIn)
+        let holding = ChargeLimitPolicy.isHoldingAtLimit(
+            capacity: capacity,
+            isPluggedIn: isPluggedIn,
+            targetThreshold: targetThreshold,
+            isCharging: isCharging
+        )
+
+        if canConfigureCustomLimit != canConfigure {
+            canConfigureCustomLimit = canConfigure
+        }
+        if isHoldingAtLimit != holding {
+            isHoldingAtLimit = holding
+        }
 
         // Determine if limit is active (< 100%) and plugged in
         let shouldInhibit = ChargeLimitPolicy.shouldInhibit(

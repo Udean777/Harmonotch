@@ -64,11 +64,7 @@ final class MenuBarPanelController: NSObject {
   }
 
   private func syncProcessSampling() {
-    if viewModel.shouldSampleProcesses {
-      ProcessActivityMonitor.shared.start()
-    } else {
-      ProcessActivityMonitor.shared.stop(keepCache: true)
-    }
+    ProcessActivityMonitor.shared.stop(keepCache: true)
   }
 
   private func observeLayoutAndLifecycle() {
@@ -84,8 +80,8 @@ final class MenuBarPanelController: NSObject {
     Publishers.MergeMany(triggers)
       .receive(on: DispatchQueue.main)
       .sink { [weak self] _ in
-        // No resize needed — the window is fixed. Shadow refresh handled by cardHeight setter.
-        self?.panel?.invalidateShadow()
+        guard let self, self.isVisible else { return }
+        self.panel?.invalidateShadow()
       }
       .store(in: &cancellables)
   }

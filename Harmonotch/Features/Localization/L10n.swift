@@ -192,6 +192,26 @@ enum L10n {
         static var chargeToFull: String {
             isEnglish ? "Charge to Full (100%)" : "Isi Penuh (100%)"
         }
+        static var chargeToFullNow: String {
+            isEnglish ? "Charge to Full Now" : "Isi Penuh Sekarang"
+        }
+        static var customLimitSetupHint: String {
+            isEnglish
+                ? "Custom limits can be set when unplugged and battery < 80%"
+                : "Batas kustom dapat diatur saat charger dicabut dan baterai < 80%"
+        }
+        static func holdingAtLimit(_ limit: Int) -> String {
+            isEnglish ? "Battery held at \(limit)%" : "Baterai ditahan di \(limit)%"
+        }
+        static var holdingAtLimitDesc: String {
+            isEnglish ? "Power is drawn directly from the adapter" : "Daya diambil langsung dari adaptor AC"
+        }
+        static func chargingToLimit(_ limit: Int) -> String {
+            isEnglish ? "Charging to \(limit)% limit" : "Mengisi daya menuju batas \(limit)%"
+        }
+        static var chargingToLimitDesc: String {
+            isEnglish ? "Switches to adapter power once reached" : "Beralih ke adaptor saat batas tercapai"
+        }
         static var fullCharge100: String {
             isEnglish ? "100% Full" : "100% Penuh"
         }
@@ -333,6 +353,30 @@ enum L10n {
         }
         static var noLyricsFound: String {
             isEnglish ? "No lyrics available" : "Lirik tidak tersedia"
+        }
+        static var showLyrics: String {
+            isEnglish ? "Show Lyrics" : "Tampilkan Lirik"
+        }
+        static var hideLyrics: String {
+            isEnglish ? "Hide Lyrics" : "Sembunyikan Lirik"
+        }
+        static var syncLyrics: String {
+            isEnglish ? "Sync Lyrics" : "Sinkronkan Lirik"
+        }
+        static var lyricsNotFound: String {
+            isEnglish ? "Lyrics not found for this track." : "Lirik tidak ditemukan untuk lagu ini."
+        }
+        static var showQueue: String {
+            isEnglish ? "Show Queue" : "Tampilkan Antrean"
+        }
+        static var hideQueue: String {
+            isEnglish ? "Hide Queue" : "Sembunyikan Antrean"
+        }
+        static var queueEmpty: String {
+            isEnglish ? "Queue is empty." : "Antrean kosong."
+        }
+        static var queueTitle: String {
+            isEnglish ? "Queue" : "Antrean"
         }
         static var instrumental: String {
             isEnglish ? "Instrumental Track" : "Lagu Instrumental"

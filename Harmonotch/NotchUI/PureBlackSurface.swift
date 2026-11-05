@@ -8,26 +8,10 @@ struct PureBlackSurface: View {
   let shape: NotchShape
   let isExpanded: Bool
 
-  private var openBorder: NotchOpenBorderShape {
-    NotchOpenBorderShape(
-      radius: shape.radius,
-      shoulder: shape.shoulder,
-      isFloating: shape.isFloating
-    )
-  }
-
   var body: some View {
-    ZStack {
-      // Pure solid fill keeps the notch surface opaque in every palette.
-      // Catppuccin uses color here, while monochrome remains black or white.
-      shape
-        .fill(AppTheme.surfaceBackground)
-
-      // The border keeps the notch silhouette distinct from the menu bar.
-      openBorder
-        .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
-    }
-    .preferredColorScheme(themeManager.colorScheme)
+    shape
+      .fill(AppTheme.surfaceBackground)
+      .preferredColorScheme(themeManager.colorScheme)
   }
 }
 

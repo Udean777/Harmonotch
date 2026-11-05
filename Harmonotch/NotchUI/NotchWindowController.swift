@@ -56,8 +56,11 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
 
     if isExpanded {
       currentWidth = NotchLayout.expandedWidth
-      let topClearance = geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 4) : 8
-      currentHeight = topClearance + NotchLayout.expandedHitAreaHeight
+      // Ikuti tinggi konten terukur agar seluruh area lirik/antrean tetap bisa diinteraksi.
+      currentHeight = notchVM.expandedContentHeight > 0
+        ? notchVM.expandedContentHeight
+        : (geometry.hasHardwareNotch ? (geometry.physicalNotchHeight + 4) : 8)
+          + NotchLayout.expandedHitAreaHeight
     } else {
       currentWidth = geometry.collapsedWidth(
         isHovered: notchVM.isHovered,
@@ -315,11 +318,65 @@ final class NotchWindowController: ObservableObject {
       }
       let mouseLocation = NSEvent.mouseLocation
       let windowPoint = panel.convertPoint(fromScreen: mouseLocation)
-      if let contentView = panel.contentView, contentView.hitTest(windowPoint) != nil {
+
+      // Jika klik di luar area konten aktual notch (bawah expanded content), tutup.
+      if !self.isPointInsideExpandedNotch(windowPoint, in: panel) {
+        NotchViewModel.shared.collapse()
         return
       }
-      NotchViewModel.shared.collapse()
+
+      // Jika di dalam area konten namun tidak mengenai elemen interaktif apa pun, tetap tutup.
+      if let contentView = panel.contentView, contentView.hitTest(windowPoint) == nil {
+        NotchViewModel.shared.collapse()
+      }
     }
+  }
+
+  /// Apakah titik berada di dalam frame konten aktual notch saat expanded.
+  private func isPointInsideExpandedNotch(_ point: NSPoint, in panel: NotchPanel) -> Bool {
+    let notchVM = NotchViewModel.shared
+    let geometry = notchVM.geometry
+    let topClearance = geometry.hasHardwareNotch
+      ? (geometry.physicalNotchHeight + 4)
+      : 8
+
+    // Pakai tinggi konten terukur bila tersedia; fallback ke konstanta per tab.
+    let measured = notchVM.expandedContentHeight
+    let contentHeight: CGFloat
+    if measured > 0 {
+      contentHeight = measured
+    } else {
+      switch notchVM.selectedTab {
+      case .battery:
+        contentHeight = topClearance + NotchLayout.expandedBatteryHeight
+      case .media:
+        if AdzanPlayer.shared.isPlaying {
+          contentHeight = topClearance + NotchLayout.expandedAdzanHeight
+        } else {
+          let hasLyrics = MediaManager.shared.hasActiveTrack
+            && (!MediaManager.shared.syncedLyrics.isEmpty
+              || !MediaManager.shared.currentLyricText.isEmpty
+              || MediaManager.shared.isLoadingLyrics
+              || MediaManager.shared.isInstrumental)
+          contentHeight = topClearance
+            + (hasLyrics ? NotchLayout.expandedMediaTrackHeight : NotchLayout.expandedMediaHeight)
+        }
+      case .prayer:
+        contentHeight = topClearance
+          + (AdzanPlayer.shared.isPlaying
+            ? NotchLayout.expandedAdzanHeight
+            : NotchLayout.expandedPrayerHeight)
+      }
+    }
+
+    let size = panel.frame.size
+    let notchWidth = NotchLayout.expandedWidth
+    let minX = (size.width - notchWidth) / 2
+    let maxX = minX + notchWidth
+    let minY = size.height - contentHeight
+    let maxY = size.height
+
+    return point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY
   }
 
   private func calculateFixedFrame(for screen: NSScreen) -> NSRect {

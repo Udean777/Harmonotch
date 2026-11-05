@@ -24,22 +24,24 @@ enum NotchLayout {
   static let floatingPillHeight: CGFloat = 24
   static let floatingWingSpacing: CGFloat = 12
 
+  static let floatingCornerRadius: CGFloat = 8
+
   static func floatingRadius(height: CGFloat, isExpanded: Bool) -> CGFloat {
-    isExpanded ? 22 : height / 2
+    isExpanded ? 22 : floatingCornerRadius
   }
-  static let expandedWidth: CGFloat = 560
-  static let expandedHorizontalInset: CGFloat = 20
+  static let expandedWidth: CGFloat = 460
+  static let expandedHorizontalInset: CGFloat = 24
   static let expandedContentWidth: CGFloat = expandedWidth - (expandedHorizontalInset * 2)
-  static let expandedBottomInset: CGFloat = 14
-  static let expandedPrayerHeight: CGFloat = 195
-  static let expandedAdzanHeight: CGFloat = 205
-  static let expandedBatteryHeight: CGFloat = 200
+  static let expandedBottomInset: CGFloat = 16
+  static let expandedPrayerHeight: CGFloat = 185
+  static let expandedAdzanHeight: CGFloat = 195
+  static let expandedBatteryHeight: CGFloat = 185
   static let expandedAIHeight: CGFloat = 240
   static let minAIHeight: CGFloat = 180
   static let maxAIHeight: CGFloat = 350
-  static let expandedMediaHeight: CGFloat = 180
-  static let expandedMediaTrackHeight: CGFloat = 275
-  static let expandedHitAreaHeight: CGFloat = 430
+  static let expandedMediaHeight: CGFloat = 190
+  static let expandedMediaTrackHeight: CGFloat = 360
+  static let expandedHitAreaHeight: CGFloat = 280
 
   static func dynamicAIHeight(
     modelCount: Int,
@@ -114,11 +116,11 @@ struct NotchShape: Shape {
 
   func path(in rect: CGRect) -> Path {
     if isFloating {
-      // Detached pill: fully rounded ends instead of the bezel shoulders.
-      return Path(
-        roundedRect: rect,
-        cornerRadius: min(radius, rect.height / 2, rect.width / 2)
-      )
+      // Detached pill: squarish rounded ends matching Apple squircle styling.
+      return RoundedRectangle(
+        cornerRadius: min(radius, rect.height / 2, rect.width / 2),
+        style: .continuous
+      ).path(in: rect)
     }
 
     let clampedShoulder = min(max(0, shoulder), rect.height * 0.25, rect.width / 4)
@@ -175,10 +177,10 @@ struct NotchOpenBorderShape: Shape {
 
   func path(in rect: CGRect) -> Path {
     if isFloating {
-      return Path(
-        roundedRect: rect,
-        cornerRadius: min(radius, rect.height / 2, rect.width / 2)
-      )
+      return RoundedRectangle(
+        cornerRadius: min(radius, rect.height / 2, rect.width / 2),
+        style: .continuous
+      ).path(in: rect)
     }
 
     let clampedShoulder = min(max(0, shoulder), rect.height * 0.25, rect.width / 4)
@@ -213,6 +215,16 @@ struct NotchOpenBorderShape: Shape {
       control2: CGPoint(x: rect.width - clampedShoulder * tangent, y: 0)
     )
     return path
+  }
+}
+
+extension NotchShape {
+  var openBorder: NotchOpenBorderShape {
+    NotchOpenBorderShape(
+      radius: radius,
+      shoulder: shoulder,
+      isFloating: isFloating
+    )
   }
 }
 
