@@ -125,7 +125,7 @@ final class BatteryMonitor: ObservableObject {
 
     func startPeriodicRefresh() {
         guard refreshTimer == nil else { return }
-        refreshTimer = Timer.publish(every: 30, on: .main, in: .common)
+        refreshTimer = Timer.publish(every: 60, tolerance: 6.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.refreshBatteryInfo()

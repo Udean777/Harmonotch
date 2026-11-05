@@ -135,6 +135,14 @@ enum ArtworkPalette {
   }
 }
 
+/// Queue item shown when user opens the queue from the notch.
+struct QueueItem: Identifiable, Hashable {
+  let id = UUID()
+  let title: String
+  let artist: String
+}
+
+/// Manages media playback state, artwork, lyrics fetching, and the play queue.
 final class MediaManager: ObservableObject {
   static let shared = MediaManager()
 
@@ -148,13 +156,20 @@ final class MediaManager: ObservableObject {
   @Published var artworkImage: NSImage? = nil
   @Published private(set) var artworkAccentColor: NSColor? = nil
 
-  @Published var syncedLyrics: [LyricLine] = []
+  @Published var syncedLyrics: [LyricLine] = [] {
+    didSet {
+      updatePlaybackTimerState()
+    }
+  }
   @Published var unsyncedLyrics: [String] = []
   @Published var currentLyricIndex: Int = -1
   @Published var currentLyricText: String = ""
   @Published var isLoadingLyrics: Bool = false
   @Published var isInstrumental: Bool = false
   @Published var lyricsStatus: LyricsStatus = .idle
+
+  /// Play queue for the currently playing track. Filled automatically when track is active.
+  @Published var queue: [QueueItem] = []
 
   var hasActiveTrack: Bool {
     !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -174,6 +189,7 @@ final class MediaManager: ObservableObject {
 
   private var playbackTimer: AnyCancellable?
   private var fastPollingTimer: AnyCancellable?
+  private var currentPlaybackInterval: TimeInterval = 0
   private var lastFetchedTrackKey: String = ""
   private var cancellables = Set<AnyCancellable>()
   private var scriptCache: [String: NSAppleScript] = [:]
@@ -336,6 +352,7 @@ final class MediaManager: ObservableObject {
         self.applyArtwork(direct)
       }
       if trackChanged && !title.isEmpty {
+        self.queue = [QueueItem(title: title, artist: artist)]
         if directArtwork == nil {
           self.fetchArtworkAsync(source: source, directURL: artworkURL)
         }
@@ -420,6 +437,7 @@ final class MediaManager: ObservableObject {
     trackTitle = ""
     artistName = ""
     albumName = ""
+    self.queue = []
     applyArtwork(nil)
     lastDetectedRawWebTitle = ""
     playbackPosition = 0
@@ -439,28 +457,34 @@ final class MediaManager: ObservableObject {
   }
 
   private func updatePlaybackTimerState() {
-    if isPlaying {
-      if playbackTimer == nil {
-        playbackTimer = Timer.publish(every: 0.25, on: .main, in: .common)
-          .autoconnect()
-          .sink { [weak self] _ in
-            guard let self = self, self.isPlaying else { return }
-            self.playbackPosition += 0.25
-            if self.duration > 0 && self.playbackPosition > self.duration {
-              self.playbackPosition = self.duration
-            }
-            self.updateCurrentLyric()
-          }
-      }
-    } else {
+    guard isPlaying else {
       playbackTimer?.cancel()
       playbackTimer = nil
+      currentPlaybackInterval = 0
+      return
+    }
+
+    let targetInterval: TimeInterval = syncedLyrics.isEmpty ? 1.0 : 0.25
+    if playbackTimer == nil || currentPlaybackInterval != targetInterval {
+      playbackTimer?.cancel()
+      currentPlaybackInterval = targetInterval
+      playbackTimer = Timer.publish(every: targetInterval, tolerance: targetInterval * 0.1, on: .main, in: .common)
+        .autoconnect()
+        .sink { [weak self] _ in
+          guard let self = self, self.isPlaying else { return }
+          self.playbackPosition += targetInterval
+          if self.duration > 0 && self.playbackPosition > self.duration {
+            self.playbackPosition = self.duration
+          }
+          if !self.syncedLyrics.isEmpty {
+            self.updateCurrentLyric()
+          }
+        }
     }
   }
 
-  // AppleScript polling keeps sources without notification payloads in sync.
   private func setupFastPollingTimer() {
-    fastPollingTimer = Timer.publish(every: 2.0, on: .main, in: .common)
+    fastPollingTimer = Timer.publish(every: 4.0, tolerance: 0.5, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in
         self?.pollCurrentMediaState()

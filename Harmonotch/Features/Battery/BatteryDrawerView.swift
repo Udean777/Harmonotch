@@ -64,6 +64,10 @@ struct BatteryDrawerView: View {
         .frame(height: 5)
       }
 
+      if chargeLimiter.shouldShowChargeToFullNow {
+        chargeToFullBanner
+      }
+
       HStack(spacing: 8) {
         BatteryStatCard(
           icon: "heart.fill",
@@ -87,10 +91,72 @@ struct BatteryDrawerView: View {
             ? (batteryMonitor.adapterWatts.map { "\($0)W AC" } ?? "AC") : L10n.Battery.internalBattery
         )
       }
-
-      ClamshellCardView()
     }
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: chargeLimiter.shouldShowChargeToFullNow)
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: chargeLimiter.isHoldingAtLimit)
     .frame(width: NotchLayout.expandedContentWidth, alignment: .top)
+  }
+
+  @ViewBuilder
+  private var chargeToFullBanner: some View {
+    HStack(spacing: 9) {
+      Image(systemName: chargeLimiter.isHoldingAtLimit ? "powerplug.fill" : "bolt.badge.clock.fill")
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundColor(chargeLimiter.isHoldingAtLimit ? AppTheme.accentCyan : AppTheme.accentAmber)
+
+      VStack(alignment: .leading, spacing: 1.5) {
+        Text(chargeLimiter.isHoldingAtLimit
+          ? L10n.Battery.holdingAtLimit(chargeLimiter.targetThreshold)
+          : L10n.Battery.chargingToLimit(chargeLimiter.targetThreshold)
+        )
+        .font(.system(size: 11, weight: .bold))
+        .foregroundColor(AppTheme.textPrimary)
+
+        Text(chargeLimiter.isHoldingAtLimit
+          ? L10n.Battery.holdingAtLimitDesc
+          : L10n.Battery.chargingToLimitDesc
+        )
+        .font(.system(size: 9.5))
+        .foregroundColor(AppTheme.textSecondary)
+        .lineLimit(1)
+      }
+
+      Spacer(minLength: 4)
+
+      Button(action: {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          chargeLimiter.chargeToFullNow()
+        }
+      }) {
+        HStack(spacing: 4) {
+          Image(systemName: "bolt.fill")
+            .font(.system(size: 9, weight: .bold))
+          Text(L10n.Battery.chargeToFullNow)
+            .font(.system(size: 10, weight: .semibold, design: .rounded))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4.5)
+        .background(AppTheme.accentGreen)
+        .cornerRadius(6)
+        .overlay(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .stroke(Color.white.opacity(0.2), lineWidth: 0.6)
+        )
+      }
+      .buttonStyle(.plain)
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 7)
+    .background(
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .fill(AppTheme.cardBackground)
+        .overlay(
+          RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+        )
+    )
+    .transition(.opacity.combined(with: .scale(scale: 0.98)))
   }
 
   private var healthAccentColor: Color {
@@ -177,123 +243,5 @@ struct BatteryStatCard: View {
             .stroke(AppTheme.cardBorder, lineWidth: 0.5)
         )
     )
-  }
-}
-
-struct ClamshellCardView: View {
-  @ObservedObject var clamshell = ClamshellManager.shared
-
-  var body: some View {
-    HStack(spacing: 10) {
-      Image(systemName: "display.2")
-        .font(.system(size: 13, weight: .semibold))
-        .foregroundColor(accentColor)
-
-      Text(L10n.Clamshell.title)
-        .font(.system(size: 12, weight: .bold))
-        .foregroundColor(AppTheme.textPrimary)
-        .lineLimit(1)
-
-      statusBadge
-
-      Spacer(minLength: 4)
-
-      if !clamshell.isSudoConfigured {
-        Button(action: {
-          clamshell.setupPasswordlessSudo { _ in }
-        }) {
-          HStack(spacing: 4) {
-            Image(systemName: "key.fill")
-              .font(.system(size: 9))
-            Text(
-              clamshell.isPerformingSetup
-                ? L10n.Clamshell.authorizing : L10n.Clamshell.setupPermission
-            )
-            .font(.system(size: 10, weight: .semibold))
-            .lineLimit(1)
-          }
-          .foregroundColor(AppTheme.accentCyan)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 3)
-          .background(AppTheme.accentCyan.opacity(0.14))
-          .cornerRadius(5)
-        }
-        .buttonStyle(.plain)
-        .disabled(clamshell.isPerformingSetup)
-      }
-
-      Toggle("", isOn: $clamshell.isArmed)
-        .toggleStyle(.switch)
-        .labelsHidden()
-        .scaleEffect(0.82)
-    }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 8)
-    .background(
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .fill(AppTheme.cardBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-        )
-    )
-  }
-
-  private var accentColor: Color {
-    switch clamshell.currentState {
-    case .active:
-      return AppTheme.accentGreen
-    case .standby:
-      return AppTheme.accentAmber
-    case .pausedLowBattery:
-      return AppTheme.accentRed
-    case .off:
-      return AppTheme.textTertiary
-    }
-  }
-
-  @ViewBuilder
-  private var statusBadge: some View {
-    HStack(spacing: 4) {
-      Image(systemName: statusIconName)
-        .font(.system(size: 8, weight: .bold))
-        .foregroundColor(accentColor)
-
-      Text(statusTitle)
-        .font(.system(size: 9, weight: .bold))
-        .foregroundColor(accentColor)
-    }
-    .padding(.horizontal, 6)
-    .padding(.vertical, 2)
-    .background(
-      RoundedRectangle(cornerRadius: 4, style: .continuous)
-        .fill(accentColor.opacity(0.14))
-    )
-  }
-
-  private var statusIconName: String {
-    switch clamshell.currentState {
-    case .active:
-      return "checkmark.circle.fill"
-    case .standby:
-      return "clock.badge.fill"
-    case .pausedLowBattery:
-      return "exclamationmark.triangle.fill"
-    case .off:
-      return "circle"
-    }
-  }
-
-  private var statusTitle: String {
-    switch clamshell.currentState {
-    case .active:
-      return L10n.Clamshell.active
-    case .standby:
-      return L10n.Clamshell.standby
-    case .pausedLowBattery:
-      return L10n.Clamshell.pausedLowBattery
-    case .off:
-      return L10n.Clamshell.off
-    }
   }
 }

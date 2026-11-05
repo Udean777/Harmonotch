@@ -85,10 +85,17 @@ struct NotchPillView: View {
     }
   }
 
+  private var leftLeadingInset: CGFloat {
+    if isMediaPlaying && !geometry.hasHardwareNotch {
+      return 0
+    }
+    return outerInset
+  }
+
   private var leftWing: some View {
     leftContent
       .fixedSize(horizontal: true, vertical: false)
-      .padding(.leading, outerInset)
+      .padding(.leading, leftLeadingInset)
       .padding(.trailing, innerInset)
       .background(wingWidthProbe(isLeft: true))
       .frame(width: wings.left, height: height, alignment: .leading)
@@ -254,6 +261,10 @@ struct NotchPillView: View {
     geometry.hasHardwareNotch ? 19 : height
   }
 
+  private var thumbnailCornerRadius: CGFloat {
+    geometry.hasHardwareNotch ? 5 : NotchLayout.floatingRadius(height: height, isExpanded: false)
+  }
+
   @ViewBuilder
   private var thumbnail: some View {
     Group {
@@ -262,13 +273,13 @@ struct NotchPillView: View {
           .resizable()
           .aspectRatio(contentMode: .fill)
           .frame(width: thumbnailDiameter, height: thumbnailDiameter)
-          .clipShape(Circle())
+          .clipShape(RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous))
           .overlay(
-            Circle()
-              .stroke(Color.white.opacity(0.20), lineWidth: 0.6)
+            RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
+              .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
           )
       } else {
-        Circle()
+        RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
           .fill(Color(white: 0.16))
           .frame(width: thumbnailDiameter, height: thumbnailDiameter)
           .overlay(
@@ -277,7 +288,7 @@ struct NotchPillView: View {
               .foregroundColor(.white.opacity(0.85))
           )
           .overlay(
-            Circle()
+            RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
               .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
           )
       }

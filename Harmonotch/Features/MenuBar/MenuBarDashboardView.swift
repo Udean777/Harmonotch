@@ -159,12 +159,8 @@ struct MenuBarDashboardView: View {
       )
     case .battery:
       DashboardBatterySection()
-    case .process:
-      DashboardProcessSection()
     case .prayer:
       DashboardPrayerSection()
-    case .utilities:
-      DashboardUtilitiesSection()
     }
   }
 
@@ -201,9 +197,7 @@ struct MenuBarDashboardView: View {
     switch tab {
     case .now: return L10n.Dashboard.nowTab
     case .battery: return L10n.Dashboard.batteryTab
-    case .process: return L10n.Dashboard.processTab
     case .prayer: return L10n.Dashboard.prayerTab
-    case .utilities: return L10n.Dashboard.utilitiesTab
     }
   }
 }

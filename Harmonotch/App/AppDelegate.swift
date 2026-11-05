@@ -208,13 +208,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     mediaTabItem.state = (currentTab == .media) ? .on : .off
     tabsSubmenu.addItem(mediaTabItem)
 
-    let aiTabItem = NSMenuItem(
-      title: L10n.Drawer.aiTab, action: #selector(selectTabAI), keyEquivalent: "4")
-    aiTabItem.target = self
-    aiTabItem.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
-    aiTabItem.state = (currentTab == .ai) ? .on : .off
-    tabsSubmenu.addItem(aiTabItem)
-
     return tabsSubmenu
   }
 
@@ -385,12 +378,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func selectTabMedia() {
     NotchViewModel.shared.selectedTab = .media
-    NotchViewModel.shared.isExpanded = true
-    updateStatusBarButton()
-  }
-
-  @objc private func selectTabAI() {
-    NotchViewModel.shared.selectedTab = .ai
     NotchViewModel.shared.isExpanded = true
     updateStatusBarButton()
   }

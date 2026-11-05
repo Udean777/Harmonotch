@@ -7,8 +7,27 @@ struct MediaDrawerView: View {
   @ObservedObject var prayerManager = PrayerManager.shared
   @ObservedObject var languageManager = LanguageManager.shared
 
+  private enum MediaPanel: Equatable {
+    case lyrics
+    case queue
+  }
+
+  @State private var activePanel: MediaPanel?
+
+  private var isLyricsShown: Bool { activePanel == .lyrics }
+  private var isQueueShown: Bool { activePanel == .queue }
+
   private var mediaAccentColor: Color {
     mediaManager.artworkAccentColor.map(Color.init(nsColor:)) ?? .white
+  }
+
+  /// Whether lyrics are available for display (synced or plain text).
+  private var lyricsAvailable: Bool {
+    switch mediaManager.lyricsStatus {
+    case .synced(let lines): return !lines.isEmpty
+    case .unsynced(let lines): return !lines.isEmpty
+    default: return false
+    }
   }
 
   var body: some View {
@@ -30,8 +49,26 @@ struct MediaDrawerView: View {
     .animation(NotchMotion.fade, value: mediaManager.trackTitle)
     .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
     .animation(NotchMotion.quick, value: mediaManager.isPlaying)
+    .animation(NotchMotion.content, value: activePanel)
     .onAppear {
       mediaManager.pollCurrentMediaState()
+      autoShowLyricsIfAvailable()
+    }
+    .onChange(of: mediaManager.trackTitle) { _, _ in
+      autoShowLyricsIfAvailable()
+    }
+  }
+
+  private func autoShowLyricsIfAvailable() {
+    // Auto-select lyrics only if user hasn't chosen a panel yet.
+    if activePanel == nil && lyricsAvailable {
+      activePanel = .lyrics
+    }
+  }
+
+  private func selectPanel(_ panel: MediaPanel) {
+    withAnimation(NotchMotion.content) {
+      activePanel = (activePanel == panel) ? nil : panel
     }
   }
 
@@ -244,6 +281,46 @@ struct MediaDrawerView: View {
           }
           .buttonStyle(.plain)
         }
+
+        HStack(spacing: 8) {
+          Button(action: {
+            selectPanel(.lyrics)
+          }) {
+            Image(systemName: isLyricsShown ? "text.quote" : "text.bubble")
+              .font(.system(size: 11, weight: .semibold))
+              .foregroundColor(isLyricsShown ? AppTheme.accentCyan : AppTheme.textSecondary)
+              .frame(width: 32, height: 32)
+              .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .fill(isLyricsShown ? AppTheme.accentCyan.opacity(0.15) : AppTheme.badgeBackground)
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .stroke(isLyricsShown ? AppTheme.accentCyan.opacity(0.5) : AppTheme.cardBorder, lineWidth: 0.5)
+              )
+          }
+          .buttonStyle(.plain)
+          .help(isLyricsShown ? L10n.Media.hideLyrics : L10n.Media.showLyrics)
+
+          Button(action: {
+            selectPanel(.queue)
+          }) {
+            Image(systemName: isQueueShown ? "list.below.rectangle" : "list.number")
+              .font(.system(size: 11, weight: .semibold))
+              .foregroundColor(isQueueShown ? AppTheme.accentCyan : AppTheme.textSecondary)
+              .frame(width: 32, height: 32)
+              .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .fill(isQueueShown ? AppTheme.accentCyan.opacity(0.15) : AppTheme.badgeBackground)
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .stroke(isQueueShown ? AppTheme.accentCyan.opacity(0.5) : AppTheme.cardBorder, lineWidth: 0.5)
+              )
+          }
+          .buttonStyle(.plain)
+          .help(isQueueShown ? L10n.Media.hideQueue : L10n.Media.showQueue)
+        }
       }
 
       HStack(spacing: 8) {
@@ -271,12 +348,194 @@ struct MediaDrawerView: View {
           .foregroundColor(AppTheme.textTertiary)
       }
 
-      if mediaManager.hasActiveTrack {
-        ExpandedLyricsView(mediaAccentColor: mediaAccentColor)
-      } else if let next = prayerManager.nextPrayerItem {
-        prayerStatusBanner(next: next)
+      switch activePanel {
+      case .some(.lyrics):
+        lyricsContent.transition(NotchMotion.drawer)
+      case .some(.queue):
+        queueContent.transition(NotchMotion.drawer)
+      case .none:
+        EmptyView()
       }
     }
+  }
+
+  /// Lyrics view: shows lyrics when available, sync button on failure,
+  /// honest empty state when lyrics cannot be shown.
+  @ViewBuilder
+  private var lyricsContent: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      switch mediaManager.lyricsStatus {
+      case .synced(let lines):
+        if lines.isEmpty {
+          unavailableLyricsUI
+        } else {
+          ExpandedLyricsView(mediaAccentColor: mediaAccentColor)
+        }
+
+      case .unsynced(let lines):
+        if lines.isEmpty {
+          unavailableLyricsUI
+        } else {
+          ExpandedLyricsView(mediaAccentColor: mediaAccentColor)
+        }
+
+      case .loading:
+        HStack(spacing: 8) {
+          ProgressView()
+            .controlSize(.small)
+          Text(L10n.Media.loadingLyrics)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(AppTheme.textSecondary)
+          Spacer(minLength: 4)
+        }
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+      case .instrumental:
+        HStack(spacing: 10) {
+          ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(AppTheme.accentCyan.opacity(0.12))
+              .frame(width: 28, height: 28)
+            Image(systemName: "music.quarternote.3")
+              .font(.system(size: 12, weight: .semibold))
+              .foregroundColor(AppTheme.accentCyan)
+          }
+          VStack(alignment: .leading, spacing: 1.5) {
+            Text(L10n.Media.instrumental)
+              .font(.system(size: 11, weight: .bold, design: .rounded))
+              .foregroundColor(AppTheme.textPrimary)
+            Text(L10n.Media.instrumentalDesc)
+              .font(.system(size: 9.5, weight: .medium))
+              .foregroundColor(AppTheme.textSecondary)
+              .lineLimit(2)
+          }
+          Spacer(minLength: 4)
+        }
+        .padding(.vertical, 6)
+
+      case .unavailable, .idle:
+        unavailableLyricsUI
+      }
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 8)
+    .background(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(AppTheme.cardBackground)
+        .overlay(
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+        )
+    )
+  }
+
+  /// Unavailable lyrics UI with sync button and honest message.
+  @ViewBuilder
+  private var unavailableLyricsUI: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 8) {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .font(.system(size: 10, weight: .bold))
+          .foregroundColor(AppTheme.accentAmber)
+        Text(L10n.Media.lyricsNotFound)
+          .font(.system(size: 10, weight: .medium))
+          .foregroundColor(AppTheme.textSecondary)
+      }
+
+      Button(action: {
+        mediaManager.refetchLyrics()
+      }) {
+        HStack(spacing: 5) {
+          Image(systemName: "arrow.triangle.2.circlepath")
+            .font(.system(size: 9, weight: .semibold))
+          Text(L10n.Media.syncLyrics)
+            .font(.system(size: 9.5, weight: .semibold))
+        }
+        .foregroundColor(mediaAccentColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(mediaAccentColor.opacity(0.15))
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .stroke(mediaAccentColor.opacity(0.5), lineWidth: 0.5)
+        )
+      }
+      .buttonStyle(.plain)
+
+      Text(L10n.Media.lyricsUnavailableDesc)
+        .font(.system(size: 9, weight: .medium))
+        .foregroundColor(AppTheme.textTertiary)
+        .lineLimit(2)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(.vertical, 8)
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  /// Queue view: song list when present, empty UI when queue not found.
+  @ViewBuilder
+  private var queueContent: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        Image(systemName: "list.number")
+          .font(.system(size: 10, weight: .semibold))
+          .foregroundColor(AppTheme.textSecondary)
+        Text(L10n.Media.queueTitle)
+          .font(.system(size: 11, weight: .bold, design: .rounded))
+          .foregroundColor(AppTheme.textPrimary)
+        Spacer(minLength: 4)
+      }
+
+      if mediaManager.queue.isEmpty {
+        VStack(alignment: .leading, spacing: 6) {
+          Image(systemName: "text.bubble")
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(AppTheme.textTertiary)
+          Text(L10n.Media.queueEmpty)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(AppTheme.textSecondary)
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      } else {
+        ForEach(Array(mediaManager.queue.enumerated()), id: \.element.id) { index, item in
+          HStack(spacing: 8) {
+            Text("\(index + 1)")
+              .font(.system(size: 9.5, weight: .medium, design: .rounded))
+              .foregroundColor(AppTheme.textTertiary)
+              .frame(width: 16, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 1) {
+              Text(item.title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(AppTheme.textPrimary)
+                .lineLimit(1)
+              Text(item.artist.isEmpty ? L10n.Media.nowPlaying : item.artist)
+                .font(.system(size: 8.5, weight: .medium))
+                .foregroundColor(AppTheme.textSecondary)
+                .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+          }
+          .padding(.vertical, 3)
+        }
+      }
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 8)
+    .background(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(AppTheme.cardBackground)
+        .overlay(
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+        )
+    )
   }
 
   private func prayerStatusBanner(next: PrayerScheduleItem) -> some View {
@@ -349,46 +608,6 @@ struct MediaDrawerView: View {
 
         Spacer(minLength: 4)
       }
-
-      HStack(spacing: 10) {
-        Button(action: {
-          openApp(bundleIdentifier: "com.spotify.client", fallbackUrl: "spotify:")
-        }) {
-          HStack(spacing: 6) {
-            Image(systemName: "music.note.list")
-              .font(.system(size: 12))
-            Text("Spotify")
-              .font(.system(size: 11.5, weight: .semibold))
-          }
-          .foregroundColor(AppTheme.textPrimary)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 8)
-          .background(AppTheme.cardBackground)
-          .cornerRadius(8)
-          .overlay(
-            RoundedRectangle(cornerRadius: 8).stroke(AppTheme.cardBorder, lineWidth: 0.6))
-        }
-        .buttonStyle(.plain)
-
-        Button(action: {
-          openApp(bundleIdentifier: "com.apple.Music", fallbackUrl: "music:")
-        }) {
-          HStack(spacing: 6) {
-            Image(systemName: "apple.logo")
-              .font(.system(size: 12))
-            Text("Apple Music")
-              .font(.system(size: 11.5, weight: .semibold))
-          }
-          .foregroundColor(AppTheme.textPrimary)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 8)
-          .background(AppTheme.cardBackground)
-          .cornerRadius(8)
-          .overlay(
-            RoundedRectangle(cornerRadius: 8).stroke(AppTheme.cardBorder, lineWidth: 0.6))
-        }
-        .buttonStyle(.plain)
-      }
     }
   }
 
@@ -446,8 +665,8 @@ struct ExpandedLyricsView: View {
         }
       }
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 8)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(
       RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -460,49 +679,19 @@ struct ExpandedLyricsView: View {
   }
 
   private var headerBar: some View {
-    HStack(spacing: 6) {
+    HStack(spacing: 4) {
       Image(systemName: "quote.bubble.fill")
-        .font(.system(size: 9.5, weight: .bold))
+        .font(.system(size: 9, weight: .bold))
         .foregroundColor(mediaAccentColor)
 
       Text(L10n.Media.syncedLyricsTitle.uppercased())
-        .font(.system(size: 9, weight: .bold, design: .rounded))
-        .tracking(0.6)
+        .font(.system(size: 8.5, weight: .bold, design: .rounded))
+        .tracking(0.4)
         .foregroundColor(AppTheme.textSecondary)
 
       statusBadge
 
       Spacer(minLength: 4)
-
-      if case .synced = mediaManager.lyricsStatus, !mediaManager.syncedLyrics.isEmpty {
-        if mediaManager.currentLyricIndex >= 0 {
-          Text("\(mediaManager.currentLyricIndex + 1)/\(mediaManager.syncedLyrics.count)")
-            .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
-            .foregroundColor(AppTheme.textTertiary)
-        }
-
-        if isUserInteracting {
-          Button(action: {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-              isUserInteracting = false
-            }
-          }) {
-            HStack(spacing: 3) {
-              Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 8, weight: .bold))
-              Text(L10n.Media.sync)
-                .font(.system(size: 8.5, weight: .semibold))
-            }
-            .foregroundColor(mediaAccentColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(mediaAccentColor.opacity(0.12))
-            .cornerRadius(4)
-          }
-          .buttonStyle(.plain)
-          .transition(.opacity)
-        }
-      }
     }
   }
 
@@ -570,7 +759,7 @@ struct ExpandedLyricsView: View {
   private var syncedLyricsStream: some View {
     ScrollViewReader { proxy in
       ScrollView(.vertical, showsIndicators: false) {
-        LazyVStack(alignment: .leading, spacing: 4) {
+        LazyVStack(alignment: .leading, spacing: 3) {
           ForEach(Array(mediaManager.syncedLyrics.enumerated()), id: \.element.id) { index, line in
             let isActive = index == mediaManager.currentLyricIndex
             let isPast = index < mediaManager.currentLyricIndex
@@ -586,9 +775,9 @@ struct ExpandedLyricsView: View {
             .id(line.id)
           }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
       }
-      .frame(height: 105)
+      .frame(height: 120)
       .mask(
         LinearGradient(
           stops: [
@@ -689,8 +878,8 @@ struct ExpandedLyricsView: View {
             .transition(.opacity)
         }
       }
-      .padding(.horizontal, 6)
-      .padding(.vertical, isActive ? 4 : 2.5)
+      .padding(.horizontal, 4)
+      .padding(.vertical, isActive ? 3 : 2)
       .background(
         RoundedRectangle(cornerRadius: 6, style: .continuous)
           .fill(
@@ -776,7 +965,7 @@ struct ExpandedLyricsView: View {
         }
         .padding(.vertical, 2)
       }
-      .frame(height: 105)
+      .frame(height: 130)
     }
   }
 

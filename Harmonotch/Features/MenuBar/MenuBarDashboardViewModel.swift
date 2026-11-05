@@ -4,9 +4,7 @@ import Foundation
 enum DashboardTab: String, CaseIterable, Identifiable {
   case now
   case battery
-  case process
   case prayer
-  case utilities
 
   var id: String { rawValue }
 
@@ -16,12 +14,8 @@ enum DashboardTab: String, CaseIterable, Identifiable {
       return "square.grid.2x2.fill"
     case .battery:
       return "battery.100"
-    case .process:
-      return "cpu"
     case .prayer:
       return "moon.stars.fill"
-    case .utilities:
-      return "slider.horizontal.3"
     }
   }
 
@@ -31,12 +25,8 @@ enum DashboardTab: String, CaseIterable, Identifiable {
       return "Overview"
     case .battery:
       return "Battery"
-    case .process:
-      return "Activity"
     case .prayer:
       return "Prayer"
-    case .utilities:
-      return "Utilities"
     }
   }
 }
@@ -59,10 +49,6 @@ final class MenuBarDashboardViewModel: ObservableObject {
   var onTabChanged: ((DashboardTab) -> Void)?
   /// Called whenever the dashboard card's rendered height changes. Used to update hit-test masking.
   var onCardHeightChanged: ((CGFloat) -> Void)?
-
-  var shouldSampleProcesses: Bool {
-    isPanelOpen && selectedTab == .process
-  }
 
   func panelDidOpen() {
     guard !isPanelOpen else { return }

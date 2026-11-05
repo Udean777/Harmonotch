@@ -48,4 +48,34 @@ enum ChargeLimitPolicy {
     static func clampThreshold(_ value: Int) -> Int {
         min(maxThreshold, max(minThreshold, value))
     }
+
+    /// Determines whether the user can change or pick custom charge limits (80, 85, 90, 95).
+    /// Custom limits can only be configured if the charger is not connected and the current
+    /// battery capacity is strictly below the default threshold (80%).
+    static func canConfigureCustomLimit(capacity: Int, isPluggedIn: Bool) -> Bool {
+        !isPluggedIn && capacity < defaultThreshold
+    }
+
+    /// Determines whether the "Charge to Full Now" button should be presented to the user.
+    /// Shown when the charger is connected with an active charge limit (< 100%).
+    static func shouldShowChargeToFullNow(
+        capacity: Int,
+        isPluggedIn: Bool,
+        targetThreshold: Int
+    ) -> Bool {
+        isPluggedIn && isLimitActive(threshold: targetThreshold)
+    }
+
+    /// Determines whether the battery has reached and is currently holding at or near the target limit.
+    static func isHoldingAtLimit(
+        capacity: Int,
+        isPluggedIn: Bool,
+        targetThreshold: Int,
+        isCharging: Bool
+    ) -> Bool {
+        guard isPluggedIn && isLimitActive(threshold: targetThreshold) else {
+            return false
+        }
+        return !isCharging && capacity >= (targetThreshold - hysteresisMargin)
+    }
 }
