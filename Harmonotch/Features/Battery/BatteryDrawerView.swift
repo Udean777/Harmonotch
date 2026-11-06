@@ -3,6 +3,7 @@ import SwiftUI
 struct BatteryDrawerView: View {
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
   @ObservedObject var chargeLimiter = BatteryChargeLimiter.shared
+  @ObservedObject var clamshell = ClamshellManager.shared
   @ObservedObject var languageManager = LanguageManager.shared
 
   var body: some View {
@@ -64,10 +65,6 @@ struct BatteryDrawerView: View {
         .frame(height: 5)
       }
 
-      if chargeLimiter.shouldShowChargeToFullNow {
-        chargeToFullBanner
-      }
-
       HStack(spacing: 8) {
         BatteryStatCard(
           icon: "heart.fill",
@@ -91,60 +88,95 @@ struct BatteryDrawerView: View {
             ? (batteryMonitor.adapterWatts.map { "\($0)W AC" } ?? "AC") : L10n.Battery.internalBattery
         )
       }
+
+      clamshellCard
     }
-    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: chargeLimiter.shouldShowChargeToFullNow)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: chargeLimiter.isHoldingAtLimit)
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: clamshell.currentState)
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: clamshell.isSudoConfigured)
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: clamshell.setupFailed)
     .frame(width: NotchLayout.expandedContentWidth, alignment: .top)
   }
 
   @ViewBuilder
-  private var chargeToFullBanner: some View {
-    HStack(spacing: 9) {
-      Image(systemName: chargeLimiter.isHoldingAtLimit ? "powerplug.fill" : "bolt.badge.clock.fill")
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundColor(chargeLimiter.isHoldingAtLimit ? AppTheme.accentCyan : AppTheme.accentAmber)
+  private var clamshellCard: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Image(systemName: clamshellIconName)
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundColor(clamshellAccentColor)
 
-      VStack(alignment: .leading, spacing: 1.5) {
-        Text(chargeLimiter.isHoldingAtLimit
-          ? L10n.Battery.holdingAtLimit(chargeLimiter.targetThreshold)
-          : L10n.Battery.chargingToLimit(chargeLimiter.targetThreshold)
-        )
-        .font(.system(size: 11, weight: .bold))
-        .foregroundColor(AppTheme.textPrimary)
+        VStack(alignment: .leading, spacing: 1.5) {
+          HStack(spacing: 6) {
+            Text(L10n.Clamshell.title)
+              .font(.system(size: 11, weight: .bold))
+              .foregroundColor(AppTheme.textPrimary)
 
-        Text(chargeLimiter.isHoldingAtLimit
-          ? L10n.Battery.holdingAtLimitDesc
-          : L10n.Battery.chargingToLimitDesc
-        )
-        .font(.system(size: 9.5))
-        .foregroundColor(AppTheme.textSecondary)
-        .lineLimit(1)
+            Text(clamshellStatusLabel)
+              .font(.system(size: 9.5, weight: .semibold))
+              .foregroundColor(clamshellAccentColor)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 1.5)
+              .background(
+                Capsule()
+                  .fill(clamshellAccentColor.opacity(0.14))
+              )
+          }
+
+          Text(clamshellDetailText)
+            .font(.system(size: 9.5))
+            .foregroundColor(AppTheme.textSecondary)
+            .lineLimit(1)
+        }
+
+        Spacer(minLength: 4)
+
+        if !clamshell.isSudoConfigured {
+          if clamshell.isPerformingSetup {
+            HStack(spacing: 5) {
+              ProgressView()
+                .controlSize(.mini)
+              Text(L10n.Clamshell.authorizing)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundColor(AppTheme.textSecondary)
+            }
+          } else {
+            Button(action: {
+              clamshell.setupPasswordlessSudo { _ in }
+            }) {
+              HStack(spacing: 4) {
+                Image(systemName: "lock.open.fill")
+                  .font(.system(size: 9, weight: .bold))
+                Text(L10n.Clamshell.setupPermission)
+                  .font(.system(size: 10, weight: .semibold, design: .rounded))
+              }
+              .foregroundColor(.white)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(AppTheme.accentCyan)
+              .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
+          }
+        }
+
+        Toggle("", isOn: $clamshell.isArmed)
+          .labelsHidden()
+          .toggleStyle(.switch)
+          .controlSize(.mini)
+          .disabled(clamshell.isPerformingSetup)
       }
 
-      Spacer(minLength: 4)
-
-      Button(action: {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-          chargeLimiter.chargeToFullNow()
-        }
-      }) {
+      if clamshell.setupFailed && !clamshell.isPerformingSetup {
         HStack(spacing: 4) {
-          Image(systemName: "bolt.fill")
-            .font(.system(size: 9, weight: .bold))
-          Text(L10n.Battery.chargeToFullNow)
-            .font(.system(size: 10, weight: .semibold, design: .rounded))
+          Image(systemName: "exclamationmark.triangle.fill")
+            .font(.system(size: 9))
+          Text(L10n.Clamshell.setupFailedMessage)
+            .font(.system(size: 9.5, weight: .medium))
+            .lineLimit(1)
         }
-        .foregroundColor(.white)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4.5)
-        .background(AppTheme.accentGreen)
-        .cornerRadius(6)
-        .overlay(
-          RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .stroke(Color.white.opacity(0.2), lineWidth: 0.6)
-        )
+        .foregroundColor(AppTheme.accentRed)
       }
-      .buttonStyle(.plain)
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 7)
@@ -156,7 +188,58 @@ struct BatteryDrawerView: View {
             .stroke(AppTheme.cardBorder, lineWidth: 0.5)
         )
     )
-    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+  }
+
+  private var clamshellStatusLabel: String {
+    switch clamshell.currentState {
+    case .active:
+      return L10n.Clamshell.active
+    case .standby:
+      return L10n.Clamshell.standby
+    case .pausedLowBattery:
+      return L10n.Clamshell.pausedLowBattery
+    case .off:
+      return L10n.Clamshell.off
+    }
+  }
+
+  private var clamshellIconName: String {
+    switch clamshell.currentState {
+    case .active:
+      return "display.2"
+    case .standby:
+      return "display.trianglebadge.exclamationmark"
+    case .pausedLowBattery:
+      return "bolt.slash.fill"
+    case .off:
+      return "display"
+    }
+  }
+
+  private var clamshellAccentColor: Color {
+    switch clamshell.currentState {
+    case .active:
+      return AppTheme.accentGreen
+    case .standby:
+      return AppTheme.accentAmber
+    case .pausedLowBattery:
+      return AppTheme.accentRed
+    case .off:
+      return AppTheme.textSecondary
+    }
+  }
+
+  private var clamshellDetailText: String {
+    if !clamshell.hasExternalDisplay {
+      return L10n.Clamshell.noExternalDisplay
+    }
+    let displayName = clamshell.externalDisplayName.isEmpty
+      ? L10n.Clamshell.active
+      : clamshell.externalDisplayName
+    if !batteryMonitor.isPluggedIn {
+      return "\(displayName) • \(L10n.Clamshell.powerAdapterWarning)"
+    }
+    return "\(displayName) • \(L10n.Clamshell.batteryProtectionNote)"
   }
 
   private var healthAccentColor: Color {

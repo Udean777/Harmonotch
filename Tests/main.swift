@@ -120,6 +120,108 @@ checkEqual(ClamshellPolicy.state(
     isArmed: true, hasExternalDisplay: true, isPluggedIn: false, batteryCapacity: 50
 ), .pausedLowBattery, "on battery at cutoff pauses")
 
+checkEqual(
+    ClamshellPolicy.parseSleepDisabled("System-wide power settings:\n SleepDisabled\t\t1\nCurrently in use:\n"),
+    true,
+    "parses SleepDisabled 1 with tabs"
+)
+checkEqual(
+    ClamshellPolicy.parseSleepDisabled("System-wide power settings:\n SleepDisabled      0\nCurrently in use:\n"),
+    false,
+    "parses SleepDisabled 0 with spaces"
+)
+checkEqual(
+    ClamshellPolicy.parseSleepDisabled("Currently in use:\n sleep 1\n"),
+    nil,
+    "returns nil when SleepDisabled is absent"
+)
+
+// MARK: - Clamshell lid sleep support
+
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(lidClosed: false, systemAllowsSleep: true, assertions: []),
+    false,
+    "lid false -> false"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(lidClosed: nil, systemAllowsSleep: true, assertions: []),
+    false,
+    "lid nil -> false"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(lidClosed: true, systemAllowsSleep: false, assertions: []),
+    false,
+    "system policy false -> false"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(lidClosed: true, systemAllowsSleep: nil, assertions: []),
+    false,
+    "system policy nil -> false"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "DisplayWake", "ProcessingHotPlug": true, "AssertLevel": 255]]
+    ),
+    false,
+    "ProcessingHotPlug assertion blocks sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "PreventSystemSleep", "AppliesOnLidClose": true, "AssertLevel": 255]]
+    ),
+    false,
+    "AppliesOnLidClose assertion blocks sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "PreventUserIdleSystemSleep", "AssertLevel": 255]]
+    ),
+    true,
+    "PreventUserIdleSystemSleep without lid flag allows sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "PreventSystemSleep", "AppliesOnLidClose": true, "AssertLevel": 0]]
+    ),
+    true,
+    "assertion with AssertLevel 0 allows sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "UserIsActive", "AppliesOnLidClose": NSNumber(value: 1), "AssertLevel": NSNumber(value: 255)]]
+    ),
+    false,
+    "UserIsActive with NSNumber AppliesOnLidClose=1 blocks sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: [["AssertType": "UserIsActive", "AppliesOnLidClose": NSNumber(value: 0), "AssertLevel": NSNumber(value: 255)]]
+    ),
+    true,
+    "UserIsActive without lid flag allows sleep"
+)
+checkEqual(
+    ClamshellLidSupport.shouldRequestSleep(
+        lidClosed: true,
+        systemAllowsSleep: true,
+        assertions: nil
+    ),
+    true,
+    "nil assertions when lid closed and system allows sleep returns true"
+)
+
 // MARK: - Compass
 
 checkEqual(Compass.cardinal(for: 0, isEnglish: true), "N", "compass north")

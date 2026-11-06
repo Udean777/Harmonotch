@@ -33,6 +33,9 @@ enum UserDefaultsKeys {
     static let adzanVolume = UserDefaultsKey<Float>(name: "Harmonotch_AdzanVolume", defaultValue: 0.85)
     static let adzanMuted = UserDefaultsKey<Bool>(name: "Harmonotch_AdzanMuted", defaultValue: false)
     static let clamshellArmed = UserDefaultsKey<Bool>(name: "Harmonotch_ClamshellArmed", defaultValue: false)
+    static let clamshellOverrideOwned = UserDefaultsKey<Bool>(name: "Harmonotch_ClamshellOverrideOwned", defaultValue: false)
+    static let clamshellLastKnownDisabled = UserDefaultsKey<Bool>(name: "Harmonotch_ClamshellLastKnownDisabled", defaultValue: false)
+    // Kept only for legacy migration; ClamshellManager no longer reads or writes this key.
     static let sudoConfigured = UserDefaultsKey<Bool>(name: "Harmonotch_SudoConfigured", defaultValue: false)
     static let companionEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_CompanionEnabled", defaultValue: true)
     static let chargeLimitEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_ChargeLimitEnabled", defaultValue: false)

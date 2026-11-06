@@ -189,12 +189,6 @@ enum L10n {
                     : "Jaga kesehatan baterai dengan membatasi daya di \(limit)%"
             }
         }
-        static var chargeToFull: String {
-            isEnglish ? "Charge to Full (100%)" : "Isi Penuh (100%)"
-        }
-        static var chargeToFullNow: String {
-            isEnglish ? "Charge to Full Now" : "Isi Penuh Sekarang"
-        }
         static var customLimitSetupHint: String {
             isEnglish
                 ? "Custom limits can be set when unplugged and battery < 80%"
@@ -217,11 +211,6 @@ enum L10n {
         }
         static var nativeLimitActive: String {
             isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
-        }
-        static func macOSHoldingCharge(capacity: Int) -> String {
-            isEnglish
-                ? "macOS is holding charge at \(capacity)%. Turn off '80% Limit' in Battery Settings to charge to 100%."
-                : "macOS menahan pengisian daya di \(capacity)%. Nonaktifkan 'Batas 80%' di Pengaturan Baterai untuk mengisi hingga 100%."
         }
         static var openBatterySettings: String {
             isEnglish ? "Open Battery Settings" : "Buka Pengaturan Baterai"
@@ -259,9 +248,6 @@ enum L10n {
         static var title: String {
             isEnglish ? "Clamshell Mode" : "Mode Clamshell"
         }
-        static var subtitle: String {
-            isEnglish ? "Keep awake with lid closed" : "Tetap hidup saat layar ditutup"
-        }
         static var active: String {
             isEnglish ? "Active" : "Aktif"
         }
@@ -274,23 +260,26 @@ enum L10n {
         static var off: String {
             isEnglish ? "Off" : "Nonaktif"
         }
-        static var externalDisplayLabel: String {
-            isEnglish ? "External Display" : "Monitor Eksternal"
-        }
         static var noExternalDisplay: String {
             isEnglish ? "No external display detected" : "Tidak ada monitor eksternal terhubung"
         }
         static var setupPermission: String {
-            isEnglish ? "Allow Access" : "Izinkan Akses"
-        }
-        static var authorized: String {
-            isEnglish ? "Authorized" : "Akses diizinkan"
+            isEnglish ? "Setup Access" : "Atur Izin"
         }
         static var authorizing: String {
             isEnglish ? "Authorizing..." : "Meminta izin..."
         }
+        static var setupFailedMessage: String {
+            isEnglish ? "Setup failed or cancelled. Admin permission is required." : "Pengaturan izin gagal atau dibatalkan. Izin admin diperlukan."
+        }
+        static var powerAdapterWarning: String {
+            isEnglish ? "Connect power adapter recommended (auto-pauses at ≤ 50%)" : "Disarankan pasang adaptor daya (jeda otomatis saat ≤ 50%)"
+        }
         static var batteryProtectionNote: String {
             isEnglish ? "Auto-pauses at ≤ 50% on battery" : "Otomatis dijeda jika baterai ≤ 50%"
+        }
+        static var menuSetupAction: String {
+            isEnglish ? "Setup Clamshell Permission..." : "Atur Izin Mode Clamshell..."
         }
         static var warningNotificationTitle: String {
             isEnglish ? "Harmonotch stay-awake warning" : "Peringatan mode tetap hidup"

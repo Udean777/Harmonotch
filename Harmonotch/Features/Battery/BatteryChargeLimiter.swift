@@ -32,7 +32,7 @@ final class BatteryChargeLimiter: ObservableObject {
         }
     }
 
-    /// Whether charging is actively capped (< 100%). When 100%, charge to full is enabled.
+    /// Whether charging is actively capped (< 100%). When 100%, charging is unrestricted.
     var isLimitActive: Bool {
         ChargeLimitPolicy.isLimitActive(threshold: targetThreshold)
     }
@@ -42,101 +42,6 @@ final class BatteryChargeLimiter: ObservableObject {
 
     /// Whether the battery is currently holding at or near the target limit.
     @Published private(set) var isHoldingAtLimit: Bool = false
-
-    /// Whether the "Charge to Full Now" button should be displayed in the UI.
-    var shouldShowChargeToFullNow: Bool {
-        let capacity = BatteryMonitor.shared.currentCapacity
-        let isPluggedIn = BatteryMonitor.shared.isPluggedIn
-        return ChargeLimitPolicy.shouldShowChargeToFullNow(
-            capacity: capacity,
-            isPluggedIn: isPluggedIn,
-            targetThreshold: targetThreshold
-        )
-    }
-
-    /// Action triggered by user to charge battery to full (100%).
-    func chargeToFullNow() {
-        targetThreshold = 100
-        Self.writeNativeChargeLimit(100)
-        applyInhibit(false, targetLimit: 100, isNativeHandled: false)
-        evaluateLimit()
-
-        if AXIsProcessTrusted() {
-            triggerNativeChargeToFullInBackground()
-        } else {
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(options)
-            if let url = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension") {
-                NSWorkspace.shared.open(url)
-            }
-        }
-    }
-
-    /// Triggers macOS native "Charge to Full Now" in the background if system power daemon is holding at 80%
-    private func triggerNativeChargeToFullInBackground() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let script = """
-            tell application "System Events"
-                tell application process "ControlCenter"
-                    set batteryItem to missing value
-                    repeat with anItem in menu bar items of menu bar 1
-                        try
-                            set axId to value of attribute "AXIdentifier" of anItem
-                            set d to description of anItem
-                            if axId is "com.apple.menuextra.battery" or d contains "Battery" or d contains "Baterai" or d contains "battery" or d contains "baterai" then
-                                set batteryItem to anItem
-                                exit repeat
-                            end if
-                        end try
-                    end repeat
-
-                    if batteryItem is not missing value then
-                        tell batteryItem to click
-                        delay 0.35
-                        set clicked to false
-                        try
-                            tell menu 1 of batteryItem
-                                repeat with mItem in menu items
-                                    set t to title of mItem
-                                    if t contains "Full" or t contains "Penuh" then
-                                        click mItem
-                                        set clicked to true
-                                        exit repeat
-                                    end if
-                                end repeat
-                            end tell
-                        end try
-                        if not clicked then
-                            try
-                                repeat with w in (every window)
-                                    repeat with elem in (entire contents of w)
-                                        try
-                                            set nm to name of elem
-                                            set tt to title of elem
-                                            if nm contains "Full" or tt contains "Full" or nm contains "Penuh" or tt contains "Penuh" then
-                                                click elem
-                                                set clicked to true
-                                                exit repeat
-                                            end if
-                                        end try
-                                    end repeat
-                                    if clicked then exit repeat
-                                end repeat
-                            end try
-                        end if
-                        if not clicked then
-                            key code 53
-                        end if
-                    end if
-                end tell
-            end tell
-            """
-            if let appleScript = NSAppleScript(source: script) {
-                var errorDict: NSDictionary?
-                appleScript.executeAndReturnError(&errorDict)
-            }
-        }
-    }
 
     /// Backwards-compatibility alias for views that check isEnabled
     var isEnabled: Bool {
@@ -154,16 +59,6 @@ final class BatteryChargeLimiter: ObservableObject {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         guard let binDir = appSupport?.appendingPathComponent("Harmonotch/bin", isDirectory: true) else { return nil }
         return binDir.appendingPathComponent("harmonotch-smc").path
-    }
-
-    /// Returns true if macOS native battery management appears to be holding charging at 80% (or native limit)
-    /// while the user has requested full 100% charge.
-    var isNativeHoldingAtLimit: Bool {
-        let capacity = BatteryMonitor.shared.currentCapacity
-        let isPluggedIn = BatteryMonitor.shared.isPluggedIn
-        let isCharging = BatteryMonitor.shared.isCharging
-        let limit = nativeLimitValue ?? 80
-        return targetThreshold >= 100 && isPluggedIn && !isCharging && capacity >= (limit - 2) && capacity < 100
     }
 
     @Published private(set) var hasNativeLimit: Bool = false
@@ -524,9 +419,9 @@ final class BatteryChargeLimiter: ObservableObject {
             }
 
             let escapedHelper = helperPath.replacingOccurrences(of: " ", with: "\\ ")
-            let ruleContent = "%admin ALL=(ALL) NOPASSWD: /usr/bin/pmset -a disablesleep *, \(escapedHelper) *"
+            let ruleContent = "%admin ALL=(ALL) NOPASSWD: \(escapedHelper) *"
 
-            let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 440 \"$tmp\" "
+            let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 0440 \"$tmp\" "
                 + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" /etc/sudoers.d/harmonotch"
             let scriptSource = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
 

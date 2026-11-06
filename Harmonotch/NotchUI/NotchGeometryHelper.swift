@@ -35,7 +35,7 @@ enum NotchLayout {
   static let expandedBottomInset: CGFloat = 16
   static let expandedPrayerHeight: CGFloat = 185
   static let expandedAdzanHeight: CGFloat = 195
-  static let expandedBatteryHeight: CGFloat = 185
+  static let expandedBatteryHeight: CGFloat = 235
   static let expandedAIHeight: CGFloat = 240
   static let minAIHeight: CGFloat = 180
   static let maxAIHeight: CGFloat = 350

@@ -36,7 +36,18 @@ Prayer times are calculated on device. The app has no account, no analytics, and
   - Smart hysteresis (2% buffer) prevents rapid charging on/off cycles when hovering at the threshold.
   - Automatic fail-safe: restores normal charging state when quitting the app or unplugging the power cable.
   - One-click privilege setup via `/etc/sudoers.d/harmonotch`, with fallbacks to CLI tools (`battery`, `smc`) and smart audio/visual notifications.
-- Includes Clamshell Awake policy control and shortcuts to refresh telemetry or open macOS Battery settings.
+- **Clamshell Mode (Stay Awake with Lid Closed)**:
+  - Keeps the Mac awake and the external monitor active as the primary display when the MacBook lid is closed.
+  - **Requirements**: An external display must be connected; without an external display, the mode stays in `Standby (No Display)` and never disables system sleep.
+  - **Battery & Power Adapter Policy**: Connecting a power adapter is recommended. When running on battery power, Harmonotch sends a warning notification at `60%` and automatically pauses Clamshell Mode at `≤ 50%`, restoring normal sleep (`SleepDisabled 0`) and putting the Mac to sleep if the lid is closed. Reconnecting the power adapter automatically resumes the session.
+  - **Ownership & Crash Recovery**: Tracks override ownership (`Harmonotch_ClamshellOverrideOwned`) before enabling `disablesleep 1`, restores sleep synchronously on app termination, and recovers stale state on next launch without interfering with `disablesleep` set by other tools.
+  - **Admin Permission & Manual Cleanup**: Uses a dedicated sudoers file at `/etc/sudoers.d/harmonotch-clamshell` scoped to your user UID for `/usr/bin/pmset -a disablesleep 1` and `0` only (separate from the Charge Limiter rule at `/etc/sudoers.d/harmonotch`). To remove and reset manually without the app:
+    ```bash
+    sudo rm -f /etc/sudoers.d/harmonotch-clamshell
+    sudo /usr/bin/pmset -a disablesleep 0
+    defaults delete com.ssajudn.Harmonotch Harmonotch_ClamshellOverrideOwned 2>/dev/null || true
+    ```
+- Shortcuts to refresh telemetry or open macOS Battery settings.
 
 ### Media and lyrics
 

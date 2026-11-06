@@ -10,7 +10,7 @@ enum ChargeLimitPolicy {
     static let availableThresholds = [80, 85, 90, 95, 100]
 
     /// True if the threshold represents an active charge limit (< 100%).
-    /// 100% means charge to full (unrestricted).
+    /// 100% means unrestricted charging.
     static func isLimitActive(threshold: Int) -> Bool {
         threshold < maxThreshold
     }
@@ -54,16 +54,6 @@ enum ChargeLimitPolicy {
     /// battery capacity is strictly below the default threshold (80%).
     static func canConfigureCustomLimit(capacity: Int, isPluggedIn: Bool) -> Bool {
         !isPluggedIn && capacity < defaultThreshold
-    }
-
-    /// Determines whether the "Charge to Full Now" button should be presented to the user.
-    /// Shown when the charger is connected with an active charge limit (< 100%).
-    static func shouldShowChargeToFullNow(
-        capacity: Int,
-        isPluggedIn: Bool,
-        targetThreshold: Int
-    ) -> Bool {
-        isPluggedIn && isLimitActive(threshold: targetThreshold)
     }
 
     /// Determines whether the battery has reached and is currently holding at or near the target limit.

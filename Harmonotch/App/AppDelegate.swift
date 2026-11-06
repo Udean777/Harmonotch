@@ -99,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       UpdateManager.shared.$isChecking.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$currentState.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$isArmed.map { _ in () }.eraseToAnyPublisher(),
+      ClamshellManager.shared.$isSudoConfigured.map { _ in () }.eraseToAnyPublisher(),
     ]
 
     Publishers.MergeMany(inputs)
@@ -275,7 +276,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     clamshellItem.target = self
     clamshellItem.image = NSImage(systemSymbolName: clamshellIcon, accessibilityDescription: nil)
     clamshellItem.state = ClamshellManager.shared.isArmed ? .on : .off
+    clamshellItem.isEnabled = !ClamshellManager.shared.isPerformingSetup
     menu.addItem(clamshellItem)
+
+    if !ClamshellManager.shared.isSudoConfigured {
+      let setupTitle = ClamshellManager.shared.isPerformingSetup
+        ? L10n.Clamshell.authorizing
+        : L10n.Clamshell.menuSetupAction
+      let setupItem = NSMenuItem(
+        title: setupTitle,
+        action: #selector(setupClamshellPermissionFromMenu),
+        keyEquivalent: ""
+      )
+      setupItem.target = self
+      setupItem.image = NSImage(
+        systemSymbolName: "lock.open.fill", accessibilityDescription: nil)
+      setupItem.isEnabled = !ClamshellManager.shared.isPerformingSetup
+      menu.addItem(setupItem)
+    }
   }
 
   private func buildLanguageSubmenu() -> NSMenu {
@@ -438,6 +456,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleClamshellStayAwake() {
     ClamshellManager.shared.isArmed.toggle()
+  }
+
+  @objc private func setupClamshellPermissionFromMenu() {
+    NotchViewModel.shared.selectedTab = .battery
+    NotchViewModel.shared.isExpanded = true
+    ClamshellManager.shared.setupPasswordlessSudo { _ in }
   }
 
   @objc private func quitApp() {

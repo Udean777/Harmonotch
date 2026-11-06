@@ -15,6 +15,7 @@ SOURCES+=(
     "Harmonotch/Features/Localization/LanguageManager.swift"
     "Harmonotch/Features/Localization/L10n.swift"
     "Harmonotch/Features/Battery/ClamshellPolicy.swift"
+    "Harmonotch/Features/Battery/ClamshellLidSupport.swift"
     "Harmonotch/Features/Battery/ChargeLimitPolicy.swift"
     "Harmonotch/Features/Battery/BatteryReading.swift"
     "Harmonotch/Features/Prayer/Compass.swift"
