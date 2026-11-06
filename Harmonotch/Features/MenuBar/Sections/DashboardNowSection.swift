@@ -9,6 +9,7 @@ struct DashboardNowSection: View {
   @ObservedObject private var updateManager = UpdateManager.shared
   @ObservedObject private var themeManager = ThemeManager.shared
   @ObservedObject private var languageManager = LanguageManager.shared
+  @ObservedObject private var volumeHUD = VolumeHUDController.shared
 
   var onSelectTab: (DashboardTab) -> Void
 
@@ -25,6 +26,8 @@ struct DashboardNowSection: View {
       } else if mediaManager.hasActiveTrack {
         mediaQuickRow
       }
+
+      volumeHUDQuickRow
     }
   }
 
@@ -325,6 +328,80 @@ struct DashboardNowSection: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(label)
+  }
+
+  private var volumeHUDQuickRow: some View {
+    DashboardCard {
+      HStack(spacing: 8) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(AppTheme.badgeBackground)
+            .frame(width: 28, height: 28)
+
+          Image(
+            systemName: volumeHUD.isEnabled
+              ? (volumeHUD.isTapActive ? "speaker.wave.2.fill" : "exclamationmark.triangle.fill")
+              : "speaker.wave.2"
+          )
+          .font(.system(size: 11, weight: .semibold))
+          .foregroundColor(
+            volumeHUD.isEnabled
+              ? (volumeHUD.isTapActive ? AppTheme.accentGreen : AppTheme.accentAmber)
+              : AppTheme.textTertiary
+          )
+        }
+        .accessibilityHidden(true)
+
+        VStack(alignment: .leading, spacing: 1) {
+          Text(L10n.Menu.volumeHUDToggle)
+            .font(.system(size: 10.5, weight: .bold))
+            .foregroundColor(AppTheme.textPrimary)
+            .lineLimit(1)
+
+          Text(
+            volumeHUD.isEnabled
+              ? (volumeHUD.isTapActive
+                ? L10n.Volume.statusActive
+                : L10n.Volume.statusNeedsPermission)
+              : L10n.Volume.statusDisabled
+          )
+          .font(.system(size: 9, weight: .medium))
+          .foregroundColor(
+            volumeHUD.isEnabled && !volumeHUD.isTapActive
+              ? AppTheme.accentAmber
+              : AppTheme.textSecondary
+          )
+          .lineLimit(1)
+        }
+
+        Spacer(minLength: 4)
+
+        if volumeHUD.isEnabled && !volumeHUD.isAccessibilityGranted {
+          Button {
+            volumeHUD.requestAccessibilityPermission(resetStaleEntry: true)
+          } label: {
+            Text(L10n.Volume.grantPermissionAction)
+              .font(.system(size: 9.5, weight: .bold))
+              .foregroundColor(Color.black)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(Capsule().fill(AppTheme.accentAmber))
+          }
+          .buttonStyle(.plain)
+        }
+
+        Toggle(
+          "",
+          isOn: Binding(
+            get: { volumeHUD.isEnabled },
+            set: { volumeHUD.setEnabled($0, promptIfUntrusted: true) }
+          )
+        )
+        .labelsHidden()
+        .toggleStyle(.switch)
+        .controlSize(.mini)
+      }
+    }
   }
 
   private var prayerState: DashboardDataState<PrayerScheduleItem> {

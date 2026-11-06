@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 import ServiceManagement
 import SwiftUI
@@ -11,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     NotchWindowController.shared.setupAndShowWindow()
     setupStatusBarItem()
     observeUpdates()
+    VolumeHUDController.shared.syncWithPreferences()
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
       UpdateManager.shared.checkForUpdates(isUserInitiated: false)
@@ -18,6 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
+    VolumeHUDController.shared.stop()
+    SystemAudioService.shared.stopObserving()
     MediaManager.shared.stop()
     ClamshellManager.shared.prepareForTermination()
     BatteryChargeLimiter.shared.prepareForTermination()
@@ -134,6 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func menuNeedsUpdate(_ menu: NSMenu) {
+    VolumeHUDController.shared.syncWithPreferences()
     menu.removeAllItems()
     addDrawerSection(to: menu)
     menu.addItem(NSMenuItem.separator())
@@ -249,6 +254,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       systemSymbolName: "arrow.up.forward.app", accessibilityDescription: nil)
     launchItem.state = isLaunchAtLogin ? .on : .off
     menu.addItem(launchItem)
+
+    let isVolumeHUDEnabled = UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled]
+    let volumeHUDItem = NSMenuItem(
+      title: L10n.Menu.volumeHUDToggle,
+      action: #selector(toggleVolumeHUD),
+      keyEquivalent: ""
+    )
+    volumeHUDItem.target = self
+    volumeHUDItem.image = NSImage(
+      systemSymbolName: isVolumeHUDEnabled ? "speaker.wave.2.fill" : "speaker.wave.2",
+      accessibilityDescription: nil
+    )
+    volumeHUDItem.state = isVolumeHUDEnabled ? .on : .off
+    menu.addItem(volumeHUDItem)
 
     let clamshellState = ClamshellManager.shared.currentState
     let clamshellTitle: String
@@ -432,6 +451,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleNotchVisibility() {
     NotchWindowController.shared.toggleNotchHidden()
+    if NotchWindowController.shared.isNotchHidden {
+      NotchViewModel.shared.dismissVolumeNotice()
+    }
+  }
+
+  @objc private func toggleVolumeHUD() {
+    let nextEnabled = !UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled]
+    VolumeHUDController.shared.setEnabled(nextEnabled, promptIfUntrusted: false)
+
+    if nextEnabled && !AXIsProcessTrusted() {
+      presentVolumeHUDAccessibilityAlert()
+    }
+  }
+
+  private func presentVolumeHUDAccessibilityAlert() {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .informational
+    alert.messageText = L10n.Volume.permissionAlertTitle
+    alert.informativeText = L10n.Volume.permissionAlertMessage
+    alert.addButton(withTitle: L10n.Volume.openAccessibilitySettings)
+    alert.addButton(withTitle: L10n.Volume.cancel)
+    if alert.runModal() == .alertFirstButtonReturn {
+      VolumeHUDController.openAccessibilitySettings()
+    }
   }
 
   @objc private func toggleTestAdzan() {

@@ -153,7 +153,19 @@ struct NotchContainerView: View {
   /// Expanded content with natural height (follows content of each tab).
   private var expandedContent: some View {
     VStack(spacing: 10) {
-      NotchTabBar(selectedTab: $notchVM.selectedTab)
+      ZStack {
+        NotchTabBar(selectedTab: $notchVM.selectedTab)
+
+        if let notice = notchVM.volumeNotice {
+          HStack {
+            Spacer(minLength: 0)
+            VolumeNoticeView(notice: notice, isExpandedBadge: true)
+              .transition(NotchMotion.swap)
+          }
+        }
+      }
+      .frame(width: NotchLayout.expandedContentWidth)
+      .animation(NotchMotion.content, value: notchVM.volumeNotice != nil)
 
       ZStack(alignment: .top) {
         switch notchVM.selectedTab {

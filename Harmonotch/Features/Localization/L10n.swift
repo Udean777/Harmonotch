@@ -445,6 +445,9 @@ enum L10n {
         static var clamshellToggle: String {
             isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
         }
+        static var volumeHUDToggle: String {
+            isEnglish ? "Volume HUD in Notch" : "Volume HUD di Notch"
+        }
         static var keyboardBacklight: String {
             isEnglish ? "Keyboard Backlight" : "Lampu Keyboard"
         }
@@ -666,8 +669,8 @@ enum L10n {
         }
         static var vorssaintDesc: String {
             isEnglish
-                ? "MediaRemote technique & product research reference for now-playing media player"
-                : "Referensi teknik MediaRemote & riset produk untuk media player pemutar musik"
+                ? "Reference for the MediaRemote technique, clamshell behavior, and volume-key HUD ownership"
+                : "Referensi teknik MediaRemote, perilaku clamshell, dan kepemilikan HUD tombol volume"
         }
         static var lrclibTitle: String {
             "LRCLIB"
@@ -823,6 +826,49 @@ enum L10n {
             isEnglish
                 ? "Passive read-only inspection. Safe & private."
                 : "Inspeksi pasif baca-saja. Aman & privat."
+        }
+    }
+
+    enum Volume {
+        static func accessibilityLabel(percent: Int, muted: Bool) -> String {
+            if muted {
+                return isEnglish ? "Volume muted, 0 percent" : "Volume dibisukan, 0 persen"
+            }
+            return isEnglish ? "Volume \(percent) percent" : "Volume \(percent) persen"
+        }
+
+        static var permissionAlertTitle: String {
+            isEnglish ? "Accessibility Permission Required" : "Izin Aksesibilitas Diperlukan"
+        }
+
+        static var permissionAlertMessage: String {
+            isEnglish
+                ? "Harmonotch needs Accessibility permission to intercept volume keys and display the Volume HUD in the notch without showing a duplicate system HUD."
+                : "Harmonotch memerlukan izin Aksesibilitas untuk menangkap tombol volume dan menampilkan Volume HUD di notch tanpa memunculkan HUD sistem ganda."
+        }
+
+        static var openAccessibilitySettings: String {
+            isEnglish ? "Open System Settings" : "Buka Pengaturan Sistem"
+        }
+
+        static var cancel: String {
+            isEnglish ? "Cancel" : "Batal"
+        }
+
+        static var statusActive: String {
+            isEnglish ? "Active in Notch" : "Aktif di Notch"
+        }
+
+        static var statusNeedsPermission: String {
+            isEnglish ? "Needs Accessibility Permission" : "Butuh Izin Aksesibilitas"
+        }
+
+        static var statusDisabled: String {
+            isEnglish ? "Using macOS System HUD" : "Menggunakan HUD Bawaan macOS"
+        }
+
+        static var grantPermissionAction: String {
+            isEnglish ? "Grant Access" : "Beri Izin"
         }
     }
 }

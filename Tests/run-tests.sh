@@ -36,6 +36,8 @@ SOURCES+=(
     "Harmonotch/Features/Processes/ProcessActivityRanking.swift"
     "Harmonotch/Features/Processes/ProcessActivityMonitor.swift"
     "Harmonotch/Features/Prayer/PrayerScheduleResolver.swift"
+    "Harmonotch/Features/Audio/SystemAudioService.swift"
+    "Harmonotch/Features/Audio/VolumeKeyRouter.swift"
     "Tests/main.swift"
 )
 

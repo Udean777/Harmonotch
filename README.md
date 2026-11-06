@@ -58,6 +58,14 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 
 The MediaRemote bridge uses an undocumented Apple framework, so it can change or disappear in a future macOS release. That is why the AppleScript path stays in place, and why this app ships outside the Mac App Store.
 
+### Volume HUD in Notch (Single-Owner)
+
+- Clean volume indicator seamlessly rendered in the notch when volume keys (up, down, mute) are pressed.
+- **Strict Single Ownership Architecture**: Per keypress, only one HUD owns the screen. When Harmonotch handles volume, the native macOS OSD is intercepted without showing dual/duplicate HUDs.
+- **Hardware Fallback**: Directly writes to CoreAudio (`AudioObjectSetPropertyData`). If the active device does not support software volume or write fails, control immediately falls back to native macOS with an automatic grace period.
+- **Native Feedback Parity**: Honors macOS "Play feedback when volume is changed" setting and Shift key inversion using Apple's official `volume.aiff` audio sample.
+- **Third-Party App Note**: Harmonotch uses a `.cgSessionEventTap` to intercept volume keys. Do not run Harmonotch simultaneously with other utilities that consume volume keys (e.g. Vorssaint, BetterDisplay, or MonitorControl), as multiple competing event taps cannot coordinate key consumption.
+
 ### AI agent quota telemetry
 
 - Live tracking of quota remaining and reset countdowns across active coding agents: **Google Antigravity**, **Claude Code**, **Ollama**, **Cursor**, and **GitHub Copilot**.
@@ -179,7 +187,7 @@ Harmonotch/
 - [Adhan-Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps (MIT License) for astronomical prayer calculations.
 - [LRCLIB](https://lrclib.net/) for synced lyrics.
 - [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html) for the adhan recordings.
-- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique and for product-level research into demand-driven monitoring and modular utility panels. Harmonotch's implementations are written independently from Apple documentation and original testing; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
+- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique, for research into demand-driven monitoring and modular utility panels, and for the clamshell and volume-key-HUD behavior that informed Harmonotch's implementations. Harmonotch's implementations are written independently from Apple documentation, original testing, and observed runtime behavior; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
 - Apple for the iTunes Search API, `MediaRemote`, SF Symbols, and IOKit.
 
 Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Engineering provenance and clean-room boundaries are documented in [docs/IMPLEMENTATION_PROVENANCE.md](docs/IMPLEMENTATION_PROVENANCE.md).

@@ -85,8 +85,16 @@ struct NotchPillView: View {
     }
   }
 
+  private var showsVolumeOnLeft: Bool {
+    notchVM.volumeNotice != nil && isMediaPlaying
+  }
+
+  private var showsVolumeOnRight: Bool {
+    notchVM.volumeNotice != nil && !isMediaPlaying
+  }
+
   private var leftLeadingInset: CGFloat {
-    if isMediaPlaying && !geometry.hasHardwareNotch {
+    if isMediaPlaying && !showsVolumeOnLeft && !geometry.hasHardwareNotch {
       return 0
     }
     return outerInset
@@ -130,19 +138,31 @@ struct NotchPillView: View {
   }
 
   private var leftContent: some View {
-    ZStack { leftContentBody.id(contentMode).transition(NotchMotion.swap) }
-      .animation(NotchMotion.content, value: contentMode)
-      .animation(NotchMotion.quick, value: isLeftHovered)
+    ZStack {
+      leftContentBody
+        .id("\(contentMode)-\(showsVolumeOnLeft)")
+        .transition(NotchMotion.swap)
+    }
+    .animation(NotchMotion.content, value: contentMode)
+    .animation(NotchMotion.content, value: showsVolumeOnLeft)
+    .animation(NotchMotion.quick, value: isLeftHovered)
   }
 
   private var rightContent: some View {
-    ZStack { rightContentBody.id(contentMode).transition(NotchMotion.swap) }
-      .animation(NotchMotion.content, value: contentMode)
+    ZStack {
+      rightContentBody
+        .id("\(contentMode)-\(showsVolumeOnRight)")
+        .transition(NotchMotion.swap)
+    }
+    .animation(NotchMotion.content, value: contentMode)
+    .animation(NotchMotion.content, value: showsVolumeOnRight)
   }
 
   @ViewBuilder
   private var leftContentBody: some View {
-    if isBatteryMode {
+    if let notice = notchVM.volumeNotice, isMediaPlaying {
+      VolumeNoticeView(notice: notice)
+    } else if isBatteryMode {
       HStack(spacing: 4) {
         if isLeftHovered && notchVM.isCompanionEnabled {
           PrayerCompanionView()
@@ -161,7 +181,9 @@ struct NotchPillView: View {
 
   @ViewBuilder
   private var rightContentBody: some View {
-    if adzanPlayer.isPlaying {
+    if let notice = notchVM.volumeNotice, !isMediaPlaying {
+      VolumeNoticeView(notice: notice)
+    } else if adzanPlayer.isPlaying {
       HStack(spacing: 4) {
         Circle()
           .fill(Color.white)
