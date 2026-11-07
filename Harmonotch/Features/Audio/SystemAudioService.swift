@@ -130,6 +130,38 @@ final class SystemAudioService: ObservableObject {
   }
 
   @discardableResult
+  func setVolume(_ target: Float) -> Bool {
+    guard target.isFinite else { return false }
+    guard let deviceID = verifiedActiveDeviceID() else { return false }
+    let clamped = min(1, max(0, target))
+
+    guard Self.defaultOutputDeviceID() == deviceID else {
+      refreshCurrentDeviceState()
+      return false
+    }
+    guard Self.writeVolume(clamped, for: deviceID) else {
+      refreshCurrentDeviceState()
+      return false
+    }
+
+    let shouldMute = Self.shouldAutoMute(forVolume: clamped)
+    let currentMuted = Self.readMute(for: deviceID) ?? isMuted ?? false
+    if Self.hasSettableMute(for: deviceID) {
+      if shouldMute && !currentMuted {
+        _ = Self.writeMute(true, for: deviceID)
+      } else if !shouldMute && currentMuted {
+        _ = Self.writeMute(false, for: deviceID)
+      }
+    }
+
+    let actualVolume = Self.readVolume(for: deviceID) ?? clamped
+    let actualMuted = Self.readMute(for: deviceID) ?? (Self.hasSettableMute(for: deviceID) ? shouldMute : nil)
+    outputVolume = actualVolume
+    isMuted = actualMuted
+    return true
+  }
+
+  @discardableResult
   func toggleMute() -> Bool {
     guard let deviceID = verifiedActiveDeviceID() else { return false }
     guard let currentMuted = Self.readMute(for: deviceID) ?? isMuted else {

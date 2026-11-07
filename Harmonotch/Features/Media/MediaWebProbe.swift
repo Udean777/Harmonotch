@@ -17,8 +17,8 @@ extension MediaManager {
 
   /// Must run on `AppleScriptRunner.queue`. Reads every media tab of every running browser,
   /// then follows the tab that is really playing.
-  func pollWebMediaState(localHasTrack: Bool) {
-    let browsers = runningBrowsers()
+  func pollWebMediaState(localHasTrack: Bool, browsers: [String]? = nil) {
+    let browsers = browsers ?? runningBrowsers()
 
     guard !browsers.isEmpty else {
       setWebHint(nil)
@@ -273,24 +273,50 @@ extension MediaManager {
     return nil
   }
 
-  /// Sends `js` to the browser tab currently shown in the drawer.
+  /// Sends `js` to the browser tab currently shown in the drawer or active media session.
   /// A permission or JavaScript error becomes the drawer hint.
-  func sendWebCommand(_ js: String) {
+  func sendWebCommand(_ js: String, preferredBrowser: String? = nil) {
     AppleScriptRunner.queue.async { [weak self] in
       guard let self = self else { return }
-      // The bridge may have been the source, so the tab was never recorded here.
-      if self.activeWebTarget == nil {
-        let snapshots = self.probeWebSnapshots(self.runningBrowsers()).0
-        self.activeWebTarget = WebMediaParser.pick(from: snapshots)
+      let targetBrowser: String? = {
+        if let preferredBrowser { return preferredBrowser }
+        if let activeBrowser = self.activeWebTarget?.browser { return activeBrowser }
+        if let bID = self.currentIdentity?.bundleID {
+          return BrowserCatalog.entry(forBundleID: bID)?.name
+        }
+        return nil
+      }()
+      let browsers = targetBrowser.map { [$0] } ?? self.runningBrowsers()
+
+      var target = self.activeWebTarget
+      if target == nil || (targetBrowser != nil && target?.browser != targetBrowser) {
+        let snapshots = self.probeWebSnapshots(browsers).0
+        if let current = WebMediaParser.pick(
+          from: snapshots, preferredURL: self.activeWebTarget?.url)
+        {
+          self.activeWebTarget = current
+          target = current
+        }
       }
-      guard let target = self.activeWebTarget else { return }
-      let script = WebMediaScripts.control(browser: target.browser, url: target.url, js: js)
+
+      let browserToControl = target?.browser ?? targetBrowser ?? browsers.first
+      guard let browserToControl else { return }
+      let urlToControl = target?.url ?? ""
+
+      let script = WebMediaScripts.control(browser: browserToControl, url: urlToControl, js: js)
       guard let output = AppleScriptRunner.execute(script) else {
-        self.setWebHint(.automationDenied(browser: target.browser))
+        self.setWebHint(.automationDenied(browser: browserToControl))
         return
       }
-      if let error = WebMediaParser.error(from: output, browser: target.browser) {
+      if let error = WebMediaParser.error(from: output, browser: browserToControl) {
         self.setWebHint(error)
+      } else {
+        self.setWebHint(nil)
+        if js == WebMediaScripts.pauseJS() {
+          self.activeWebTarget?.isPaused = true
+        } else if js == WebMediaScripts.playJS() {
+          self.activeWebTarget?.isPaused = false
+        }
       }
     }
   }

@@ -2,6 +2,8 @@ import SwiftUI
 
 /// A small battery-aware companion for the collapsed notch pill.
 struct PrayerCompanionView: View {
+  /// Callers pass whether the pill is actually on screen, so loops can stop.
+  var isVisible: Bool = true
   @ObservedObject private var prayerManager = PrayerManager.shared
   @ObservedObject private var adzanPlayer = AdzanPlayer.shared
   @ObservedObject private var batteryMonitor = BatteryMonitor.shared
@@ -48,7 +50,7 @@ struct PrayerCompanionView: View {
       Ellipse()
         .fill(moodColor.opacity(0.34))
         .frame(width: 20, height: 14)
-        .blur(radius: 3.5)
+        .blur(radius: 2)
         .scaleEffect(isBlinking ? 1.16 : 1)
         .opacity(batteryMood == .danger ? 1 : 0.88)
         .animation(.easeOut(duration: 0.18), value: isBlinking)
@@ -56,7 +58,7 @@ struct PrayerCompanionView: View {
       Ellipse()
         .stroke(moodColor.opacity(0.34), lineWidth: 1)
         .frame(width: 17, height: 11)
-        .blur(radius: 2)
+        .blur(radius: 1)
         .opacity(isBlinking ? 0.95 : 0.62)
         .animation(.easeOut(duration: 0.18), value: isBlinking)
 
@@ -78,13 +80,25 @@ struct PrayerCompanionView: View {
     .onAppear {
       motionPhase = true
     }
-    .task {
+    .onChange(of: isVisible) { _, visible in
+      if !visible {
+        isBlinking = false
+        blinkBounce = 1
+        blinkLift = 0
+        isReacting = false
+        motionPhase = false
+      }
+    }
+    .task(id: isVisible) {
+      guard isVisible else { return }
       await blinkLoop()
     }
-    .task {
+    .task(id: isVisible) {
+      guard isVisible else { return }
       await runEntranceHop()
     }
-    .task(id: batteryMood) {
+    .task(id: "\(batteryMood)-\(isVisible)") {
+      guard isVisible else { return }
       await runMoodReaction()
     }
     .accessibilityElement(children: .ignore)

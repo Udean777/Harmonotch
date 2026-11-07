@@ -3,20 +3,44 @@ import Foundation
 
 extension MediaManager {
   func pollCurrentMediaState() {
+    guard !isPollInFlight else { return }
+    isPollInFlight = true
     // Skip AppleScript polling while a music app plays through the bridge; web polling still runs otherwise.
     let isMusicAppPlaying = isPlaying && (mediaSource == .spotify || mediaSource == .appleMusic)
+    let bridgeValid = hasValidBridgePlaying
+    let cachedBrowserList = cachedBrowsers
 
     AppleScriptRunner.queue.async { [weak self] in
-      guard let self = self else { return }
+      guard let self = self else {
+        DispatchQueue.main.async { [weak self] in
+          self?.isPollInFlight = false
+          self?.scheduleNextPoll()
+        }
+        return
+      }
       self.localPollPlaying = false
       let localHasTrack =
         self.pollSpotifyState() || self.pollAppleMusicState() || self.pollQuickTimeState()
       // When a local music player is actively playing, web polling is deferred to save CPU
-      if isMusicAppPlaying && self.localPollPlaying { return }
-      self.pollWebMediaState(localHasTrack: localHasTrack)
+      if isMusicAppPlaying && self.localPollPlaying {
+        DispatchQueue.main.async { [weak self] in
+          self?.isPollInFlight = false
+          self?.reconcile()
+          self?.scheduleNextPoll()
+        }
+        return
+      }
+      // A fresh bridge state already tells us what is playing; probing tabs is pure cost.
+      if !bridgeValid {
+        self.pollWebMediaState(localHasTrack: localHasTrack, browsers: cachedBrowserList)
+      }
       // Re-run arbitration even when every poll is empty, so a dead client's
       // last playing state cannot stay on screen.
-      DispatchQueue.main.async { [weak self] in self?.reconcile() }
+      DispatchQueue.main.async { [weak self] in
+        self?.isPollInFlight = false
+        self?.reconcile()
+        self?.scheduleNextPoll()
+      }
     }
   }
 
@@ -217,7 +241,8 @@ extension MediaManager {
     } else if bundleID == "com.apple.QuickTimePlayerX" {
       AppleScriptRunner.executeAsync("tell application \"QuickTime Player\" to playpause document 1")
     } else if Self.isBrowserBundleID(bundleID) {
-      sendWebCommand(wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS())
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS(), preferredBrowser: browserName)
     }
   }
 
@@ -228,7 +253,8 @@ extension MediaManager {
     } else if bundleID == "com.apple.Music" {
       AppleScriptRunner.executeAsync("tell application id \"com.apple.Music\" to next track")
     } else if Self.isBrowserBundleID(bundleID) {
-      sendWebCommand(WebMediaScripts.nextJS())
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.nextJS(), preferredBrowser: browserName)
     }
   }
 
@@ -239,7 +265,8 @@ extension MediaManager {
     } else if bundleID == "com.apple.Music" {
       AppleScriptRunner.executeAsync("tell application id \"com.apple.Music\" to previous track")
     } else if Self.isBrowserBundleID(bundleID) {
-      sendWebCommand(WebMediaScripts.previousJS())
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.previousJS(), preferredBrowser: browserName)
     }
   }
 
@@ -252,7 +279,8 @@ extension MediaManager {
       AppleScriptRunner.executeAsync(
         "tell application id \"com.apple.Music\" to set player position to \(Int(position))")
     } else if Self.isBrowserBundleID(bundleID) {
-      sendWebCommand(WebMediaScripts.seekJS(to: position))
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.seekJS(to: position), preferredBrowser: browserName)
     }
   }
 }

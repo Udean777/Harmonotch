@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private var cancellables = Set<AnyCancellable>()
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    URLCache.shared.diskCapacity = 25 * 1024 * 1024
+    URLCache.shared.memoryCapacity = 16 * 1024 * 1024
     NotchWindowController.shared.setupAndShowWindow()
     setupStatusBarItem()
     observeUpdates()

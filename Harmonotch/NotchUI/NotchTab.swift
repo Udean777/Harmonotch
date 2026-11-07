@@ -37,7 +37,7 @@ struct NotchTabBar: View {
     @Namespace private var tabAnimation
 
     private var isAudioActive: Bool {
-        adzanPlayer.isPlaying || mediaManager.hasMediaSession
+        adzanPlayer.isPlaying || mediaManager.summary.hasMediaSession
     }
 
     private var visibleTabs: [DrawerTab] {

@@ -55,7 +55,7 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     )
 
     if isExpanded {
-      currentWidth = NotchLayout.expandedWidth
+      currentWidth = NotchLayout.expandedTotalWidth
       // Follow measured content height so entire lyrics/queue area remains interactable.
       currentHeight = notchVM.expandedContentHeight > 0
         ? notchVM.expandedContentHeight
@@ -368,7 +368,7 @@ final class NotchWindowController: ObservableObject {
     }
 
     let size = panel.frame.size
-    let notchWidth = NotchLayout.expandedWidth
+    let notchWidth = NotchLayout.expandedTotalWidth
     let minX = (size.width - notchWidth) / 2
     let maxX = minX + notchWidth
     let minY = size.height - contentHeight

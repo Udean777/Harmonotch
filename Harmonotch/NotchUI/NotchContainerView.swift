@@ -75,6 +75,10 @@ struct NotchContainerView: View {
     }
   }
 
+  private var satelliteHeight: CGFloat {
+    max(120, targetHeight - topClearance - NotchLayout.expandedBottomInset)
+  }
+
   private var notchShape: NotchShape {
     NotchShape.island(
       height: targetHeight,
@@ -86,20 +90,64 @@ struct NotchContainerView: View {
   var body: some View {
     ZStack(alignment: .top) {
       if notchVM.isExpanded {
-        expandedContent
-          .transition(
-            .asymmetric(
-              insertion: .scale(scale: 0.86, anchor: .top)
-                .combined(with: .opacity)
-                .combined(with: .offset(y: -6)),
-              removal: .scale(scale: 0.70, anchor: .top)
-                .combined(with: .opacity)
-                .combined(with: .offset(y: -8))
+        HStack(alignment: .top, spacing: NotchLayout.satelliteGap) {
+          NotchSatelliteBrightnessSlider(height: satelliteHeight)
+            .padding(.top, topClearance)
+            .transition(
+              .asymmetric(
+                insertion: .scale(scale: 0.85, anchor: .top)
+                  .combined(with: .opacity)
+                  .combined(with: .offset(y: -4)),
+                removal: .scale(scale: 0.70, anchor: .top)
+                  .combined(with: .opacity)
+                  .combined(with: .offset(y: -6))
+              )
             )
+
+          centralExpandedNotch
+
+          NotchVerticalVolumeSlider(height: satelliteHeight)
+            .padding(.top, topClearance)
+            .transition(
+              .asymmetric(
+                insertion: .scale(scale: 0.85, anchor: .top)
+                  .combined(with: .opacity)
+                  .combined(with: .offset(y: -4)),
+                removal: .scale(scale: 0.70, anchor: .top)
+                  .combined(with: .opacity)
+                  .combined(with: .offset(y: -6))
+              )
+            )
+        }
+        .frame(width: NotchLayout.expandedTotalWidth, alignment: .top)
+        .transition(
+          .asymmetric(
+            insertion: .scale(scale: 0.88, anchor: .top)
+              .combined(with: .opacity)
+              .combined(with: .offset(y: -6)),
+            removal: .scale(scale: 0.72, anchor: .top)
+              .combined(with: .opacity)
+              .combined(with: .offset(y: -8))
           )
+        )
       } else {
         NotchPillView()
           .frame(width: targetWidth, height: geometry.collapsedHeight, alignment: .top)
+          .background(
+            HarmonotchSurface(shape: notchShape, isExpanded: false)
+          )
+          .clipShape(notchShape)
+          .overlay(
+            notchShape.openBorder
+              .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
+              .allowsHitTesting(false)
+          )
+          .offset(
+            x: geometry.hasHardwareNotch
+              ? -(collapsedWings.left - collapsedWings.right) / 2
+              : 0,
+            y: geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset
+          )
           .transition(
             .asymmetric(
               insertion: .scale(scale: 0.85, anchor: .top)
@@ -110,22 +158,6 @@ struct NotchContainerView: View {
           )
       }
     }
-    .frame(width: targetWidth, alignment: .top)
-    .background(
-      HarmonotchSurface(shape: notchShape, isExpanded: notchVM.isExpanded)
-    )
-    .clipShape(notchShape)
-    .overlay(
-      notchShape.openBorder
-        .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
-        .allowsHitTesting(false)
-    )
-    .offset(
-      x: !notchVM.isExpanded && geometry.hasHardwareNotch
-        ? -(collapsedWings.left - collapsedWings.right) / 2
-        : 0,
-      y: geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset
-    )
     .frame(width: NotchWindowController.canvasWidth, alignment: .top)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .animation(
@@ -139,6 +171,7 @@ struct NotchContainerView: View {
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
     .animation(NotchMotion.content, value: targetWidth)
     .animation(NotchMotion.content, value: notchVM.selectedTab)
+    .animation(NotchMotion.content, value: satelliteHeight)
     .localizedThemedRoot()
     .onPreferenceChange(ExpandedContentHeightKey.self) { height in
       guard height > 0 else { return }
@@ -149,22 +182,25 @@ struct NotchContainerView: View {
     }
   }
 
+  private var centralExpandedNotch: some View {
+    expandedContent
+      .frame(width: NotchLayout.expandedWidth, alignment: .top)
+      .background(
+        HarmonotchSurface(shape: notchShape, isExpanded: true)
+      )
+      .clipShape(notchShape)
+      .overlay(
+        notchShape.openBorder
+          .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
+          .allowsHitTesting(false)
+      )
+      .offset(y: geometry.hasHardwareNotch ? 0 : NotchLayout.floatingTopInset)
+  }
+
   /// Expanded content with natural height (follows content of each tab).
   private var expandedContent: some View {
     VStack(spacing: 10) {
-      ZStack {
-        NotchTabBar(selectedTab: $notchVM.selectedTab)
-
-        if let notice = notchVM.volumeNotice {
-          HStack {
-            Spacer(minLength: 0)
-            VolumeNoticeView(notice: notice, isExpandedBadge: true)
-              .transition(NotchMotion.swap)
-          }
-        }
-      }
-      .frame(width: NotchLayout.expandedContentWidth)
-      .animation(NotchMotion.content, value: notchVM.volumeNotice != nil)
+      NotchTabBar(selectedTab: $notchVM.selectedTab)
 
       ZStack(alignment: .top) {
         switch notchVM.selectedTab {
@@ -184,7 +220,7 @@ struct NotchContainerView: View {
     .padding(.top, topClearance)
     .padding(.horizontal, NotchLayout.expandedHorizontalInset)
     .padding(.bottom, NotchLayout.expandedBottomInset)
-    .frame(width: targetWidth, alignment: .top)
+    .frame(width: NotchLayout.expandedWidth, alignment: .top)
     .background(
       GeometryReader { proxy in
         Color.clear.preference(

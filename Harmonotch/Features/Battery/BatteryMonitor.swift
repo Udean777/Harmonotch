@@ -6,7 +6,8 @@ import Combine
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
 
-    private static let healthCacheDuration: TimeInterval = 300
+    // Battery health changes at most once per cycle; avoid a subprocess every few minutes.
+    private static let healthCacheDuration: TimeInterval = 1800
 
     /// Dashboard-facing state. Stays `.loading` until the first read finishes, so
     /// no number is shown before it is real.

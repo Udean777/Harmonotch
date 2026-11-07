@@ -266,4 +266,61 @@ func runMediaTests() {
   checkEqual(
     BrowserCatalog.primaryBundleID(forBrowserName: "Arc"), "company.thebrowser.Browser",
     "Arc primaryBundleID")
+
+  // MARK: - Bounded lyrics cache
+
+  let cache = LyricsCache(capacity: 2)
+  cache["a"] = (
+    status: .unavailable("a"), synced: [], unsynced: [], isInstrumental: false, duration: 1
+  )
+  cache["b"] = (
+    status: .unavailable("b"), synced: [], unsynced: [], isInstrumental: false, duration: 2
+  )
+  check(cache["a"] != nil, "LRU keeps recently used entry")
+  cache["c"] = (
+    status: .unavailable("c"), synced: [], unsynced: [], isInstrumental: false, duration: 3
+  )
+  check(cache["b"] == nil, "LRU evicts least recently used entry")
+  check(cache["a"] != nil && cache["c"] != nil, "LRU keeps touched and new entries")
+
+  // MARK: - Candidate registry pruning
+
+  func candidate(bundle: String, title: String, updated: TimeInterval) -> MediaCandidate {
+    MediaCandidate(
+      identity: MediaIdentity(bundleID: bundle, contentID: title),
+      app: MediaAppInfo.resolve(bundleID: bundle),
+      title: title,
+      artist: "Artist",
+      lastUpdated: updated
+    )
+  }
+
+  let now = TimeInterval(1_000)
+  let registry: [MediaIdentity: MediaCandidate] = [
+    MediaIdentity(bundleID: "com.app.a", contentID: "old"): candidate(
+      bundle: "com.app.a", title: "old", updated: 0),
+    MediaIdentity(bundleID: "com.app.b", contentID: "fresh"): candidate(
+      bundle: "com.app.b", title: "fresh", updated: 950),
+    MediaIdentity(bundleID: "com.app.c", contentID: "current"): candidate(
+      bundle: "com.app.c", title: "current", updated: 0),
+  ]
+  let pruned = MediaManager.prunedCandidateRegistry(
+    registry, keeping: MediaIdentity(bundleID: "com.app.c", contentID: "current"),
+    now: now, maxAge: 120, limit: 20)
+  check(pruned[MediaIdentity(bundleID: "com.app.a", contentID: "old")] == nil, "prune drops stale entry")
+  check(pruned[MediaIdentity(bundleID: "com.app.b", contentID: "fresh")] != nil, "prune keeps fresh entry")
+  check(
+    pruned[MediaIdentity(bundleID: "com.app.c", contentID: "current")] != nil,
+    "prune keeps current winner")
+
+  var big: [MediaIdentity: MediaCandidate] = [:]
+  for i in 0..<30 {
+    let id = MediaIdentity(bundleID: "com.app.x", contentID: "t\(i)")
+    big[id] = candidate(bundle: "com.app.x", title: "t\(i)", updated: TimeInterval(900 + i))
+  }
+  let capped = MediaManager.prunedCandidateRegistry(
+    big, keeping: MediaIdentity(bundleID: "com.app.x", contentID: "t29"),
+    now: now, maxAge: 1_000, limit: 20)
+  checkEqual(capped.count, 20, "prune caps registry size")
+  check(capped[MediaIdentity(bundleID: "com.app.x", contentID: "t29")] != nil, "prune cap keeps newest winner")
 }

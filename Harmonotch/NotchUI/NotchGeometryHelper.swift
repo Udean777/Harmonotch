@@ -32,6 +32,11 @@ enum NotchLayout {
   static let expandedWidth: CGFloat = 460
   static let expandedHorizontalInset: CGFloat = 24
   static let expandedContentWidth: CGFloat = expandedWidth - (expandedHorizontalInset * 2)
+  static let satelliteSliderWidth: CGFloat = 22
+  static let satelliteGap: CGFloat = 10
+  static var expandedTotalWidth: CGFloat {
+    expandedWidth + 2 * (satelliteSliderWidth + satelliteGap)
+  }
   static let expandedBottomInset: CGFloat = 16
   static let expandedPrayerHeight: CGFloat = 185
   static let expandedAdzanHeight: CGFloat = 195

@@ -3,6 +3,74 @@ import Combine
 import Foundation
 import SwiftUI
 
+typealias CachedLyrics = (
+  status: LyricsStatus, synced: [LyricLine], unsynced: [String], isInstrumental: Bool,
+  duration: TimeInterval
+)
+
+/// Small LRU so long sessions do not keep every track's lyrics in memory.
+final class LyricsCache {
+  private let capacity: Int
+  private var entries: [String: CachedLyrics] = [:]
+  private var order: [String] = []
+
+  init(capacity: Int = 50) {
+    self.capacity = capacity
+  }
+
+  subscript(key: String) -> CachedLyrics? {
+    get {
+      guard let entry = entries[key] else { return nil }
+      touch(key)
+      return entry
+    }
+    set {
+      guard let newValue else {
+        entries.removeValue(forKey: key)
+        order.removeAll { $0 == key }
+        return
+      }
+      entries[key] = newValue
+      touch(key)
+    }
+  }
+
+  private func touch(_ key: String) {
+    order.removeAll { $0 == key }
+    order.append(key)
+    while order.count > capacity {
+      entries.removeValue(forKey: order.removeFirst())
+    }
+  }
+}
+
+/// Isolated clock so playback ticks don't re-render every view observing the manager.
+final class PlaybackClock: ObservableObject {
+  @Published var position: TimeInterval = 0
+  @Published var duration: TimeInterval = 0
+
+  var progress: Double {
+    duration > 0 ? min(1.0, max(0.0, position / duration)) : 0.0
+  }
+
+  var formattedPosition: String { TimeFormatting.clock(position) }
+  var formattedDuration: String { TimeFormatting.clock(duration) }
+}
+
+/// Small surface used by pill/tab/menu views that don't need every published field.
+public struct MediaSummary: Equatable {
+  public let isPlaying: Bool
+  public let hasMediaSession: Bool
+  public let title: String
+  public let artist: String
+  public let bundleID: String?
+  public let hasMetadata: Bool
+
+  public static let empty = MediaSummary(
+    isPlaying: false, hasMediaSession: false, title: "", artist: "", bundleID: nil,
+    hasMetadata: false)
+}
+
 /// Manages media playback state, artwork, lyrics fetching, and the play queue.
 final class MediaManager: ObservableObject {
   static let shared = MediaManager()
@@ -13,8 +81,18 @@ final class MediaManager: ObservableObject {
   @Published var trackTitle: String = ""
   @Published var artistName: String = ""
   @Published var albumName: String = ""
-  @Published var duration: TimeInterval = 0
-  @Published var playbackPosition: TimeInterval = 0
+  @Published var summary = MediaSummary.empty
+  let playbackClock = PlaybackClock()
+
+  var duration: TimeInterval {
+    get { playbackClock.duration }
+    set { playbackClock.duration = newValue }
+  }
+
+  var playbackPosition: TimeInterval {
+    get { playbackClock.position }
+    set { playbackClock.position = newValue }
+  }
   @Published var artworkImage: NSImage? = nil
   @Published var artworkAccentColor: NSColor? = nil
 
@@ -41,39 +119,36 @@ final class MediaManager: ObservableObject {
     presentation != nil
   }
 
-  var progress: Double {
-    duration > 0 ? min(1.0, max(0.0, playbackPosition / duration)) : 0.0
-  }
-
-  var formattedPosition: String {
-    TimeFormatting.clock(playbackPosition)
-  }
-
-  var formattedDuration: String {
-    TimeFormatting.clock(duration)
-  }
+  var progress: Double { playbackClock.progress }
+  var formattedPosition: String { playbackClock.formattedPosition }
+  var formattedDuration: String { playbackClock.formattedDuration }
 
   var playbackTimer: AnyCancellable?
-  var fastPollingTimer: AnyCancellable?
+  var pollWorkItem: DispatchWorkItem?
   var currentPlaybackInterval: TimeInterval = 0
+  var isPollInFlight = false
+  var lastInteractionAt = Date.distantPast
+  var cachedBrowsers: [String] = []
   var lastFetchedTrackKey: String = ""
   var cancellables = Set<AnyCancellable>()
   var lastDetectedRawWebTitle: String = ""
 
   let artworkCache = NSCache<NSString, NSImage>()
-  var lyricsCache:
-    [String: (
-      status: LyricsStatus, synced: [LyricLine], unsynced: [String], isInstrumental: Bool,
-      duration: TimeInterval
-    )] = [:]
+  var lyricsCache = LyricsCache()
 
   @Published var webMediaHint: WebMediaProbeError? = nil
   @Published public var includeOtherAudioApps: Bool = UserDefaults.standard[UserDefaultsKeys.includeOtherAudioApps] {
     didSet {
       UserDefaults.standard[UserDefaultsKeys.includeOtherAudioApps] = includeOtherAudioApps
+      let monitor = AudioProcessPresenceMonitor.shared
+      if includeOtherAudioApps {
+        monitor.start()
+      } else {
+        monitor.stop()
+      }
       DispatchQueue.main.async { [weak self] in
         guard let self = self else { return }
-        self.handleAudioPresenceApps(AudioProcessPresenceMonitor.shared.activeApps)
+        self.handleAudioPresenceApps(monitor.activeApps)
       }
     }
   }
@@ -91,8 +166,10 @@ final class MediaManager: ObservableObject {
   var artworkAccentTrackKey = ""
 
   private init() {
+    artworkCache.countLimit = 30
+    artworkCache.totalCostLimit = 64 * 1024 * 1024
     setupDistributedNotificationObservers()
-    setupFastPollingTimer()
+    scheduleNextPoll()
     nowPlayingBridge.onState = { [weak self] state in
       self?.handleNowPlayingState(state)
     }
@@ -112,8 +189,16 @@ final class MediaManager: ObservableObject {
     AppLauncher.activateOrOpen(bundleID: bundleID)
   }
 
-  func traceProducer(producer: String, source: MediaSource, title: String, isPlaying: Bool, details: String = "") {
-    print("[MediaTrace][\(Date().timeIntervalSince1970)] producer=\(producer) source=\(source.rawValue) title='\(title)' playing=\(isPlaying) \(details)")
+  func traceProducer(
+    producer: String,
+    source: MediaSource,
+    title: @autoclosure () -> String,
+    isPlaying: Bool,
+    details: @autoclosure () -> String = ""
+  ) {
+    #if DEBUG
+      print("[MediaTrace][\(Date().timeIntervalSince1970)] producer=\(producer) source=\(source.rawValue) title='\(title())' playing=\(isPlaying) \(details())")
+    #endif
   }
 
   // MARK: - Arbitration (Single Ingestion & Reconcile)
@@ -196,28 +281,100 @@ final class MediaManager: ObservableObject {
       if hasActiveTrack || presentation != nil {
         clearSession()
       }
+      candidateRegistry = Self.prunedCandidateRegistry(
+        candidateRegistry, keeping: currentIdentity,
+        now: Date().timeIntervalSince1970)
       return
     }
 
     applyCandidate(winner)
+    candidateRegistry = Self.prunedCandidateRegistry(
+      candidateRegistry, keeping: currentIdentity,
+      now: Date().timeIntervalSince1970)
   }
 
   public static func isBrowserBundleID(_ bundleID: String) -> Bool {
     BrowserCatalog.isBrowser(bundleID: bundleID)
   }
 
+  /// Drops stale entries so the registry (and any base64 artwork inside it) stays
+  /// bounded; the current winner is never pruned.
+  static func prunedCandidateRegistry(
+    _ registry: [MediaIdentity: MediaCandidate],
+    keeping keep: MediaIdentity?,
+    now: TimeInterval,
+    maxAge: TimeInterval = 120,
+    limit: Int = 20
+  ) -> [MediaIdentity: MediaCandidate] {
+    var result = registry.filter { identity, candidate in
+      identity == keep || now - candidate.lastUpdated <= maxAge
+    }
+    if result.count > limit {
+      let dropCount = result.count - limit
+      let ordered = result.sorted(by: { a, b in
+        let aKeep = a.key == keep
+        let bKeep = b.key == keep
+        if aKeep != bKeep { return !aKeep }
+        return a.value.lastUpdated < b.value.lastUpdated
+      })
+      for index in 0..<dropCount {
+        result.removeValue(forKey: ordered[index].key)
+      }
+    }
+    return result
+  }
+
+  /// Position/artwork change every poll; only display-relevant fields count here.
+  private func isSameDisplayState(_ old: MediaPresentation?, _ winner: MediaCandidate) -> Bool {
+    guard let old else { return false }
+    guard old.identity == winner.identity, old.isPlaying == winner.isPlaying else { return false }
+    switch (old.kind, winner.hasMetadata) {
+    case (.track(let info), true):
+      return info.title == winner.title && info.artist == winner.artist
+        && info.album == winner.album && info.duration == winner.duration
+    case (.audioOnly(let app), false):
+      return app.bundleID == winner.app.bundleID && app.displayName == winner.app.displayName
+    default:
+      return false
+    }
+  }
+
   private func applyCandidate(_ winner: MediaCandidate) {
     let identityChanged = (currentIdentity != winner.identity)
     let trackChanged = (trackTitle != winner.title || artistName != winner.artist)
+    let newPresentation = MediaPresentation(candidate: winner)
+    let newSource = Self.mediaSource(for: winner.app.bundleID)
+
+    // Dedupe: identical polls must not re-publish and re-render.
+    if !identityChanged, !trackChanged, isSameDisplayState(presentation, winner),
+      isPlaying == winner.isPlaying, mediaSource == newSource,
+      albumName == winner.album || !winner.hasMetadata
+    {
+      if winner.hasMetadata {
+        playbackPosition = winner.position
+        duration = winner.duration
+      }
+      return
+    }
+
     if identityChanged || trackChanged {
       mediaGeneration &+= 1
     }
     let currentGen = mediaGeneration
 
     currentIdentity = winner.identity
-    presentation = MediaPresentation(candidate: winner)
-    isPlaying = winner.isPlaying
-    mediaSource = Self.mediaSource(for: winner.app.bundleID)
+    if !isSameDisplayState(presentation, winner) { presentation = newPresentation }
+    if isPlaying != winner.isPlaying { isPlaying = winner.isPlaying }
+    if mediaSource != newSource { mediaSource = newSource }
+    let newSummary = MediaSummary(
+      isPlaying: winner.isPlaying,
+      hasMediaSession: true,
+      title: winner.hasMetadata ? winner.title : "",
+      artist: winner.hasMetadata ? winner.artist : winner.app.displayName,
+      bundleID: winner.app.bundleID,
+      hasMetadata: winner.hasMetadata
+    )
+    if summary != newSummary { summary = newSummary }
     updatePlaybackTimerState()
 
     if winner.hasMetadata {
@@ -231,34 +388,21 @@ final class MediaManager: ObservableObject {
       artistName = winner.artist
       albumName = winner.album
 
-      let resolvedDirectArtwork: NSImage? = {
-        if case .data(let data)? = winner.artwork {
-          return NSImage(data: data)
-        }
-        return nil
-      }()
+      var hasDirectArtwork = false
+      if case .data? = winner.artwork { hasDirectArtwork = true }
       let resolvedURL = resolveBrowserArtworkURL(for: winner)
 
-      if let direct = resolvedDirectArtwork {
-        let cacheKey = MediaArtworkCacheKey.make(
-          bundleID: winner.app.bundleID,
-          title: winner.title,
-          artist: winner.artist,
-          directURL: resolvedURL
-        ) as NSString
-        artworkCache.setObject(direct, forKey: cacheKey)
-        applyArtwork(direct, generation: currentGen)
-      } else if identityChanged || trackChanged {
+      if !hasDirectArtwork, identityChanged || trackChanged {
         // Clear old artwork immediately on track/source switch so stale cover never lingers
         applyArtwork(nil, generation: currentGen)
       }
 
       if (trackChanged || identityChanged) && !winner.title.isEmpty {
         queue = [QueueItem(title: winner.title, artist: winner.artist)]
-        if resolvedDirectArtwork == nil {
-          fetchArtworkAsync(for: winner, directURL: resolvedURL, generation: currentGen)
-        }
+        fetchArtworkAsync(for: winner, directURL: resolvedURL, generation: currentGen)
         fetchLyrics(track: winner.title, artist: winner.artist, album: winner.album, duration: winner.duration)
+      } else if artworkImage == nil, winner.artwork != nil {
+        fetchArtworkAsync(for: winner, directURL: resolvedURL, generation: currentGen)
       }
       updateCurrentLyric()
     } else {
@@ -290,6 +434,7 @@ final class MediaManager: ObservableObject {
   private func clearSession() {
     mediaGeneration &+= 1
     isPlaying = false
+    if summary != .empty { summary = .empty }
     presentation = nil
     currentIdentity = nil
     mediaSource = .none
@@ -333,18 +478,44 @@ final class MediaManager: ObservableObject {
     }
   }
 
-  private func setupFastPollingTimer() {
-    fastPollingTimer = Timer.publish(every: 4.0, tolerance: 0.5, on: .main, in: .common)
-      .autoconnect()
-      .sink { [weak self] _ in
-        self?.pollCurrentMediaState()
-      }
+  /// Whether the MediaRemote bridge already has a fresh playing state, in which
+  /// case probing browsers again only burns CPU.
+  var hasValidBridgePlaying: Bool {
+    let now = Date().timeIntervalSince1970
+    return candidateRegistry.values.contains {
+      // Browsers are excluded: tab Position/control for those still lives in the
+      // web probe, so skipping it would leave the active tab stale (pause a
+      // video in the wrong tab or none at all).
+      $0.awareness == .mediaRemote && $0.isPlaying && $0.hasMetadata
+        && now - $0.lastUpdated <= 10 && !Self.isBrowserBundleID($0.app.bundleID)
+    }
+  }
+
+  /// Adaptive polling cadence: fast while something may be changing, slow when idle.
+  var nextPollInterval: TimeInterval {
+    if isPlaying || hasValidBridgePlaying || Date().timeIntervalSince(lastInteractionAt) < 10 {
+      return 4
+    }
+    if hasActiveTrack || presentation != nil || !cachedBrowsers.isEmpty {
+      return 15
+    }
+    return 30
+  }
+
+  func scheduleNextPoll(after delay: TimeInterval? = nil) {
+    pollWorkItem?.cancel()
+    cachedBrowsers = runningBrowsers()
+    let interval = delay ?? nextPollInterval
+    let item = DispatchWorkItem { [weak self] in
+      self?.pollCurrentMediaState()
+    }
+    pollWorkItem = item
+    DispatchQueue.main.asyncAfter(deadline: .now() + interval, execute: item)
   }
 
   func pollSoon(after delay: TimeInterval = 0.35) {
-    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-      self?.pollCurrentMediaState()
-    }
+    lastInteractionAt = Date()
+    scheduleNextPoll(after: delay)
   }
 
   /// Sends a command to the MediaRemote bridge; falls back to AppleScript only
@@ -381,9 +552,10 @@ final class MediaManager: ObservableObject {
       reconcile()
     }
 
-    if let id = currentIdentity, let cand = candidateRegistry[id],
-       cand.awareness == .script && Self.isBrowserBundleID(cand.app.bundleID) {
-      sendWebCommand(wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS())
+    let targetBundle = targetBundleID ?? currentIdentity?.bundleID ?? presentation?.app.bundleID
+    if let bundleID = targetBundle, Self.isBrowserBundleID(bundleID) {
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS(), preferredBrowser: browserName)
       pollSoon(after: 0.8)
       return
     }
@@ -405,9 +577,10 @@ final class MediaManager: ObservableObject {
     expectedPlayingState = isPlaying
     let targetBundleID = currentIdentity?.bundleID
 
-    if let id = currentIdentity, let cand = candidateRegistry[id],
-       cand.awareness == .script && Self.isBrowserBundleID(cand.app.bundleID) {
-      sendWebCommand(WebMediaScripts.nextJS())
+    let targetBundle = targetBundleID ?? currentIdentity?.bundleID ?? presentation?.app.bundleID
+    if let bundleID = targetBundle, Self.isBrowserBundleID(bundleID) {
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.nextJS(), preferredBrowser: browserName)
       pollSoon(after: 0.8)
       return
     }
@@ -429,9 +602,10 @@ final class MediaManager: ObservableObject {
     expectedPlayingState = isPlaying
     let targetBundleID = currentIdentity?.bundleID
 
-    if let id = currentIdentity, let cand = candidateRegistry[id],
-       cand.awareness == .script && Self.isBrowserBundleID(cand.app.bundleID) {
-      sendWebCommand(WebMediaScripts.previousJS())
+    let targetBundle = targetBundleID ?? currentIdentity?.bundleID ?? presentation?.app.bundleID
+    if let bundleID = targetBundle, Self.isBrowserBundleID(bundleID) {
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.previousJS(), preferredBrowser: browserName)
       pollSoon(after: 0.8)
       return
     }
@@ -452,9 +626,10 @@ final class MediaManager: ObservableObject {
     playbackPosition = position
     let targetBundleID = currentIdentity?.bundleID
 
-    if let id = currentIdentity, let cand = candidateRegistry[id],
-       cand.awareness == .script && Self.isBrowserBundleID(cand.app.bundleID) {
-      sendWebCommand(WebMediaScripts.seekJS(to: position))
+    let targetBundle = targetBundleID ?? currentIdentity?.bundleID ?? presentation?.app.bundleID
+    if let bundleID = targetBundle, Self.isBrowserBundleID(bundleID) {
+      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
+      sendWebCommand(WebMediaScripts.seekJS(to: position), preferredBrowser: browserName)
       return
     }
 

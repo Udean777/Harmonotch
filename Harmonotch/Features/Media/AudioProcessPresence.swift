@@ -81,6 +81,7 @@ public final class AudioProcessPresenceMonitor: ObservableObject {
   private let queue = DispatchQueue(label: "com.harmonotch.audioprocesspresence", qos: .utility)
   private var tickTimer: Timer?
   private var isListening: Bool = false
+  private var listenerBlock: AudioObjectPropertyListenerBlock?
 
   public init() {}
 
@@ -95,7 +96,7 @@ public final class AudioProcessPresenceMonitor: ObservableObject {
       self.registerCoreAudioListener()
 
       DispatchQueue.main.async { [weak self] in
-        self?.tickTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        self?.tickTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
           self?.tick()
         }
       }
@@ -131,17 +132,24 @@ public final class AudioProcessPresenceMonitor: ObservableObject {
       mElement: kAudioObjectPropertyElementMain
     )
 
+    let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+      self?.pollAudioProcesses()
+    }
+    listenerBlock = block
+
     let status = AudioObjectAddPropertyListenerBlock(
       AudioObjectID(kAudioObjectSystemObject),
       &address,
-      queue
-    ) { [weak self] _, _ in
-      self?.pollAudioProcesses()
-    }
+      queue,
+      block
+    )
 
     if status != noErr {
       // In environments where process list listener is restricted, timer polling acts as fallback
-      print("[AudioProcessPresence] Process list listener returned status: \(status)")
+      #if DEBUG
+        print("[AudioProcessPresence] Process list listener returned status: \(status)")
+      #endif
+      listenerBlock = nil
     }
   }
 
@@ -152,12 +160,14 @@ public final class AudioProcessPresenceMonitor: ObservableObject {
       mElement: kAudioObjectPropertyElementMain
     )
 
+    guard let listenerBlock else { return }
     _ = AudioObjectRemovePropertyListenerBlock(
       AudioObjectID(kAudioObjectSystemObject),
       &address,
       queue,
-      { _, _ in }
+      listenerBlock
     )
+    self.listenerBlock = nil
   }
 
   private func pollAudioProcesses() {

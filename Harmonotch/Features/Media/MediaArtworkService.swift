@@ -1,5 +1,34 @@
 import AppKit
 import Foundation
+import ImageIO
+
+/// Decodes artwork off the main thread and caps its pixel size so a large cover
+/// cannot pin tens of megabytes in the cache.
+enum ArtworkDownsampler {
+  static let maxPixelSize = 512
+
+  static func image(from data: Data) -> NSImage? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,
+      kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+      kCGImageSourceShouldCacheImmediately: true,
+    ]
+    guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    else { return nil }
+    return NSImage(
+      cgImage: cgImage,
+      size: NSSize(width: cgImage.width, height: cgImage.height))
+  }
+
+  static func estimatedCost(of image: NSImage) -> Int {
+    let rep = image.representations.first
+    let width = rep?.pixelsWide ?? Int(image.size.width)
+    let height = rep?.pixelsHigh ?? Int(image.size.height)
+    return max(1, width * height * 4)
+  }
+}
 
 /// Picks a readable accent color out of album artwork for media UI tinting.
 enum ArtworkPalette {
@@ -125,6 +154,7 @@ extension MediaManager {
       )
       return
     }
+    if let image, artworkImage === image { return }
     artworkImage = image
     guard let image else {
       artworkAccentColor = nil
@@ -171,10 +201,29 @@ extension MediaManager {
       return
     }
 
+    if case .data(let data)? = candidate.artwork {
+      DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        guard let image = ArtworkDownsampler.image(from: data) else { return }
+        self?.artworkCache.setObject(
+          image, forKey: cacheKey, cost: ArtworkDownsampler.estimatedCost(of: image))
+        DispatchQueue.main.async { [weak self] in
+          guard let self = self else { return }
+          // The full-res bytes served their purpose; release them from the registry.
+          if var stored = self.candidateRegistry[candidate.identity], case .data? = stored.artwork {
+            stored.artwork = nil
+            self.candidateRegistry[candidate.identity] = stored
+          }
+          self.applyArtwork(image, generation: generation)
+        }
+      }
+      return
+    }
+
     if let direct = directURL {
       URLSession.shared.dataTask(with: direct) { [weak self] data, _, _ in
-        if let data = data, let image = NSImage(data: data) {
-          self?.artworkCache.setObject(image, forKey: cacheKey)
+        if let data, let image = ArtworkDownsampler.image(from: data) {
+          self?.artworkCache.setObject(
+            image, forKey: cacheKey, cost: ArtworkDownsampler.estimatedCost(of: image))
           DispatchQueue.main.async {
             self?.applyArtwork(image, generation: generation)
           }
@@ -192,8 +241,9 @@ extension MediaManager {
           let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines))
         {
           URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            if let data = data, let image = NSImage(data: data) {
-              self?.artworkCache.setObject(image, forKey: cacheKey)
+            if let data, let image = ArtworkDownsampler.image(from: data) {
+              self?.artworkCache.setObject(
+                image, forKey: cacheKey, cost: ArtworkDownsampler.estimatedCost(of: image))
               DispatchQueue.main.async {
                 self?.applyArtwork(image, generation: generation)
               }
@@ -214,9 +264,10 @@ extension MediaManager {
           end tell
           """
         guard let data = AppleScriptRunner.executeData(script),
-          let image = NSImage(data: data)
+          let image = ArtworkDownsampler.image(from: data)
         else { return }
-        self.artworkCache.setObject(image, forKey: cacheKey)
+        self.artworkCache.setObject(
+          image, forKey: cacheKey, cost: ArtworkDownsampler.estimatedCost(of: image))
         DispatchQueue.main.async {
           self.applyArtwork(image, generation: generation)
         }

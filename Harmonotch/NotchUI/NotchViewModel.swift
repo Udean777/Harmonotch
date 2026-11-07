@@ -7,6 +7,11 @@ struct VolumeNotice: Equatable {
   let symbol: String
 }
 
+private struct MediaActiveState: Equatable {
+  let isMediaPlaying: Bool
+  let hasSession: Bool
+}
+
 final class NotchViewModel: ObservableObject {
   static let shared = NotchViewModel()
   static let volumeNoticeDuration: TimeInterval = 1.6
@@ -60,23 +65,30 @@ final class NotchViewModel: ObservableObject {
       }
       .store(in: &cancellables)
 
-    // Switch to Media tab when media starts playing, never while the user is on another tab.
+    // Switch to Media tab when media starts playing.
+    // When paused, remain on Media tab so long as a media session exists.
+    // Only switch to battery when the session is cleared and Adzan is not playing.
     Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$presentation)
-      .map { isPlaying, presentation in
-        isPlaying && presentation != nil
+      .map { isPlaying, presentation -> MediaActiveState in
+        MediaActiveState(
+          isMediaPlaying: isPlaying && presentation != nil,
+          hasSession: presentation != nil
+        )
       }
       .removeDuplicates()
       .receive(on: DispatchQueue.main)
-      .sink { [weak self] isMediaActive in
+      .sink { [weak self] state in
         guard let self = self else { return }
-        if isMediaActive {
+        if state.isMediaPlaying {
           guard self.selectedTab != .media else { return }
           withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
             self.selectedTab = .media
           }
-        } else if !AdzanPlayer.shared.isPlaying, self.selectedTab == .media {
-          withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
-            self.selectedTab = .battery
+        } else if !state.hasSession && !AdzanPlayer.shared.isPlaying {
+          if self.selectedTab == .media {
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
+              self.selectedTab = .battery
+            }
           }
         }
       }
@@ -151,7 +163,7 @@ final class NotchViewModel: ObservableObject {
   private func scheduleVolumeNoticeDismiss() {
     volumeNoticeDismissWorkItem?.cancel()
     let workItem = DispatchWorkItem { [weak self] in
-      guard let self else { return }
+      guard let self = self else { return }
       if VolumeHUDController.shared.hasHeldKey {
         self.scheduleVolumeNoticeDismiss()
         return

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MediaDrawerView: View {
   @ObservedObject var mediaManager = MediaManager.shared
+  @ObservedObject var playbackClock = MediaManager.shared.playbackClock
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var prayerManager = PrayerManager.shared
 

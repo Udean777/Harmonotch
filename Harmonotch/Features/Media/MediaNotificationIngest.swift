@@ -31,7 +31,9 @@ extension MediaManager {
         self?.handleAudioPresenceApps(apps)
       }
       .store(in: &cancellables)
-    AudioProcessPresenceMonitor.shared.start()
+    if includeOtherAudioApps {
+      AudioProcessPresenceMonitor.shared.start()
+    }
   }
 
   func handleAudioPresenceApps(_ apps: [MediaAppInfo]) {
@@ -157,6 +159,8 @@ extension MediaManager {
   // MARK: - MediaRemote bridge
 
   func handleNowPlayingState(_ state: NowPlayingState) {
+    // Called on the bridge queue, so base64 decoding stays off the main thread.
+    let artworkData = state.artwork.flatMap { Data(base64Encoded: $0) }
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
       guard !state.title.isEmpty else {
@@ -180,7 +184,7 @@ extension MediaManager {
         contentID: state.contentID.isEmpty ? "\(state.title)|\(state.artist)" : state.contentID
       )
       let appInfo = MediaAppInfo.resolve(bundleID: bundleID)
-      let artworkSource = state.artwork.flatMap { Data(base64Encoded: $0) }.map { MediaArtworkSource.data($0) }
+      let artworkSource = artworkData.map { MediaArtworkSource.data($0) }
 
       self.traceProducer(
         producer: "NowPlayingBridge",

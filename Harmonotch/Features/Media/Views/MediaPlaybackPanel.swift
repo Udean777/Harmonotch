@@ -168,7 +168,7 @@ extension MediaDrawerView {
       }
 
       HStack(spacing: 8) {
-        Text(mediaManager.formattedPosition)
+        Text(playbackClock.formattedPosition)
           .font(.system(size: 9.5, weight: .medium, design: .monospaced))
           .monospacedDigit()
           .foregroundColor(AppTheme.textTertiary)
@@ -181,12 +181,12 @@ extension MediaDrawerView {
 
             Capsule()
               .fill(mediaAccentColor)
-              .frame(width: max(5, geo.size.width * CGFloat(mediaManager.progress)), height: 5)
+              .frame(width: max(5, geo.size.width * CGFloat(playbackClock.progress)), height: 5)
           }
         }
         .frame(height: 5)
 
-        Text(mediaManager.formattedDuration)
+        Text(playbackClock.formattedDuration)
           .font(.system(size: 9.5, weight: .medium, design: .monospaced))
           .monospacedDigit()
           .foregroundColor(AppTheme.textTertiary)

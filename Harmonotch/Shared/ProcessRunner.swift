@@ -33,13 +33,16 @@ nonisolated enum ProcessRunner {
     let group = DispatchGroup()
 
     group.enter()
-    DispatchQueue.global(qos: .utility).async {
+    // Readers must not run at a lower QoS than the caller blocked in group.wait()
+    // below: callers include userInitiated queues, and a .utility reader under a
+    // userInitiated waiter is a priority inversion (Instruments hang-risk report).
+    DispatchQueue.global(qos: .userInitiated).async {
       outData = outPipe.fileHandleForReading.readDataToEndOfFile()
       group.leave()
     }
 
     group.enter()
-    DispatchQueue.global(qos: .utility).async {
+    DispatchQueue.global(qos: .userInitiated).async {
       errData = errPipe.fileHandleForReading.readDataToEndOfFile()
       group.leave()
     }
