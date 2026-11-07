@@ -171,22 +171,10 @@ extension AppDelegate {
     menu.addItem(includeOtherItem)
 
     let clamshellState = ClamshellManager.shared.currentState
-    let clamshellTitle: String
-    let clamshellIcon: String
-    switch clamshellState {
-    case .active:
-      clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.active))"
-      clamshellIcon = "display.2"
-    case .standby:
-      clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.standby))"
-      clamshellIcon = "display.trianglebadge.exclamationmark"
-    case .pausedLowBattery:
-      clamshellTitle = "\(L10n.Menu.clamshellToggle) (\(L10n.Clamshell.pausedLowBattery))"
-      clamshellIcon = "bolt.slash"
-    case .off:
-      clamshellTitle = L10n.Menu.clamshellToggle
-      clamshellIcon = "display"
-    }
+    let clamshellTitle: String = clamshellState == .off
+      ? L10n.Menu.clamshellToggle
+      : "\(L10n.Menu.clamshellToggle) (\(ClamshellPresentation.statusLabel(for: clamshellState)))"
+    let clamshellIcon = ClamshellPresentation.iconName(for: clamshellState)
 
     let clamshellItem = NSMenuItem(
       title: clamshellTitle,

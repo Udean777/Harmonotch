@@ -519,7 +519,7 @@ struct DashboardAgentsSection: View {
         .foregroundColor(failedCount > 0 ? AppTheme.accentAmber : AppTheme.textSecondary)
 
       if let checkedAt = quotaService.lastCheckedAt {
-        Text("• \(L10n.Dashboard.batteryUpdated(Self.relativeTime(checkedAt)))")
+        Text("• \(L10n.Dashboard.batteryUpdated(TimeFormatting.relativeText(for: checkedAt)))")
           .font(.system(size: 9.5, weight: .medium))
           .foregroundColor(AppTheme.textTertiary)
           .lineLimit(1)
@@ -558,26 +558,5 @@ struct DashboardAgentsSection: View {
       .accessibilityLabel(L10n.AIAgents.refreshAgents)
     }
     .padding(.horizontal, 2)
-  }
-
-  private static let enRelativeFormatter: RelativeDateTimeFormatter = {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "en")
-    formatter.unitsStyle = .short
-    return formatter
-  }()
-
-  private static let idRelativeFormatter: RelativeDateTimeFormatter = {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "id")
-    formatter.unitsStyle = .short
-    return formatter
-  }()
-
-  private static func relativeTime(_ date: Date) -> String {
-    let formatter = LanguageManager.shared.currentLanguage == .english
-      ? enRelativeFormatter
-      : idRelativeFormatter
-    return formatter.localizedString(for: date, relativeTo: Date())
   }
 }

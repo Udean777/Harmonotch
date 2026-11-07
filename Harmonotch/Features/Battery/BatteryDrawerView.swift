@@ -181,42 +181,15 @@ struct BatteryDrawerView: View {
   }
 
   private var clamshellStatusLabel: String {
-    switch clamshell.currentState {
-    case .active:
-      return L10n.Clamshell.active
-    case .standby:
-      return L10n.Clamshell.standby
-    case .pausedLowBattery:
-      return L10n.Clamshell.pausedLowBattery
-    case .off:
-      return L10n.Clamshell.off
-    }
+    ClamshellPresentation.statusLabel(for: clamshell.currentState)
   }
 
   private var clamshellIconName: String {
-    switch clamshell.currentState {
-    case .active:
-      return "display.2"
-    case .standby:
-      return "display.trianglebadge.exclamationmark"
-    case .pausedLowBattery:
-      return "bolt.slash.fill"
-    case .off:
-      return "display"
-    }
+    ClamshellPresentation.iconName(for: clamshell.currentState)
   }
 
   private var clamshellAccentColor: Color {
-    switch clamshell.currentState {
-    case .active:
-      return AppTheme.accentGreen
-    case .standby:
-      return AppTheme.accentAmber
-    case .pausedLowBattery:
-      return AppTheme.accentRed
-    case .off:
-      return AppTheme.textSecondary
-    }
+    ClamshellPresentation.accentColor(for: clamshell.currentState)
   }
 
   private var clamshellDetailText: String {

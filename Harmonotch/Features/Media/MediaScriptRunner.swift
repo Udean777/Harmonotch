@@ -78,72 +78,29 @@ extension MediaManager {
   }
 
   func pollSpotifyState() -> Bool {
-    guard
-      !NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").isEmpty
-    else {
-      removeScriptCandidates(bundleID: "com.spotify.client")
-      return false
-    }
-    let spotifyScript = """
-      if application id "com.spotify.client" is running then
-          tell application id "com.spotify.client"
-              set playerState to player state as string
-              set trackName to name of current track
-              set artistName to artist of current track
-              set albumName to album of current track
-              set trackDuration to (duration of current track) / 1000
-              set playerPos to player position
-              return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
-          end tell
-      else
-          return ""
-      end if
-      """
-
-    guard let result = AppleScriptRunner.execute(spotifyScript), !result.isEmpty else { return false }
-    let parts = result.components(separatedBy: "|||")
-    guard parts.count >= 6 else { return false }
-    let isPlaying = parts[0].lowercased() == "playing"
-    let title = parts[1]
-    let artist = parts[2]
-    let album = parts[3]
-    let duration = extractDouble(from: parts[4]) ?? 0
-    let pos = extractDouble(from: parts[5]) ?? 0
-    guard !title.isEmpty else { return false }
-    localPollPlaying = isPlaying
-
-    let identity = MediaIdentity(bundleID: "com.spotify.client", contentID: "\(title)|\(artist)")
-    let candidate = MediaCandidate(
-      identity: identity,
-      app: MediaAppInfo.resolve(bundleID: "com.spotify.client"),
-      title: title,
-      artist: artist,
-      album: album,
-      duration: duration,
-      position: pos,
-      isPlaying: isPlaying,
-      isMusicApp: true,
-      awareness: .script,
-      capabilities: .standardPlayer
-    )
-    ingest(candidate: candidate)
-    return true
+    pollStandardMusicApp(bundleID: "com.spotify.client", durationInMilliseconds: true)
   }
 
   func pollAppleMusicState() -> Bool {
-    guard !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music").isEmpty
-    else {
-      removeScriptCandidates(bundleID: "com.apple.Music")
+    pollStandardMusicApp(bundleID: "com.apple.Music", durationInMilliseconds: false)
+  }
+
+  private func pollStandardMusicApp(bundleID: String, durationInMilliseconds: Bool) -> Bool {
+    guard !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty else {
+      removeScriptCandidates(bundleID: bundleID)
       return false
     }
-    let musicScript = """
-      if application id "com.apple.Music" is running then
-          tell application id "com.apple.Music"
+    let durationExpression = durationInMilliseconds
+      ? "(duration of current track) / 1000"
+      : "duration of current track"
+    let script = """
+      if application id "\(bundleID)" is running then
+          tell application id "\(bundleID)"
               set playerState to player state as string
               set trackName to name of current track
               set artistName to artist of current track
               set albumName to album of current track
-              set trackDuration to duration of current track
+              set trackDuration to \(durationExpression)
               set playerPos to player position
               return playerState & "|||" & trackName & "|||" & artistName & "|||" & albumName & "|||" & (trackDuration as string) & "|||" & (playerPos as string)
           end tell
@@ -152,7 +109,7 @@ extension MediaManager {
       end if
       """
 
-    guard let result = AppleScriptRunner.execute(musicScript), !result.isEmpty else { return false }
+    guard let result = AppleScriptRunner.execute(script), !result.isEmpty else { return false }
     let parts = result.components(separatedBy: "|||")
     guard parts.count >= 6 else { return false }
     let isPlaying = parts[0].lowercased() == "playing"
@@ -164,10 +121,10 @@ extension MediaManager {
     guard !title.isEmpty else { return false }
     localPollPlaying = isPlaying
 
-    let identity = MediaIdentity(bundleID: "com.apple.Music", contentID: "\(title)|\(artist)")
+    let identity = MediaIdentity(bundleID: bundleID, contentID: "\(title)|\(artist)")
     let candidate = MediaCandidate(
       identity: identity,
-      app: MediaAppInfo.resolve(bundleID: "com.apple.Music"),
+      app: MediaAppInfo.resolve(bundleID: bundleID),
       title: title,
       artist: artist,
       album: album,
@@ -232,55 +189,53 @@ extension MediaManager {
     return true
   }
 
-  func fallbackPlayPause(wasPlaying: Bool, targetBundleID: String?) {
+  private func dispatchPlaybackCommand(
+    targetBundleID: String?,
+    standardAppCommand: String,
+    quickTimeCommand: String? = nil,
+    browserScript: () -> String
+  ) {
     guard let bundleID = targetBundleID ?? currentIdentity?.bundleID else { return }
-    if bundleID == "com.spotify.client" {
-      AppleScriptRunner.executeAsync("tell application id \"com.spotify.client\" to playpause")
-    } else if bundleID == "com.apple.Music" {
-      AppleScriptRunner.executeAsync("tell application id \"com.apple.Music\" to playpause")
-    } else if bundleID == "com.apple.QuickTimePlayerX" {
-      AppleScriptRunner.executeAsync("tell application \"QuickTime Player\" to playpause document 1")
+    if bundleID == "com.spotify.client" || bundleID == "com.apple.Music" {
+      AppleScriptRunner.executeAsync("tell application id \"\(bundleID)\" to \(standardAppCommand)")
+    } else if bundleID == "com.apple.QuickTimePlayerX", let qtCmd = quickTimeCommand {
+      AppleScriptRunner.executeAsync("tell application \"QuickTime Player\" to \(qtCmd)")
     } else if Self.isBrowserBundleID(bundleID) {
       let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
-      sendWebCommand(wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS(), preferredBrowser: browserName)
+      sendWebCommand(browserScript(), preferredBrowser: browserName)
     }
+  }
+
+  func fallbackPlayPause(wasPlaying: Bool, targetBundleID: String?) {
+    dispatchPlaybackCommand(
+      targetBundleID: targetBundleID,
+      standardAppCommand: "playpause",
+      quickTimeCommand: "playpause document 1",
+      browserScript: { wasPlaying ? WebMediaScripts.pauseJS() : WebMediaScripts.playJS() }
+    )
   }
 
   func fallbackNext(targetBundleID: String?) {
-    guard let bundleID = targetBundleID ?? currentIdentity?.bundleID else { return }
-    if bundleID == "com.spotify.client" {
-      AppleScriptRunner.executeAsync("tell application id \"com.spotify.client\" to next track")
-    } else if bundleID == "com.apple.Music" {
-      AppleScriptRunner.executeAsync("tell application id \"com.apple.Music\" to next track")
-    } else if Self.isBrowserBundleID(bundleID) {
-      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
-      sendWebCommand(WebMediaScripts.nextJS(), preferredBrowser: browserName)
-    }
+    dispatchPlaybackCommand(
+      targetBundleID: targetBundleID,
+      standardAppCommand: "next track",
+      browserScript: { WebMediaScripts.nextJS() }
+    )
   }
 
   func fallbackPrevious(targetBundleID: String?) {
-    guard let bundleID = targetBundleID ?? currentIdentity?.bundleID else { return }
-    if bundleID == "com.spotify.client" {
-      AppleScriptRunner.executeAsync("tell application id \"com.spotify.client\" to previous track")
-    } else if bundleID == "com.apple.Music" {
-      AppleScriptRunner.executeAsync("tell application id \"com.apple.Music\" to previous track")
-    } else if Self.isBrowserBundleID(bundleID) {
-      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
-      sendWebCommand(WebMediaScripts.previousJS(), preferredBrowser: browserName)
-    }
+    dispatchPlaybackCommand(
+      targetBundleID: targetBundleID,
+      standardAppCommand: "previous track",
+      browserScript: { WebMediaScripts.previousJS() }
+    )
   }
 
   func fallbackSeek(_ position: TimeInterval, targetBundleID: String?) {
-    guard let bundleID = targetBundleID ?? currentIdentity?.bundleID else { return }
-    if bundleID == "com.spotify.client" {
-      AppleScriptRunner.executeAsync(
-        "tell application id \"com.spotify.client\" to set player position to \(Int(position))")
-    } else if bundleID == "com.apple.Music" {
-      AppleScriptRunner.executeAsync(
-        "tell application id \"com.apple.Music\" to set player position to \(Int(position))")
-    } else if Self.isBrowserBundleID(bundleID) {
-      let browserName = BrowserCatalog.entry(forBundleID: bundleID)?.name
-      sendWebCommand(WebMediaScripts.seekJS(to: position), preferredBrowser: browserName)
-    }
+    dispatchPlaybackCommand(
+      targetBundleID: targetBundleID,
+      standardAppCommand: "set player position to \(Int(position))",
+      browserScript: { WebMediaScripts.seekJS(to: position) }
+    )
   }
 }

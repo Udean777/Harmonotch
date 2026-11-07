@@ -45,47 +45,7 @@ struct DashboardPrayerSection: View {
   private var headerControls: some View {
     HStack(spacing: 8) {
       Menu {
-        Toggle(isOn: $prayerManager.useGPS) {
-          Label(L10n.Prayer.autoGPS, systemImage: "location.fill")
-        }
-
-        Divider()
-
-        ForEach(CityPreset.presets) { city in
-          Button {
-            prayerManager.useGPS = false
-            prayerManager.selectedCity = city
-          } label: {
-            HStack {
-              Text("\(city.name) (\(city.province))")
-              if !prayerManager.useGPS && prayerManager.selectedCity.id == city.id {
-                Image(systemName: "checkmark")
-              }
-            }
-          }
-        }
-
-        Divider()
-
-        Menu {
-          ForEach([-15, -10, -5, 0, 5, 10, 15, 20, 25, 30], id: \.self) { offset in
-            Button {
-              prayerManager.jumatOffsetMinutes = offset
-            } label: {
-              HStack {
-                Text(L10n.Prayer.jumatOffsetLabel(offset))
-                if prayerManager.jumatOffsetMinutes == offset {
-                  Image(systemName: "checkmark")
-                }
-              }
-            }
-          }
-        } label: {
-          Label(
-            L10n.Prayer.jumatOffsetLabel(prayerManager.jumatOffsetMinutes),
-            systemImage: "person.3.fill"
-          )
-        }
+        PrayerLocationMenuContent()
       } label: {
         HStack(spacing: 5) {
           Image(systemName: prayerManager.useGPS ? "location.fill" : "mappin.and.ellipse")

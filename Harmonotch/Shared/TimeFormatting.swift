@@ -25,4 +25,25 @@ enum TimeFormatting {
       minutes: remainingMinutes % 60
     )
   }
+
+  private static let enRelativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.locale = Locale(identifier: "en")
+    formatter.unitsStyle = .short
+    return formatter
+  }()
+
+  private static let idRelativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.locale = Locale(identifier: "id")
+    formatter.unitsStyle = .short
+    return formatter
+  }()
+
+  static func relativeText(for date: Date, relativeTo: Date = Date()) -> String {
+    let formatter = LanguageManager.shared.currentLanguage == .english
+      ? enRelativeFormatter
+      : idRelativeFormatter
+    return formatter.localizedString(for: date, relativeTo: relativeTo)
+  }
 }
