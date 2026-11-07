@@ -15,6 +15,9 @@ enum L10n {
         static var mediaTab: String {
             isEnglish ? "Audio" : "Audio"
         }
+        static var agentsTab: String {
+            isEnglish ? "AI Agents" : "AI Agents"
+        }
     }
 
     enum Prayer {
@@ -95,17 +98,6 @@ enum L10n {
             return isEnglish
                 ? "It is now \(prayer) (\(time)) in \(location)."
                 : "Telah masuk waktu sholat \(prayer) (\(time)) untuk wilayah \(location)."
-        }
-        static func companionBatteryLabel(capacity: Int) -> String {
-            isEnglish ? "Battery \(capacity) percent" : "Baterai \(capacity) persen"
-        }
-        static func companionAdzanLabel(prayer: String, battery: Int) -> String {
-            isEnglish ? "Adzan for \(prayer). Battery \(battery) percent" : "Adzan untuk \(prayer). Baterai \(battery) persen"
-        }
-        static func companionNextPrayerLabel(prayer: String, time: String, battery: Int) -> String {
-            isEnglish
-                ? "Next prayer \(prayer), at \(time). Battery \(battery) percent"
-                : "Salat berikutnya \(prayer), pukul \(time). Baterai \(battery) persen"
         }
     }
 
@@ -324,6 +316,9 @@ enum L10n {
         }
         static var tabsMenu: String {
             isEnglish ? "Quick Tab Switcher" : "Pindah Tampilan Tab"
+        }
+        static var notchAgentMenu: String {
+            isEnglish ? "Notch AI Provider" : "Provider AI di Notch"
         }
         static var testAdzan: String {
             isEnglish ? "Test Adzan Audio" : "Uji Coba Audio Adzan"
@@ -562,6 +557,33 @@ enum L10n {
                     : "\(active) Aktif • \(failed) Gagal"
             }
             return isEnglish ? "\(active) Active Agents" : "\(active) Agent Aktif"
+        }
+        static var showInNotchTitle: String {
+            isEnglish ? "Pin to Notch" : "Pin ke Notch"
+        }
+        static var activeInNotchBadge: String {
+            isEnglish ? "In Notch" : "Di Notch"
+        }
+        static var copyCommand: String {
+            isEnglish ? "Copy" : "Salin"
+        }
+        static var copiedCommand: String {
+            isEnglish ? "Copied" : "Tersalin"
+        }
+        static var switchAgentHint: String {
+            isEnglish ? "Switch active AI Agent" : "Ganti AI Agent aktif"
+        }
+        static func agentNotInstalled(_ name: String) -> String {
+            isEnglish ? "\(name) is not installed on this Mac" : "\(name) belum terinstal di Mac ini"
+        }
+        static var selectDifferentProviderHint: String {
+            isEnglish ? "Choose an installed provider below or from the Menu Bar" : "Pilih provider yang terinstal di bawah atau dari Menu Bar"
+        }
+        static var selectedInMenuBar: String {
+            isEnglish ? "Synced with Menu Bar" : "Tersinkron dengan Menu Bar"
+        }
+        static var availableAgentsPrefix: String {
+            isEnglish ? "Installed:" : "Terinstal:"
         }
     }
 

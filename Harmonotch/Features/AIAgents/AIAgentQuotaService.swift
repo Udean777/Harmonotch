@@ -24,6 +24,14 @@ final class AIAgentQuotaService: ObservableObject {
         self.lastCheckedAt = now
         self.hasCompletedInitialScan = true
         self.isScanning = false
+
+        let currentSelected = UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]
+        if !discovered.isEmpty,
+           !discovered.contains(where: { $0.kind.rawValue == currentSelected }) {
+          let preferred = discovered.first(where: { $0.authStatus.isAuthenticated }) ?? discovered[0]
+          UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = preferred.kind.rawValue
+          NotificationCenter.default.post(name: .notchAIAgentChanged, object: preferred.kind.rawValue)
+        }
       }
     }
   }

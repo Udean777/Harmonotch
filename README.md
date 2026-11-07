@@ -52,7 +52,7 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 ### Media and lyrics
 
 - Playback monitoring and transport control (`play/pause`, `next`, `previous`, `seek`) for Apple Music, Spotify, QuickTime, Podcasts, and browsers through a MediaRemote bridge: a small adapter loaded into Apple's `/usr/bin/perl` because macOS no longer answers MediaRemote directly from third-party apps. The technique was inspired by [Vorssaint](https://github.com/vorssaint/vorssaint-utils), licensed GPL-3.0-or-later, and is used with the author's written permission. Harmonotch's adapter is an independent implementation and contains no Vorssaint source code. When the bridge is unavailable, the app falls back to AppleScript and Safari/Chromium Apple Events.
-- Collapsed notch narrows toward the hardware notch while playing, showing the interactive companion and artwork thumbnail on the expanded left wing with a live equalizer waveform on the right, then restores the battery layout when playback ends.
+- Collapsed notch narrows toward the hardware notch while playing, showing the artwork thumbnail on the left wing with a live equalizer waveform on the right, then restores the battery layout when playback ends.
 - Expanded 560pt notch drawer displays high-resolution 64×64 artwork, track metadata, interactive progress scrubber, playback transport controls, and time-synchronized karaoke lyrics from [LRCLIB](https://lrclib.net/).
 - Lets you click any lyric line to seek directly to its timestamp.
 
@@ -69,7 +69,6 @@ The MediaRemote bridge uses an undocumented Apple framework, so it can change or
 ### Interface
 
 - Pure monochrome black-and-white (`#000000` / `#FFFFFF`) and Catppuccin theme palettes engineered to blend cleanly into the MacBook camera housing.
-- Interactive battery-aware notch companion (`PrayerCompanionView`) that appears on left-wing hover or active playback/adhan states with expressive mood animations.
 - Fluid spring shrink/expand geometry (`NotchMotion`) with selective cursor hit-testing so the macOS menu bar only activates outside the notch radius.
 - English and Indonesian, switched from the menu bar without a restart.
 - Streamlined menu bar dashboard with the next prayer, battery telemetry, language switcher, clamshell mode, and update checks.
@@ -166,7 +165,7 @@ Harmonotch/
 │   ├── MenuBar/                      // Menu bar dashboard and section views (Now, Battery, Prayer)
 │   ├── Theme/                        // Monochrome/Catppuccin palettes, AppTypography, cardChrome
 │   ├── Localization/                 // Language state and localized strings (L10n)
-│   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
+│   ├── Prayer/                       // Prayer engine, adhan audio, city presets
 │   ├── Battery/                      // IOKit monitor, charge limiter, and Clamshell mode
 │   ├── Audio/                        // CoreAudio service, volume key router, CGEventTap, TCC
 │   ├── Media/                        // MediaRemote bridge, web probe, artwork, lyrics, and drawer views

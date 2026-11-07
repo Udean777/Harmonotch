@@ -17,6 +17,12 @@ struct DashboardNowSection: View {
 
       heroCard
 
+      AIAgentQuickRow(
+        onSelectAgentsTab: {
+          onSelectTab(.agents)
+        }
+      )
+
       if adzanPlayer.isPlaying {
         AdzanBannerRow()
       } else if mediaManager.hasMediaSession {

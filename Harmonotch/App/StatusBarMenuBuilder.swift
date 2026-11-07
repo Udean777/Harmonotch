@@ -101,6 +101,13 @@ extension AppDelegate {
     mediaTabItem.state = (currentTab == .media) ? .on : .off
     tabsSubmenu.addItem(mediaTabItem)
 
+    let agentsTabItem = NSMenuItem(
+      title: L10n.Drawer.agentsTab, action: #selector(selectTabAgents), keyEquivalent: "4")
+    agentsTabItem.target = self
+    agentsTabItem.image = NSImage(systemSymbolName: "cpu.fill", accessibilityDescription: nil)
+    agentsTabItem.state = (currentTab == .agents) ? .on : .off
+    tabsSubmenu.addItem(agentsTabItem)
+
     return tabsSubmenu
   }
 
@@ -129,6 +136,16 @@ extension AppDelegate {
     langItem.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
     langItem.submenu = buildLanguageSubmenu()
     menu.addItem(langItem)
+
+    let currentAgentKind = AIAgentKind(rawValue: UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]) ?? .gemini
+    let notchAgentItem = NSMenuItem(
+      title: "\(L10n.Menu.notchAgentMenu): \(currentAgentKind.displayName)",
+      action: nil,
+      keyEquivalent: ""
+    )
+    notchAgentItem.image = NSImage(systemSymbolName: currentAgentKind.icon, accessibilityDescription: nil)
+    notchAgentItem.submenu = buildNotchAgentSubmenu()
+    menu.addItem(notchAgentItem)
 
     let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
     let launchItem = NSMenuItem(
@@ -220,6 +237,25 @@ extension AppDelegate {
       langSubmenu.addItem(item)
     }
     return langSubmenu
+  }
+
+  func buildNotchAgentSubmenu() -> NSMenu {
+    let submenu = NSMenu()
+    let current = UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]
+    for kind in AIAgentKind.allCases {
+      let isSelected = (current == kind.rawValue)
+      let item = NSMenuItem(
+        title: kind.displayName,
+        action: #selector(AppDelegate.switchNotchAIAgent(_:)),
+        keyEquivalent: ""
+      )
+      item.target = self
+      item.representedObject = kind.rawValue
+      item.image = NSImage(systemSymbolName: kind.icon, accessibilityDescription: nil)
+      item.state = isSelected ? .on : .off
+      submenu.addItem(item)
+    }
+    return submenu
   }
 
   func addUpdateSection(to menu: NSMenu) {

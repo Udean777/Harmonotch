@@ -33,6 +33,19 @@ extension AppDelegate {
     updateStatusBarButton()
   }
 
+  @objc func selectTabAgents() {
+    NotchViewModel.shared.selectedTab = .agents
+    NotchViewModel.shared.isExpanded = true
+    updateStatusBarButton()
+  }
+
+  @objc func switchNotchAIAgent(_ sender: NSMenuItem) {
+    guard let raw = sender.representedObject as? String else { return }
+    UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = raw
+    NotificationCenter.default.post(name: .notchAIAgentChanged, object: raw)
+    updateStatusBarButton()
+  }
+
   @objc func toggleAdzanMute() {
     AdzanPlayer.shared.isMuted.toggle()
   }

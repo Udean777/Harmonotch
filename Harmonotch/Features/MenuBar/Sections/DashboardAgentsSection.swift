@@ -1,469 +1,359 @@
+import AppKit
 import SwiftUI
 
 struct DashboardAgentsSection: View {
   @ObservedObject private var quotaService = AIAgentQuotaService.shared
-  @State private var showingDetailQuota: Bool = false
-  @State private var selectedAgentKind: AIAgentKind? = nil
+  @AppStorage("Harmonotch_SelectedNotchAIAgent") private var selectedNotchAgent: String =
+    AIAgentKind.gemini.rawValue
+  @State private var expandedAgentIds: Set<String> = []
+  @State private var copiedAgentId: String? = nil
 
   var body: some View {
-    if !quotaService.hasCompletedInitialScan && !quotaService.isScanning {
-      initialSetupCard
-    } else if quotaService.isScanning && quotaService.agents.isEmpty {
-      scanningCard
-    } else if quotaService.agents.isEmpty {
-      noAgentsFoundCard
-    } else if showingDetailQuota {
-      detailQuotaView
-    } else {
-      agentsOverviewView
-    }
-  }
-
-  private var initialSetupCard: some View {
-    DashboardCard {
-      VStack(spacing: 12) {
-        ZStack {
-          Circle()
-            .fill(AppTheme.accentCyan.opacity(0.14))
-            .frame(width: 42, height: 42)
-
-          Image(systemName: "cpu.fill")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(AppTheme.accentCyan)
-        }
-        .padding(.top, 4)
-
-        VStack(spacing: 4) {
-          Text(L10n.AIAgents.setupTitle)
-            .font(.system(size: 13, weight: .bold))
-            .foregroundColor(AppTheme.textPrimary)
-
-          Text(L10n.AIAgents.setupSubtitle)
-            .font(.system(size: 10.5, weight: .regular))
-            .foregroundColor(AppTheme.textSecondary)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 8)
-        }
-
-        Button {
-          quotaService.checkInstalledAgents()
-        } label: {
-          HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-              .font(.system(size: 11, weight: .bold))
-            Text(L10n.AIAgents.checkButton)
-              .font(.system(size: 11.5, weight: .semibold))
-          }
-          .foregroundColor(AppTheme.textPrimary)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 7)
-          .background(
-            Capsule()
-              .fill(AppTheme.accentCyan.opacity(0.24))
-              .overlay(
-                Capsule()
-                  .stroke(AppTheme.accentCyan.opacity(0.55), lineWidth: 1)
-              )
-          )
-        }
-        .buttonStyle(.plain)
-        .padding(.bottom, 4)
+    Group {
+      if quotaService.isScanning && quotaService.agents.isEmpty {
+        scanningCard
+      } else if !quotaService.hasCompletedInitialScan {
+        initialSetupCard
+      } else if quotaService.agents.isEmpty {
+        noAgentsFoundCard
+      } else {
+        unifiedAgentsView
       }
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, 6)
     }
-  }
-
-  private var scanningCard: some View {
-    DashboardCard {
-      HStack(spacing: 10) {
-        ProgressView()
-          .controlSize(.small)
-
-        Text(L10n.AIAgents.scanningText)
-          .font(.system(size: 11.5, weight: .semibold))
-          .foregroundColor(AppTheme.textPrimary)
+    .onAppear {
+      if !quotaService.hasCompletedInitialScan && !quotaService.isScanning {
+        quotaService.checkInstalledAgents()
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.vertical, 8)
     }
   }
 
-  private var noAgentsFoundCard: some View {
+  // MARK: - Unified Single-Page View with Per-Item Expand
+
+  private var unifiedAgentsView: some View {
     VStack(spacing: 8) {
-      DashboardCard {
-        VStack(alignment: .leading, spacing: 6) {
-          HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-              .font(.system(size: 14, weight: .semibold))
-              .foregroundColor(AppTheme.accentAmber)
+      topStatusHeader
 
-            Text(L10n.AIAgents.noAgentsInstalledTitle)
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(AppTheme.textPrimary)
-          }
-
-          Text(L10n.AIAgents.noAgentsInstalledDetail)
-            .font(.system(size: 10.5, weight: .regular))
-            .foregroundColor(AppTheme.textSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-        }
+      ForEach(quotaService.agents) { agent in
+        agentCard(for: agent)
       }
-
-      footerBar
     }
   }
 
-  private var agentsOverviewView: some View {
-    VStack(spacing: 8) {
+  private var topStatusHeader: some View {
+    let activeCount = quotaService.agents.filter { $0.authStatus.isAuthenticated }.count
+    let failedCount = quotaService.agents.count - activeCount
+
+    return HStack(spacing: 6) {
+      Circle()
+        .fill(failedCount > 0 ? AppTheme.accentAmber : AppTheme.accentGreen)
+        .frame(width: 6, height: 6)
+        .accessibilityHidden(true)
+
+      Text(L10n.AIAgents.summaryCount(active: activeCount, failed: failedCount))
+        .font(AppTypography.caption2(.semibold))
+        .foregroundColor(failedCount > 0 ? AppTheme.accentAmber : AppTheme.textSecondary)
+        .lineLimit(1)
+
+      if let checkedAt = quotaService.lastCheckedAt {
+        Text("• \(TimeFormatting.relativeText(for: checkedAt))")
+          .font(AppTypography.micro(.medium))
+          .foregroundColor(AppTheme.textTertiary)
+          .lineLimit(1)
+      }
+
+      Spacer(minLength: 4)
+
       Button {
-        withAnimation(.easeInOut(duration: 0.16)) {
-          selectedAgentKind = nil
-          showingDetailQuota = true
-        }
+        quotaService.checkInstalledAgents()
       } label: {
-        DashboardCard {
-          HStack(spacing: 8) {
+        HStack(spacing: 4) {
+          if quotaService.isScanning {
+            ProgressView()
+              .controlSize(.mini)
+          } else {
+            Image(systemName: "arrow.clockwise")
+              .font(.system(size: 9, weight: .bold))
+          }
+          Text(L10n.AIAgents.refreshAgents)
+            .font(AppTypography.micro(.semibold))
+        }
+        .foregroundColor(AppTheme.textSecondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(AppTheme.badgeBackground)
+            .overlay(
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+            )
+        )
+      }
+      .buttonStyle(.plain)
+      .disabled(quotaService.isScanning)
+      .help(L10n.AIAgents.refreshAgents)
+      .accessibilityLabel(L10n.AIAgents.refreshAgents)
+    }
+    .padding(.horizontal, 2)
+  }
+
+  // MARK: - Collapsible Agent Card
+
+  private func agentCard(for agent: AIAgentStatusItem) -> some View {
+    let isFailed = !agent.authStatus.isAuthenticated
+    let isPinnedToNotch = selectedNotchAgent == agent.kind.rawValue
+    let isExpanded = expandedAgentIds.contains(agent.id)
+    let progressMetrics = agent.quotaProgressMetrics
+    let infoMetrics = agent.metadataMetrics
+
+    return VStack(alignment: .leading, spacing: 8) {
+      // Top Row: Clickable Identity Summary + 1-Click Notch Pin + Expand Button
+      HStack(alignment: .center, spacing: 7) {
+        Button {
+          toggleExpanded(for: agent.id)
+        } label: {
+          HStack(alignment: .center, spacing: 8) {
             ZStack {
-              Circle()
-                .fill(AppTheme.accentCyan.opacity(0.16))
-                .frame(width: 26, height: 26)
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(
+                  isFailed
+                    ? AppTheme.accentRed.opacity(0.14)
+                    : (isPinnedToNotch ? AppTheme.accentCyan.opacity(0.18) : AppTheme.badgeBackground)
+                )
+                .frame(width: 24, height: 24)
 
-              Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(AppTheme.accentCyan)
+              Image(systemName: agent.kind.icon)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundColor(
+                  isFailed
+                    ? AppTheme.accentRed
+                    : (isPinnedToNotch ? AppTheme.accentCyan : AppTheme.textPrimary)
+                )
             }
+            .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 1) {
-              Text(L10n.AIAgents.viewDetailQuota)
-                .font(.system(size: 11.5, weight: .bold))
-                .foregroundColor(AppTheme.textPrimary)
+            VStack(alignment: .leading, spacing: 1.5) {
+              HStack(spacing: 5) {
+                Text(agent.kind.displayName)
+                  .font(AppTypography.subheadline(.bold))
+                  .foregroundColor(AppTheme.textPrimary)
+                  .lineLimit(1)
 
-              let activeCount = quotaService.agents.filter { $0.authStatus.isAuthenticated }.count
-              let failedCount = quotaService.agents.count - activeCount
-              Text(L10n.AIAgents.summaryCount(active: activeCount, failed: failedCount))
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundColor(AppTheme.textSecondary)
+                if let version = agent.version, !version.isEmpty {
+                  Text("v\(version)")
+                    .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                    .foregroundColor(AppTheme.textTertiary)
+                    .lineLimit(1)
+                }
+              }
+
+              collapsedSubtitle(for: agent)
             }
 
             Spacer(minLength: 4)
-
-            Image(systemName: "chevron.right")
-              .font(.system(size: 11, weight: .bold))
-              .foregroundColor(AppTheme.textTertiary)
           }
-        }
-      }
-      .buttonStyle(.plain)
-
-      ForEach(quotaService.agents) { agent in
-        Button {
-          withAnimation(.easeInOut(duration: 0.16)) {
-            selectedAgentKind = agent.kind
-            showingDetailQuota = true
-          }
-        } label: {
-          agentOverviewCard(for: agent)
+          .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .help(agent.binaryPath)
+
+        notchPinButton(for: agent.kind, isPinned: isPinnedToNotch)
+
+        expandToggleButton(for: agent, isExpanded: isExpanded)
       }
 
-      footerBar
-    }
-  }
-
-  private func agentOverviewCard(for agent: AIAgentStatusItem) -> some View {
-    let isFailed = !agent.authStatus.isAuthenticated
-
-    return DashboardCard {
-      HStack(spacing: 8) {
-        Image(systemName: agent.kind.icon)
-          .font(.system(size: 13, weight: .semibold))
-          .foregroundColor(isFailed ? AppTheme.accentRed : AppTheme.accentCyan)
-          .frame(width: 18)
-
-        VStack(alignment: .leading, spacing: 2) {
-          HStack(spacing: 5) {
-            Text(agent.kind.displayName)
-              .font(.system(size: 11.5, weight: .bold))
-              .foregroundColor(AppTheme.textPrimary)
-              .lineLimit(1)
-
-            if let version = agent.version, !version.isEmpty {
-              Text("v\(version)")
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .foregroundColor(AppTheme.textTertiary)
-                .lineLimit(1)
-            }
-          }
-
-          Text(agent.binaryPath)
-            .font(.system(size: 8.5, weight: .regular, design: .monospaced))
-            .foregroundColor(AppTheme.textTertiary)
-            .lineLimit(1)
-        }
-
-        Spacer(minLength: 4)
-
-        statusBadge(for: agent.authStatus)
-
-        Image(systemName: "chevron.right")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundColor(AppTheme.textTertiary)
-          .padding(.leading, 2)
-      }
-    }
-  }
-
-  private var detailQuotaView: some View {
-    VStack(spacing: 8) {
-      HStack(spacing: 8) {
-        Button {
-          withAnimation(.easeInOut(duration: 0.16)) {
-            showingDetailQuota = false
-            selectedAgentKind = nil
-          }
-        } label: {
-          HStack(spacing: 4) {
-            Image(systemName: "chevron.left")
-              .font(.system(size: 10, weight: .bold))
-            Text(L10n.AIAgents.backButton)
-              .font(.system(size: 10.5, weight: .semibold))
-          }
-          .foregroundColor(AppTheme.accentCyan)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(
-            Capsule()
-              .fill(AppTheme.badgeBackground)
-              .overlay(
-                Capsule()
-                  .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-              )
-          )
-        }
-        .buttonStyle(.plain)
-
-        Text(L10n.AIAgents.detailQuotaTitle)
-          .font(.system(size: 12, weight: .bold))
-          .foregroundColor(AppTheme.textPrimary)
-
-        Spacer(minLength: 4)
-
-        let activeCount = quotaService.agents.filter { $0.authStatus.isAuthenticated }.count
-        let failedCount = quotaService.agents.count - activeCount
-        Text(L10n.AIAgents.summaryCount(active: activeCount, failed: failedCount))
-          .font(.system(size: 9, weight: .bold))
-          .foregroundColor(failedCount > 0 ? AppTheme.accentAmber : AppTheme.accentGreen)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2.5)
-          .background(
-            Capsule()
-              .fill((failedCount > 0 ? AppTheme.accentAmber : AppTheme.accentGreen).opacity(0.14))
-          )
-      }
-      .padding(.horizontal, 2)
-
-      if quotaService.agents.count > 1 {
-        filterChips
-      }
-
-      let displayedAgents = displayedAgentsList
-      ForEach(displayedAgents) { agent in
-        detailedQuotaCard(for: agent)
-      }
-
-      footerBar
-    }
-  }
-
-  private var filterChips: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 5) {
-        Button {
-          withAnimation(.easeInOut(duration: 0.14)) {
-            selectedAgentKind = nil
-          }
-        } label: {
-          Text(L10n.AIAgents.filterAll)
-            .font(.system(size: 9.5, weight: selectedAgentKind == nil ? .bold : .medium))
-            .foregroundColor(selectedAgentKind == nil ? AppTheme.textPrimary : AppTheme.textSecondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-              Capsule()
-                .fill(selectedAgentKind == nil ? AppTheme.accentCyan.opacity(0.24) : AppTheme.badgeBackground)
-                .overlay(
-                  Capsule()
-                    .stroke(selectedAgentKind == nil ? AppTheme.accentCyan.opacity(0.55) : AppTheme.cardBorder, lineWidth: 0.6)
-                )
-            )
-        }
-        .buttonStyle(.plain)
-
-        ForEach(quotaService.agents) { agent in
-          let isSelected = selectedAgentKind == agent.kind
-          Button {
-            withAnimation(.easeInOut(duration: 0.14)) {
-              selectedAgentKind = agent.kind
-            }
-          } label: {
-            HStack(spacing: 4) {
-              Image(systemName: agent.kind.icon)
-                .font(.system(size: 8.5))
-              Text(agent.kind.displayName)
-                .font(.system(size: 9.5, weight: isSelected ? .bold : .medium))
-            }
-            .foregroundColor(isSelected ? AppTheme.textPrimary : AppTheme.textSecondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-              Capsule()
-                .fill(isSelected ? AppTheme.accentCyan.opacity(0.24) : AppTheme.badgeBackground)
-                .overlay(
-                  Capsule()
-                    .stroke(isSelected ? AppTheme.accentCyan.opacity(0.55) : AppTheme.cardBorder, lineWidth: 0.6)
-                )
-            )
-          }
-          .buttonStyle(.plain)
-        }
-      }
-      .padding(.vertical, 1)
-    }
-  }
-
-  private var displayedAgentsList: [AIAgentStatusItem] {
-    if let selected = selectedAgentKind {
-      let filtered = quotaService.agents.filter { $0.kind == selected }
-      return filtered.isEmpty ? quotaService.agents : filtered
-    }
-    return quotaService.agents
-  }
-
-  private func detailedQuotaCard(for agent: AIAgentStatusItem) -> some View {
-    let isFailed = !agent.authStatus.isAuthenticated
-
-    return DashboardCard {
-      VStack(alignment: .leading, spacing: 7) {
-        HStack(alignment: .center, spacing: 7) {
-          Image(systemName: agent.kind.icon)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(isFailed ? AppTheme.accentRed : AppTheme.accentCyan)
-            .frame(width: 18)
-
-          VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 5) {
-              Text(agent.kind.displayName)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(AppTheme.textPrimary)
-                .lineLimit(1)
-
-              if let version = agent.version, !version.isEmpty {
-                Text("v\(version)")
-                  .font(.system(size: 9, weight: .medium, design: .monospaced))
-                  .foregroundColor(AppTheme.textTertiary)
-                  .lineLimit(1)
-              }
-            }
-
-            Text(agent.binaryPath)
-              .font(.system(size: 8.5, weight: .regular, design: .monospaced))
-              .foregroundColor(AppTheme.textTertiary)
-              .lineLimit(1)
-          }
-
-          Spacer(minLength: 4)
-
-          statusBadge(for: agent.authStatus)
-        }
+      // Expanded Details: All Models, Quota Bars, or Login Recovery
+      if isExpanded {
+        Divider()
+          .background(AppTheme.divider)
 
         switch agent.authStatus {
         case .authenticated:
-          if !agent.metrics.isEmpty {
+          if !progressMetrics.isEmpty {
             VStack(spacing: 6) {
-              ForEach(agent.metrics) { metric in
-                metricRow(metric)
+              ForEach(progressMetrics) { metric in
+                metricProgressRow(metric)
               }
             }
-            .padding(.top, 2)
           }
 
-          if let note = agent.statusNote, !note.isEmpty {
+          if !infoMetrics.isEmpty {
+            metadataStrip(metrics: infoMetrics)
+          }
+
+          if progressMetrics.isEmpty && infoMetrics.isEmpty,
+             let note = agent.statusNote, !note.isEmpty
+          {
             Text(note)
-              .font(.system(size: 9.5, weight: .medium))
+              .font(AppTypography.caption2(.medium))
               .foregroundColor(AppTheme.textSecondary)
-              .lineLimit(1)
           }
 
         case .failed(let reason):
-          VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
-              Image(systemName: "xmark.octagon.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(AppTheme.accentRed)
-
-              Text(reason)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(AppTheme.accentRed)
-                .lineLimit(1)
-            }
-
-            Text(L10n.AIAgents.loginHint(agent.kind.loginCommandHint))
-              .font(.system(size: 9.5, weight: .regular))
-              .foregroundColor(AppTheme.textSecondary)
-              .lineLimit(2)
-          }
-          .padding(.top, 2)
+          failedRecoveryBox(for: agent, reason: reason)
         }
       }
     }
-  }
-
-  private func statusBadge(for status: AIAgentAuthStatus) -> some View {
-    let isAuth = status.isAuthenticated
-    let badgeColor = isAuth ? AppTheme.accentGreen : AppTheme.accentRed
-
-    let badgeText: String = {
-      switch status {
-      case .authenticated(let detail):
-        if let detail, !detail.isEmpty {
-          return detail
-        }
-        return L10n.AIAgents.statusActive
-      case .failed:
-        return L10n.AIAgents.statusFailed
-      }
-    }()
-
-    return HStack(spacing: 4) {
-      Circle()
-        .fill(badgeColor)
-        .frame(width: 5.5, height: 5.5)
-
-      Text(badgeText)
-        .font(.system(size: 9, weight: .bold))
-        .foregroundColor(isAuth ? AppTheme.textPrimary : AppTheme.accentRed)
-        .lineLimit(1)
-    }
-    .padding(.horizontal, 7)
-    .padding(.vertical, 3)
+    .padding(10)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .background(
-      Capsule()
-        .fill(badgeColor.opacity(0.14))
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(AppTheme.cardBackground)
         .overlay(
-          Capsule()
-            .stroke(badgeColor.opacity(0.38), lineWidth: 0.8)
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(
+              isPinnedToNotch ? AppTheme.accentCyan.opacity(0.45) : AppTheme.cardBorder,
+              lineWidth: isPinnedToNotch ? 0.9 : 0.6
+            )
         )
     )
   }
 
-  private func metricRow(_ metric: AIAgentQuotaMetric) -> some View {
-    VStack(alignment: .leading, spacing: 3) {
+  private func toggleExpanded(for id: String) {
+    withAnimation(.easeInOut(duration: 0.16)) {
+      if expandedAgentIds.contains(id) {
+        expandedAgentIds.remove(id)
+      } else {
+        expandedAgentIds.insert(id)
+      }
+    }
+  }
+
+  private func expandToggleButton(for agent: AIAgentStatusItem, isExpanded: Bool) -> some View {
+    let label = isExpanded ? L10n.AIAgents.hideDetails : L10n.AIAgents.showDetails
+    return Button {
+      toggleExpanded(for: agent.id)
+    } label: {
+      Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+        .font(.system(size: 9.5, weight: .bold))
+        .foregroundColor(isExpanded ? AppTheme.textPrimary : AppTheme.textSecondary)
+        .frame(width: 24, height: 24)
+        .background(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(isExpanded ? AppTheme.accentCyan.opacity(0.16) : AppTheme.badgeBackground)
+            .overlay(
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(
+                  isExpanded ? AppTheme.accentCyan.opacity(0.45) : AppTheme.cardBorder,
+                  lineWidth: 0.6
+                )
+            )
+        )
+    }
+    .buttonStyle(.plain)
+    .help(label)
+    .accessibilityLabel("\(agent.kind.displayName), \(label)")
+  }
+
+  @ViewBuilder
+  private func collapsedSubtitle(for agent: AIAgentStatusItem) -> some View {
+    switch agent.authStatus {
+    case .authenticated(let detail):
+      HStack(spacing: 4) {
+        Circle()
+          .fill(
+            agent.primaryQuotaMetric?.remainingRatio.map { progressColor(for: max(0, min(1, $0))) }
+              ?? AppTheme.accentGreen
+          )
+          .frame(width: 5, height: 5)
+
+        if let quota = agent.primaryQuotaMetric {
+          Text(quota.valueText)
+            .font(AppTypography.micro(.bold, design: .rounded))
+            .monospacedDigit()
+            .foregroundColor(AppTheme.textPrimary)
+            .lineLimit(1)
+
+          if let model = agent.activeModelSummary {
+            Text("• \(model)")
+              .font(AppTypography.micro(.medium))
+              .foregroundColor(AppTheme.textSecondary)
+              .lineLimit(1)
+          } else {
+            Text("• \(quota.label)")
+              .font(AppTypography.micro(.medium))
+              .foregroundColor(AppTheme.textSecondary)
+              .lineLimit(1)
+          }
+        } else {
+          Text(
+            agent.activeModelSummary
+              ?? agent.statusNote
+              ?? detail
+              ?? L10n.AIAgents.statusActive
+          )
+          .font(AppTypography.micro(.medium))
+          .foregroundColor(AppTheme.textSecondary)
+          .lineLimit(1)
+        }
+      }
+    case .failed:
+      HStack(spacing: 4) {
+        Circle()
+          .fill(AppTheme.accentRed)
+          .frame(width: 5, height: 5)
+
+        Text(L10n.AIAgents.statusFailed)
+          .font(AppTypography.micro(.semibold))
+          .foregroundColor(AppTheme.accentRed)
+          .lineLimit(1)
+      }
+    }
+  }
+
+  private func notchPinButton(for kind: AIAgentKind, isPinned: Bool) -> some View {
+    Button {
+      withAnimation(.easeInOut(duration: 0.14)) {
+        selectedNotchAgent = kind.rawValue
+        UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = kind.rawValue
+        NotificationCenter.default.post(name: .notchAIAgentChanged, object: kind.rawValue)
+      }
+      if isPinned {
+        NotchViewModel.shared.selectedTab = .agents
+        NotchViewModel.shared.isExpanded = true
+      }
+    } label: {
+      HStack(spacing: 4) {
+        Image(
+          systemName: isPinned
+            ? "menubar.dock.rectangle.badge.record"
+            : "menubar.dock.rectangle"
+        )
+        .font(.system(size: 8.5, weight: .semibold))
+
+        Text(isPinned ? L10n.AIAgents.activeInNotchBadge : L10n.AIAgents.showInNotchTitle)
+          .font(AppTypography.micro(isPinned ? .bold : .semibold))
+          .lineLimit(1)
+      }
+      .foregroundColor(isPinned ? AppTheme.accentCyan : AppTheme.textSecondary)
+      .padding(.horizontal, 7)
+      .padding(.vertical, 3.5)
+      .background(
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(isPinned ? AppTheme.accentCyan.opacity(0.16) : AppTheme.badgeBackground)
+          .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+              .stroke(
+                isPinned ? AppTheme.accentCyan.opacity(0.45) : AppTheme.cardBorder,
+                lineWidth: 0.6
+              )
+          )
+      )
+    }
+    .buttonStyle(.plain)
+    .help(isPinned ? L10n.Menu.openDrawer : L10n.AIAgents.showInNotchTitle)
+    .accessibilityLabel(
+      "\(kind.displayName), \(isPinned ? L10n.AIAgents.activeInNotchBadge : L10n.AIAgents.showInNotchTitle)"
+    )
+  }
+
+  // MARK: - Quota Bars & Compact Metadata Strip
+
+  private func metricProgressRow(_ metric: AIAgentQuotaMetric) -> some View {
+    VStack(alignment: .leading, spacing: 3.5) {
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(metric.label)
-          .font(.system(size: 10, weight: .medium))
+          .font(AppTypography.caption(.medium))
           .foregroundColor(AppTheme.textSecondary)
           .lineLimit(1)
 
@@ -471,13 +361,13 @@ struct DashboardAgentsSection: View {
 
         if let reset = metric.resetDescription, !reset.isEmpty {
           Text(reset)
-            .font(.system(size: 9, weight: .regular))
+            .font(AppTypography.micro(.regular))
             .foregroundColor(AppTheme.textTertiary)
             .lineLimit(1)
         }
 
         Text(metric.valueText)
-          .font(.system(size: 10.5, weight: .bold, design: .rounded))
+          .font(AppTypography.footnote(.bold, design: .rounded))
           .monospacedDigit()
           .foregroundColor(AppTheme.textPrimary)
           .lineLimit(1)
@@ -498,6 +388,230 @@ struct DashboardAgentsSection: View {
         .frame(height: 5)
       }
     }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(
+      "\(metric.label): \(metric.valueText)\(metric.resetDescription.map { ", \($0)" } ?? "")"
+    )
+  }
+
+  private func metadataStrip(metrics: [AIAgentQuotaMetric]) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      ForEach(metrics) { metric in
+        VStack(alignment: .leading, spacing: 1.5) {
+          HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(metric.label)
+              .font(AppTypography.micro(.medium))
+              .foregroundColor(AppTheme.textTertiary)
+              .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            Text(metric.valueText)
+              .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+              .foregroundColor(AppTheme.textPrimary)
+              .lineLimit(1)
+          }
+
+          if let extra = metric.resetDescription, !extra.isEmpty {
+            Text(extra)
+              .font(AppTypography.micro(.regular))
+              .foregroundColor(AppTheme.textSecondary)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+        }
+      }
+    }
+    .padding(.horizontal, 8)
+    .padding(.vertical, 5.5)
+    .background(
+      RoundedRectangle(cornerRadius: 6, style: .continuous)
+        .fill(AppTheme.badgeBackground.opacity(0.65))
+    )
+  }
+
+  // MARK: - Failed / Unauthenticated Recovery with 1-Click Copy
+
+  private func failedRecoveryBox(for agent: AIAgentStatusItem, reason: String) -> some View {
+    let command = agent.kind.loginCommandHint
+    let isCopied = copiedAgentId == agent.id
+
+    return VStack(alignment: .leading, spacing: 5) {
+      Text(reason)
+        .font(AppTypography.caption2(.medium))
+        .foregroundColor(AppTheme.textSecondary)
+        .lineLimit(2)
+
+      HStack(spacing: 6) {
+        Image(systemName: "terminal")
+          .font(.system(size: 9, weight: .semibold))
+          .foregroundColor(AppTheme.textTertiary)
+          .accessibilityHidden(true)
+
+        Text(command)
+          .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+          .foregroundColor(AppTheme.textPrimary)
+          .lineLimit(1)
+
+        Spacer(minLength: 4)
+
+        Button {
+          NSPasteboard.general.clearContents()
+          NSPasteboard.general.setString(command, forType: .string)
+          withAnimation(.easeInOut(duration: 0.14)) {
+            copiedAgentId = agent.id
+          }
+          DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            if copiedAgentId == agent.id {
+              withAnimation(.easeInOut(duration: 0.14)) {
+                copiedAgentId = nil
+              }
+            }
+          }
+        } label: {
+          HStack(spacing: 3) {
+            Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+              .font(.system(size: 8.5, weight: .bold))
+            Text(isCopied ? L10n.AIAgents.copiedCommand : L10n.AIAgents.copyCommand)
+              .font(AppTypography.micro(.semibold))
+          }
+          .foregroundColor(isCopied ? AppTheme.accentGreen : AppTheme.accentCyan)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 2.5)
+          .background(
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+              .fill(
+                (isCopied ? AppTheme.accentGreen : AppTheme.accentCyan).opacity(0.14)
+              )
+          )
+        }
+        .buttonStyle(.plain)
+        .help(L10n.AIAgents.loginHint(command))
+        .accessibilityLabel("\(L10n.AIAgents.copyCommand) \(command)")
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 5)
+      .background(
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(AppTheme.badgeBackground)
+          .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+              .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+          )
+      )
+    }
+  }
+
+  // MARK: - Loading, Initial & Empty States (R-27)
+
+  private var scanningCard: some View {
+    DashboardCard {
+      HStack(spacing: 10) {
+        ProgressView()
+          .controlSize(.small)
+
+        Text(L10n.AIAgents.scanningText)
+          .font(AppTypography.subheadline(.semibold))
+          .foregroundColor(AppTheme.textPrimary)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.vertical, 6)
+    }
+  }
+
+  private var initialSetupCard: some View {
+    DashboardCard {
+      HStack(spacing: 10) {
+        Image(systemName: "cpu.fill")
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundColor(AppTheme.accentCyan)
+          .frame(width: 28, height: 28)
+          .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+              .fill(AppTheme.accentCyan.opacity(0.14))
+          )
+          .accessibilityHidden(true)
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text(L10n.AIAgents.setupTitle)
+            .font(AppTypography.subheadline(.bold))
+            .foregroundColor(AppTheme.textPrimary)
+
+          Text(L10n.AIAgents.setupSubtitle)
+            .font(AppTypography.caption2(.regular))
+            .foregroundColor(AppTheme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Spacer(minLength: 4)
+
+        Button {
+          quotaService.checkInstalledAgents()
+        } label: {
+          Text(L10n.AIAgents.checkButton)
+            .font(AppTypography.caption(.semibold))
+            .foregroundColor(AppTheme.textPrimary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppTheme.accentCyan.opacity(0.22))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(AppTheme.accentCyan.opacity(0.5), lineWidth: 0.8)
+                )
+            )
+        }
+        .buttonStyle(.plain)
+      }
+    }
+  }
+
+  private var noAgentsFoundCard: some View {
+    DashboardCard {
+      VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 8) {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(AppTheme.accentAmber)
+            .accessibilityHidden(true)
+
+          Text(L10n.AIAgents.noAgentsInstalledTitle)
+            .font(AppTypography.subheadline(.bold))
+            .foregroundColor(AppTheme.textPrimary)
+        }
+
+        Text(L10n.AIAgents.noAgentsInstalledDetail)
+          .font(AppTypography.caption2(.regular))
+          .foregroundColor(AppTheme.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
+
+        HStack {
+          Spacer()
+          Button {
+            quotaService.checkInstalledAgents()
+          } label: {
+            HStack(spacing: 4) {
+              Image(systemName: "arrow.clockwise")
+                .font(.system(size: 9, weight: .bold))
+              Text(L10n.AIAgents.checkButton)
+                .font(AppTypography.caption2(.semibold))
+            }
+            .foregroundColor(AppTheme.textPrimary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4.5)
+            .background(
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppTheme.badgeBackground)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+                )
+            )
+          }
+          .buttonStyle(.plain)
+        }
+      }
+    }
   }
 
   private func progressColor(for remainingRatio: Double) -> Color {
@@ -507,56 +621,5 @@ struct DashboardAgentsSection: View {
       return AppTheme.accentAmber
     }
     return AppTheme.accentGreen
-  }
-
-  private var footerBar: some View {
-    let activeCount = quotaService.agents.filter { $0.authStatus.isAuthenticated }.count
-    let failedCount = quotaService.agents.count - activeCount
-
-    return HStack(spacing: 6) {
-      Text(L10n.AIAgents.summaryCount(active: activeCount, failed: failedCount))
-        .font(.system(size: 9.5, weight: .semibold))
-        .foregroundColor(failedCount > 0 ? AppTheme.accentAmber : AppTheme.textSecondary)
-
-      if let checkedAt = quotaService.lastCheckedAt {
-        Text("• \(L10n.Dashboard.batteryUpdated(TimeFormatting.relativeText(for: checkedAt)))")
-          .font(.system(size: 9.5, weight: .medium))
-          .foregroundColor(AppTheme.textTertiary)
-          .lineLimit(1)
-      }
-
-      Spacer(minLength: 4)
-
-      Button {
-        quotaService.checkInstalledAgents()
-      } label: {
-        HStack(spacing: 4) {
-          if quotaService.isScanning {
-            ProgressView()
-              .controlSize(.mini)
-          } else {
-            Image(systemName: "arrow.clockwise")
-              .font(.system(size: 9.5, weight: .bold))
-          }
-          Text(L10n.AIAgents.checkButton)
-            .font(.system(size: 9.5, weight: .semibold))
-        }
-        .foregroundColor(AppTheme.textSecondary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3.5)
-        .background(
-          Capsule()
-            .fill(AppTheme.badgeBackground)
-            .overlay(
-              Capsule()
-                .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-            )
-        )
-      }
-      .buttonStyle(.plain)
-      .disabled(quotaService.isScanning)
-      .accessibilityLabel(L10n.AIAgents.refreshAgents)
-    }
-    .padding(.horizontal, 2)
   }
 }
