@@ -529,8 +529,7 @@ final class MediaManager: ObservableObject {
       || lower.contains("opera")
   }
 
-  private func resolveBrowserArtworkURL(for candidate: MediaCandidate, explicitURL: URL?) -> URL? {
-    if let explicitURL { return explicitURL }
+  private func resolveBrowserArtworkURL(for candidate: MediaCandidate) -> URL? {
     if case .url(let url)? = candidate.artwork { return url }
     guard Self.isBrowserBundleID(candidate.app.bundleID) else { return nil }
     if let snapshot = activeWebTarget {
@@ -577,7 +576,7 @@ final class MediaManager: ObservableObject {
         }
         return nil
       }()
-      let resolvedURL = resolveBrowserArtworkURL(for: winner, explicitURL: nil)
+      let resolvedURL = resolveBrowserArtworkURL(for: winner)
 
       if let direct = resolvedDirectArtwork {
         let cacheKey = MediaArtworkCacheKey.make(
