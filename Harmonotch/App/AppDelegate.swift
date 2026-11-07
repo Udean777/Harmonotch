@@ -269,6 +269,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     volumeHUDItem.state = isVolumeHUDEnabled ? .on : .off
     menu.addItem(volumeHUDItem)
 
+    let isIncludeOther = MediaManager.shared.includeOtherAudioApps
+    let includeOtherItem = NSMenuItem(
+      title: L10n.Media.includeOtherAudioApps,
+      action: #selector(toggleIncludeOtherAudioApps),
+      keyEquivalent: ""
+    )
+    includeOtherItem.target = self
+    includeOtherItem.image = NSImage(
+      systemSymbolName: isIncludeOther ? "waveform.badge.plus" : "waveform",
+      accessibilityDescription: nil
+    )
+    includeOtherItem.state = isIncludeOther ? .on : .off
+    menu.addItem(includeOtherItem)
+
     let clamshellState = ClamshellManager.shared.currentState
     let clamshellTitle: String
     let clamshellIcon: String
@@ -463,6 +477,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     if nextEnabled && !AXIsProcessTrusted() {
       presentVolumeHUDAccessibilityAlert()
     }
+  }
+
+  @objc private func toggleIncludeOtherAudioApps() {
+    MediaManager.shared.includeOtherAudioApps.toggle()
   }
 
   private func presentVolumeHUDAccessibilityAlert() {

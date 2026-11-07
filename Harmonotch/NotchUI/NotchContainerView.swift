@@ -14,7 +14,7 @@ struct NotchContainerView: View {
   }
 
   private var isMediaPlaying: Bool {
-    mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
+    mediaManager.isPlaying && mediaManager.hasMediaSession && !adzanPlayer.isPlaying
   }
 
   private var leftContentExpansion: CGFloat {

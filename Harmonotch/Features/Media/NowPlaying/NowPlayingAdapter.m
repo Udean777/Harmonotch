@@ -16,8 +16,15 @@
 typedef void (*MRGetInfoFn)(dispatch_queue_t, void (^)(CFDictionaryRef));
 typedef void (*MRGetStringFn)(dispatch_queue_t, void (^)(CFStringRef));
 typedef void (*MRGetClientsFn)(dispatch_queue_t, void (^)(NSArray *));
+// macOS 15+ signature: (playerPath, BOOL artwork, queue, block(info, cover)).
+// The older 3-argument form crashes inside MediaRemote on current systems.
+typedef void (*MRGetInfoForPlayerFn)(id, BOOL, dispatch_queue_t,
+                                     void (^)(CFDictionaryRef, const void *));
+typedef void (*MRGetStateForPlayerFn)(id, dispatch_queue_t, void (^)(unsigned int));
 typedef Boolean (*MRSendToPlayerFn)(int32_t, CFDictionaryRef, id, uint32_t, dispatch_queue_t,
-                                    void (^)(void));
+                                    void (^)(uint32_t, NSArray *));
+typedef CFDataRef (*MRArtworkCopyFn)(const void *);
+typedef CFStringRef (*MRClientStringFn)(id);
 typedef void (*MRRegisterNotificationsFn)(dispatch_queue_t);
 
 @interface MRClient : NSObject
@@ -37,7 +44,11 @@ static struct {
   MRGetInfoFn getInfo;
   MRGetStringFn getDisplayID;
   MRGetClientsFn getClients;
+  MRGetInfoForPlayerFn getInfoForPlayer;
+  MRGetStateForPlayerFn getStateForPlayer;
   MRSendToPlayerFn sendToPlayer;
+  MRArtworkCopyFn copyArtwork;
+  MRClientStringFn getClientParentBundle;
   MRRegisterNotificationsFn registerNotifications;
 } MR;
 
@@ -56,8 +67,8 @@ static NSString *const OptionSeekPosition = @"kMRMediaRemoteOptionPlaybackPositi
 static dispatch_queue_t WorkQueue;
 static NSLock *WriteLock;
 static NSObject *StateLock;
-static NSString *LastSignature;
-static NSString *LastArtworkKey;
+static NSMutableDictionary<NSString *, NSString *> *LastSignaturesBySource;
+static NSMutableDictionary<NSString *, NSString *> *LastArtworkKeyBySource;
 
 static void *Symbol(const char *name) {
   if (!MR.handle) return NULL;
@@ -74,8 +85,14 @@ static BOOL LoadMediaRemote(void) {
   MR.getDisplayID =
       (MRGetStringFn)Symbol("MRMediaRemoteGetNowPlayingApplicationDisplayID");
   MR.getClients = (MRGetClientsFn)Symbol("MRMediaRemoteGetNowPlayingClients");
+  MR.getInfoForPlayer = (MRGetInfoForPlayerFn)Symbol("MRMediaRemoteGetNowPlayingInfoForPlayer");
+  MR.getStateForPlayer = (MRGetStateForPlayerFn)Symbol("MRMediaRemoteGetPlaybackStateForPlayer");
   MR.sendToPlayer =
       (MRSendToPlayerFn)Symbol("MRMediaRemoteSendCommandToPlayer");
+  MR.copyArtwork =
+      (MRArtworkCopyFn)Symbol("MRNowPlayingArtworkCopyImageData");
+  MR.getClientParentBundle =
+      (MRClientStringFn)Symbol("MRNowPlayingClientGetParentAppBundleIdentifier");
   MR.registerNotifications =
       (MRRegisterNotificationsFn)Symbol("MRMediaRemoteRegisterForNowPlayingNotifications");
   return MR.getInfo && MR.getDisplayID && MR.getClients && MR.sendToPlayer &&
@@ -102,14 +119,32 @@ static double DoubleValue(NSDictionary *info, NSString *key) {
   return [value isKindOfClass:[NSNumber class]] ? [value doubleValue] : 0;
 }
 
-static void EmitState(NSDictionary *info, NSString *displayID) {
+static NSData *ArtworkDataFromCover(const void *cover) {
+  if (!cover || !MR.copyArtwork) return nil;
+  CFDataRef data = MR.copyArtwork(cover);
+  return data ? (__bridge_transfer NSData *)data : nil;
+}
+
+static void EmitState(NSDictionary *info, NSString *displayID, NSString *clientID,
+                      NSNumber *overrideState) {
+  if (displayID.length == 0) return;
   NSString *title = StringValue(info, KeyTitle);
   NSString *artist = StringValue(info, KeyArtist);
   NSString *album = StringValue(info, KeyAlbum);
   double duration = DoubleValue(info, KeyDuration);
   double elapsed = DoubleValue(info, KeyElapsed);
   double rate = DoubleValue(info, KeyRate);
-  BOOL playing = rate > 0.5;
+  BOOL playing = NO;
+  if (overrideState != nil) {
+    unsigned int st = [overrideState unsignedIntValue];
+    playing = (st == 1);
+    if (playing && rate == 0) {
+      rate = 1.0;
+    }
+  } else {
+    playing = rate > 0.5;
+  }
+
   NSDate *timestamp = [info[KeyTimestamp] isKindOfClass:[NSDate class]] ? info[KeyTimestamp] : nil;
   if (playing && timestamp) {
     // Elapsed is only stamped at `timestamp`; extrapolate so 1s refreshes stay in sync.
@@ -119,11 +154,17 @@ static void EmitState(NSDictionary *info, NSString *displayID) {
   if (contentID.length == 0) {
     contentID = [NSString stringWithFormat:@"%@|%@", title, artist];
   }
+  // A browser publishes one client per tab; key state by client + content so
+  // tabs do not overwrite each other's last signature.
+  NSString *clientKey = clientID.length ? clientID : displayID;
+  NSString *stateKey = [NSString stringWithFormat:@"%@|%@", clientKey, contentID];
 
   NSData *artwork = [info[KeyArtwork] isKindOfClass:[NSData class]] ? info[KeyArtwork] : nil;
-  // QuickTime rotates contentID on every command; artwork follows the track, not the item.
-  NSString *artworkKey = [NSString stringWithFormat:@"%@|%@|%@", title, artist, album];
-  if (title.length == 0 && artist.length == 0) artworkKey = contentID;
+  // QuickTime rotates contentID on every command; artwork follows displayID + track.
+  NSString *artworkKey = [NSString stringWithFormat:@"%@|%@|%@|%@", displayID, title, artist, album];
+  if (title.length == 0 && artist.length == 0) {
+    artworkKey = [NSString stringWithFormat:@"%@|%@", displayID, contentID];
+  }
 
   // Elapsed only needs sub-second precision; paused state stays stable.
   double bucket = playing ? round(elapsed * 2) / 2 : 0;
@@ -133,18 +174,37 @@ static void EmitState(NSDictionary *info, NSString *displayID) {
   BOOL emit = NO;
   BOOL artworkChanged = NO;
   @synchronized(StateLock) {
-    artworkChanged = artwork.length > 0 && ![artworkKey isEqualToString:LastArtworkKey];
-    emit = artworkChanged || ![signature isEqualToString:LastSignature];
-    if (emit) {
-      LastSignature = signature;
-      if (artworkChanged) LastArtworkKey = artworkKey;
+    if (title.length == 0 && artist.length == 0 && !playing) {
+      // This client has stopped / cleared its media.
+      BOOL hadState = NO;
+      NSString *prefix = [NSString stringWithFormat:@"%@|", clientKey];
+      for (NSString *key in LastSignaturesBySource.allKeys) {
+        if ([key hasPrefix:prefix]) {
+          [LastSignaturesBySource removeObjectForKey:key];
+          [LastArtworkKeyBySource removeObjectForKey:key];
+          hadState = YES;
+        }
+      }
+      emit = hadState;
+    } else {
+      NSString *lastArt = LastArtworkKeyBySource[stateKey];
+      BOOL keyChanged = ![artworkKey isEqualToString:lastArt];
+      artworkChanged = artwork.length > 0 && keyChanged;
+      NSString *lastSig = LastSignaturesBySource[stateKey];
+      emit = artworkChanged || ![signature isEqualToString:lastSig];
+      if (emit) {
+        LastSignaturesBySource[stateKey] = signature;
+        if (artworkChanged || (keyChanged && artwork.length == 0)) {
+          LastArtworkKeyBySource[stateKey] = artworkKey;
+        }
+      }
     }
   }
   if (!emit) return;
 
   NSMutableDictionary *out = [NSMutableDictionary dictionary];
   out[@"event"] = @"state";
-  out[@"source"] = displayID.length ? displayID : @"";
+  out[@"source"] = displayID;
   out[@"title"] = title;
   out[@"artist"] = artist;
   out[@"album"] = album;
@@ -157,17 +217,6 @@ static void EmitState(NSDictionary *info, NSString *displayID) {
     out[@"artwork"] = [artwork base64EncodedStringWithOptions:0];
   }
   EmitJSON(out);
-}
-
-static void RefreshState(void) {
-  if (!MR.getInfo) return;
-  MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
-    NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
-    MR.getDisplayID(WorkQueue, ^(CFStringRef value) {
-      NSString *displayID = value ? (__bridge NSString *)value : @"";
-      EmitState(info, displayID);
-    });
-  });
 }
 
 // MARK: - Commands
@@ -194,15 +243,35 @@ static NSString *DisplayIDSync(void) {
   return displayID;
 }
 
-static id ClientForDisplayID(NSArray *clients, NSString *displayID) {
-  if (clients.count == 0) return nil;
+static NSString *ParentBundleOfClient(id client) {
+  if (!client || !MR.getClientParentBundle) return @"";
+  CFStringRef value = MR.getClientParentBundle(client);
+  return value ? (__bridge NSString *)value : @"";
+}
+
+static id ClientForBundleID(NSArray *clients, NSString *bundleID) {
+  if (clients.count == 0 || bundleID.length == 0) return nil;
   for (id client in clients) {
     NSString *bundle = ((MRClient *)client).bundleIdentifier;
-    if ([bundle isKindOfClass:[NSString class]] && [bundle isEqualToString:displayID]) {
+    if ([bundle isKindOfClass:[NSString class]] && [bundle isEqualToString:bundleID]) {
       return client;
     }
   }
-  return clients.firstObject;
+  // Browser/helper clients report their own bundle ID; a command targeted at
+  // the parent app (e.g. com.apple.Safari) still needs to reach them.
+  for (id client in clients) {
+    NSString *parent = ParentBundleOfClient(client);
+    if (parent.length > 0 && [parent isEqualToString:bundleID]) {
+      return client;
+    }
+  }
+  return nil;
+}
+
+static id ClientForDisplayID(NSArray *clients, NSString *displayID) {
+  if (clients.count == 0) return nil;
+  id matched = ClientForBundleID(clients, displayID);
+  return matched ?: clients.firstObject;
 }
 
 static id PlayerPathForClient(id client) {
@@ -214,9 +283,73 @@ static id PlayerPathForClient(id client) {
   return resolved ?: path;
 }
 
+static void RefreshState(void) {
+  if (MR.getClients && MR.getInfoForPlayer) {
+    MR.getClients(WorkQueue, ^(NSArray *clients) {
+      if (clients.count > 0) {
+        for (id client in clients) {
+          NSString *bundleID = ((MRClient *)client).bundleIdentifier;
+          if (![bundleID isKindOfClass:[NSString class]] || bundleID.length == 0) continue;
+          NSString *parentBundle = ParentBundleOfClient(client);
+          NSString *presentationID = parentBundle.length > 0 ? parentBundle : bundleID;
+          id playerPath = PlayerPathForClient(client);
+          if (!playerPath) continue;
+          MR.getInfoForPlayer(playerPath, YES, WorkQueue, ^(CFDictionaryRef infoRef, const void *cover) {
+            NSDictionary *info = infoRef ? (__bridge NSDictionary *)infoRef : @{};
+            NSData *artwork = ArtworkDataFromCover(cover);
+            if (artwork) {
+              NSMutableDictionary *withArtwork = [info mutableCopy];
+              withArtwork[KeyArtwork] = artwork;
+              info = withArtwork;
+            }
+            if (MR.getStateForPlayer) {
+              MR.getStateForPlayer(playerPath, WorkQueue, ^(unsigned int state) {
+                EmitState(info, presentationID, bundleID, @(state));
+              });
+            } else {
+              EmitState(info, presentationID, bundleID, nil);
+            }
+          });
+        }
+
+        NSString *displayID = DisplayIDSync();
+        if (displayID.length > 0 && !ClientForBundleID(clients, displayID) && MR.getInfo) {
+          MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
+            NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
+            EmitState(info, displayID, displayID, nil);
+          });
+        }
+        return;
+      }
+
+      if (MR.getInfo && MR.getDisplayID) {
+        MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
+          NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
+          MR.getDisplayID(WorkQueue, ^(CFStringRef value) {
+            NSString *displayID = value ? (__bridge NSString *)value : @"";
+            EmitState(info, displayID, displayID, nil);
+          });
+        });
+      }
+    });
+    return;
+  }
+
+  if (MR.getInfo && MR.getDisplayID) {
+    MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
+      NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
+      MR.getDisplayID(WorkQueue, ^(CFStringRef value) {
+        NSString *displayID = value ? (__bridge NSString *)value : @"";
+        EmitState(info, displayID, displayID, nil);
+      });
+    });
+  }
+}
+
 static void HandleCommand(NSDictionary *command) {
   NSString *commandID = [command[@"id"] isKindOfClass:[NSString class]] ? command[@"id"] : @"";
   NSString *name = [command[@"cmd"] isKindOfClass:[NSString class]] ? command[@"cmd"] : @"";
+  NSString *target = [command[@"target"] isKindOfClass:[NSString class]] ? command[@"target"] : nil;
 
   int32_t code = -1;
   NSDictionary *options = nil;
@@ -241,10 +374,17 @@ static void HandleCommand(NSDictionary *command) {
   BOOL sent = NO;
   if (code >= 0) {
     NSArray *clients = ClientsSync();
-    id client = ClientForDisplayID(clients, DisplayIDSync());
+    id client = nil;
+    if (target.length > 0) {
+      client = ClientForBundleID(clients, target);
+    }
+    if (!client) {
+      client = ClientForDisplayID(clients, DisplayIDSync());
+    }
     id path = PlayerPathForClient(client);
     if (path) {
-      sent = MR.sendToPlayer(code, (__bridge CFDictionaryRef)options, path, 0, WorkQueue, ^{});
+      sent = MR.sendToPlayer(code, (__bridge CFDictionaryRef)options, path, 0, WorkQueue,
+                             ^(uint32_t error, NSArray *responses) {});
     }
   }
 
@@ -305,6 +445,8 @@ void hnp_run(void) {
   WorkQueue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
   WriteLock = [NSLock new];
   StateLock = [NSObject new];
+  LastSignaturesBySource = [NSMutableDictionary new];
+  LastArtworkKeyBySource = [NSMutableDictionary new];
 
   if (!LoadMediaRemote()) {
     EmitJSON(@{@"event": @"error", @"message": @"MediaRemote unavailable"});

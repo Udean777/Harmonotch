@@ -42,6 +42,7 @@ enum UserDefaultsKeys {
     static let chargeLimitThreshold = UserDefaultsKey<Int>(name: "Harmonotch_ChargeLimitThreshold", defaultValue: 80)
     static let chargeLimitSudoConfigured = UserDefaultsKey<Bool>(name: "Harmonotch_ChargeLimitSudoConfigured", defaultValue: false)
     static let volumeHUDEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_VolumeHUDEnabled", defaultValue: false)
+    static let includeOtherAudioApps = UserDefaultsKey<Bool>(name: "Harmonotch_IncludeOtherAudioApps", defaultValue: true)
 }
 
 extension UserDefaults {

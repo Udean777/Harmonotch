@@ -388,6 +388,18 @@ enum L10n {
         static var sync: String {
             isEnglish ? "Sync" : "Sinkron"
         }
+        static var audioPlaying: String {
+            isEnglish ? "Audio playing" : "Sedang memutar audio"
+        }
+        static func openApp(_ name: String) -> String {
+            isEnglish ? "Open \(name)" : "Buka \(name)"
+        }
+        static func appPlayingAudio(_ name: String) -> String {
+            isEnglish ? "\(name) is playing audio" : "\(name) sedang memutar audio"
+        }
+        static var includeOtherAudioApps: String {
+            isEnglish ? "Include Other Audio Apps" : "Sertakan App Audio Lain"
+        }
     }
 
     enum Menu {

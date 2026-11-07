@@ -23,7 +23,7 @@ struct DashboardNowSection: View {
 
       if adzanPlayer.isPlaying {
         adzanBannerRow
-      } else if mediaManager.hasActiveTrack {
+      } else if mediaManager.hasMediaSession {
         mediaQuickRow
       }
 
@@ -259,13 +259,25 @@ struct DashboardNowSection: View {
               .aspectRatio(contentMode: .fill)
               .frame(width: 28, height: 28)
               .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+          } else if let appIcon = mediaManager.presentation?.app.appIcon {
+            ZStack {
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppTheme.badgeBackground)
+                .frame(width: 28, height: 28)
+
+              Image(nsImage: appIcon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
           } else {
             ZStack {
               RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(AppTheme.badgeBackground)
                 .frame(width: 28, height: 28)
 
-              Image(systemName: mediaManager.mediaSource.iconName)
+              Image(systemName: mediaManager.presentation?.app.iconSymbolName ?? mediaManager.mediaSource.iconName)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(AppTheme.accentCyan)
             }
@@ -274,12 +286,14 @@ struct DashboardNowSection: View {
         .accessibilityHidden(true)
 
         VStack(alignment: .leading, spacing: 1) {
-          Text(mediaManager.trackTitle)
+          Text(mediaManager.presentation?.hasMetadata == true ? mediaManager.trackTitle : L10n.Media.audioPlaying)
             .font(.system(size: 10.5, weight: .bold))
             .foregroundColor(AppTheme.textPrimary)
             .lineLimit(1)
 
-          Text(mediaManager.artistName.isEmpty ? L10n.Media.nowPlaying : mediaManager.artistName)
+          Text(mediaManager.presentation?.hasMetadata == true
+            ? (mediaManager.artistName.isEmpty ? L10n.Media.nowPlaying : mediaManager.artistName)
+            : (mediaManager.presentation?.app.displayName ?? ""))
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(1)
@@ -288,20 +302,32 @@ struct DashboardNowSection: View {
         Spacer(minLength: 4)
 
         HStack(spacing: 4) {
-          mediaControlButton(icon: "backward.fill", label: L10n.Media.previousTrack) {
-            mediaManager.previousTrack()
+          if mediaManager.presentation?.capabilities.contains(.previousTrack) == true {
+            mediaControlButton(icon: "backward.fill", label: L10n.Media.previousTrack) {
+              mediaManager.previousTrack()
+            }
           }
 
-          mediaControlButton(
-            icon: mediaManager.isPlaying ? "pause.fill" : "play.fill",
-            color: mediaManager.isPlaying ? AppTheme.accentAmber : AppTheme.accentGreen,
-            label: mediaManager.isPlaying ? L10n.Media.pause : L10n.Media.play
-          ) {
-            mediaManager.playPause()
+          if mediaManager.presentation?.capabilities.contains(.playPause) == true {
+            mediaControlButton(
+              icon: mediaManager.isPlaying ? "pause.fill" : "play.fill",
+              color: mediaManager.isPlaying ? AppTheme.accentAmber : AppTheme.accentGreen,
+              label: mediaManager.isPlaying ? L10n.Media.pause : L10n.Media.play
+            ) {
+              mediaManager.playPause()
+            }
           }
 
-          mediaControlButton(icon: "forward.fill", label: L10n.Media.nextTrack) {
-            mediaManager.nextTrack()
+          if mediaManager.presentation?.capabilities.contains(.nextTrack) == true {
+            mediaControlButton(icon: "forward.fill", label: L10n.Media.nextTrack) {
+              mediaManager.nextTrack()
+            }
+          }
+
+          if mediaManager.presentation?.capabilities.contains(.openApp) == true && mediaManager.presentation?.hasMetadata == false {
+            mediaControlButton(icon: "arrow.up.forward.app", label: L10n.Media.openApp(mediaManager.presentation?.app.displayName ?? "")) {
+              mediaManager.openActiveApp()
+            }
           }
         }
       }

@@ -50,7 +50,7 @@ final class NotchViewModel: ObservableObject {
           withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
             self.selectedTab = .media
           }
-        } else if !MediaManager.shared.hasActiveTrack {
+        } else if !MediaManager.shared.hasMediaSession {
           if self.selectedTab == .media {
             withAnimation(.spring(response: 0.38, dampingFraction: 0.68)) {
               self.selectedTab = .battery
@@ -61,9 +61,9 @@ final class NotchViewModel: ObservableObject {
       .store(in: &cancellables)
 
     // Switch to Media tab when media starts playing, never while the user is on another tab.
-    Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$trackTitle)
-      .map { isPlaying, trackTitle in
-        isPlaying && !trackTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    Publishers.CombineLatest(MediaManager.shared.$isPlaying, MediaManager.shared.$presentation)
+      .map { isPlaying, presentation in
+        isPlaying && presentation != nil
       }
       .removeDuplicates()
       .receive(on: DispatchQueue.main)
