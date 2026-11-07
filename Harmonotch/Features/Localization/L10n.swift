@@ -379,6 +379,9 @@ enum L10n {
         static var prayerTab: String {
             isEnglish ? "Prayer" : "Sholat"
         }
+        static var agentsTab: String {
+            isEnglish ? "AI Agent" : "AI Agent"
+        }
         static var closeDashboard: String {
             isEnglish ? "Close Dashboard" : "Tutup Dashboard"
         }
@@ -457,6 +460,108 @@ enum L10n {
             }
             let value = hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
             return isEnglish ? "in \(value)" : "dalam \(value)"
+        }
+    }
+
+    enum AIAgents {
+        static var setupTitle: String {
+            isEnglish ? "AI Agent Quota Monitor" : "Monitor Kuota AI Agent"
+        }
+        static var setupSubtitle: String {
+            isEnglish
+                ? "Scan installed AI Agent CLIs on this Mac to verify authentication and view realtime quota usage."
+                : "Pindai CLI AI Agent yang terinstal di Mac ini untuk mengecek status login dan kuota secara realtime."
+        }
+        static var checkButton: String {
+            isEnglish ? "Check AI Agents" : "Check AI Agents"
+        }
+        static var scanningText: String {
+            isEnglish ? "Checking installed AI Agent CLIs..." : "Mengecek CLI AI Agent yang terinstal..."
+        }
+        static var refreshAgents: String {
+            isEnglish ? "Refresh AI Agents" : "Segarkan AI Agent"
+        }
+        static var statusActive: String {
+            isEnglish ? "Logged In" : "Terautentikasi"
+        }
+        static var statusFailed: String {
+            isEnglish ? "Failed" : "Gagal"
+        }
+        static var notLoggedInReason: String {
+            isEnglish ? "Not logged in / Unauthenticated" : "Belum login / Tidak terautentikasi"
+        }
+        static var noAgentsInstalledTitle: String {
+            isEnglish ? "No AI Agent CLIs Found" : "CLI AI Agent Tidak Ditemukan"
+        }
+        static var noAgentsInstalledDetail: String {
+            isEnglish
+                ? "Install Claude Code, Codex, OpenCode, or Gemini CLI to track their quota here."
+                : "Instal Claude Code, Codex, OpenCode, atau Gemini CLI untuk memantau kuotanya di sini."
+        }
+        static var cliSessions: String {
+            isEnglish ? "Local CLI Sessions" : "Sesi CLI Lokal"
+        }
+        static var claudeSubscribedNote: String {
+            isEnglish ? "OAuth session active via Claude CLI" : "Sesi OAuth aktif via Claude CLI"
+        }
+        static var authenticatedReady: String {
+            isEnglish ? "Authenticated & ready" : "Terautentikasi & siap digunakan"
+        }
+        static var resetCredits: String {
+            isEnglish ? "Reset Credits" : "Kredit Reset"
+        }
+        static var connectedProviders: String {
+            isEnglish ? "Connected Providers" : "Provider Terhubung"
+        }
+        static var accountLabel: String {
+            isEnglish ? "Account" : "Akun"
+        }
+        static var quotaWindow: String {
+            isEnglish ? "Quota Window" : "Jendela Kuota"
+        }
+        static var activeModelLabel: String {
+            isEnglish ? "Active Model" : "Model Aktif"
+        }
+        static var providerLabel: String {
+            isEnglish ? "Provider" : "Penyedia"
+        }
+        static var configuredModels: String {
+            isEnglish ? "Configured Models" : "Model Terkonfigurasi"
+        }
+        static var reasoningEffortLabel: String {
+            isEnglish ? "Reasoning Effort" : "Tingkat Penalaran"
+        }
+        static var detailQuotaTitle: String {
+            isEnglish ? "Quota Details" : "Detail Quota"
+        }
+        static var viewDetailQuota: String {
+            isEnglish ? "View Quota Details" : "Lihat Detail Quota"
+        }
+        static var backButton: String {
+            isEnglish ? "Back" : "Kembali"
+        }
+        static var filterAll: String {
+            isEnglish ? "All" : "Semua"
+        }
+        static var showDetails: String {
+            isEnglish ? "Show Quota Details" : "Lihat Sisa Kuota"
+        }
+        static var hideDetails: String {
+            isEnglish ? "Hide Quota Details" : "Sembunyikan Kuota"
+        }
+        static var quotaOverview: String {
+            isEnglish ? "Remaining Quota" : "Sisa Kuota"
+        }
+        static func loginHint(_ cmd: String) -> String {
+            isEnglish ? "Run `\(cmd)` in Terminal to authenticate." : "Jalankan `\(cmd)` di Terminal untuk login."
+        }
+        static func summaryCount(active: Int, failed: Int) -> String {
+            if failed > 0 {
+                return isEnglish
+                    ? "\(active) Active • \(failed) Failed"
+                    : "\(active) Aktif • \(failed) Gagal"
+            }
+            return isEnglish ? "\(active) Active Agents" : "\(active) Agent Aktif"
         }
     }
 

@@ -15,20 +15,20 @@ struct VolumeNoticeView: View {
   }
 
   private var barWidth: CGFloat {
-    isExpandedBadge ? 44 : 38
+    isExpandedBadge ? 72 : 38
   }
 
   private var barHeight: CGFloat {
-    isExpandedBadge ? 5 : 4.5
+    isExpandedBadge ? 5.5 : 4.5
   }
 
   var body: some View {
-    HStack(spacing: isExpandedBadge ? 6 : 5) {
+    HStack(spacing: isExpandedBadge ? 8 : 5) {
       Image(systemName: notice.symbol)
-        .font(.system(size: isExpandedBadge ? 11.5 : 11, weight: .semibold))
+        .font(.system(size: isExpandedBadge ? 12 : 11, weight: .semibold))
         .symbolRenderingMode(.monochrome)
         .foregroundColor(notice.muted ? .white.opacity(0.65) : .white)
-        .frame(width: 14, alignment: .center)
+        .frame(width: 15, alignment: .center)
 
       ZStack(alignment: .leading) {
         Capsule(style: .continuous)
@@ -43,22 +43,23 @@ struct VolumeNoticeView: View {
       .animation(NotchMotion.quick, value: clampedLevel)
 
       Text("\(percent)%")
-        .font(.system(size: isExpandedBadge ? 11 : 10.5, weight: .bold, design: .rounded))
+        .font(.system(size: isExpandedBadge ? 11.5 : 10.5, weight: .bold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(notice.muted ? .white.opacity(0.75) : .white)
         .lineLimit(1)
-        .frame(minWidth: 28, alignment: .trailing)
+        .frame(minWidth: 30, alignment: .trailing)
     }
-    .padding(.horizontal, isExpandedBadge ? 9 : 2)
-    .padding(.vertical, isExpandedBadge ? 4.5 : 0)
+    .padding(.horizontal, isExpandedBadge ? 12 : 2)
+    .padding(.vertical, isExpandedBadge ? 6.5 : 0)
     .background {
       if isExpandedBadge {
         Capsule(style: .continuous)
-          .fill(AppTheme.tabBarBackground)
+          .fill(AppTheme.surfaceBackground)
           .overlay(
             Capsule(style: .continuous)
-              .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+              .stroke(AppTheme.surfaceBorder, lineWidth: 0.8)
           )
+          .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 4)
       }
     }
     .accessibilityElement(children: .ignore)

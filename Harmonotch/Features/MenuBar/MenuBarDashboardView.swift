@@ -160,6 +160,8 @@ struct MenuBarDashboardView: View {
       DashboardBatterySection()
     case .prayer:
       DashboardPrayerSection()
+    case .agents:
+      DashboardAgentsSection()
     }
   }
 
@@ -197,6 +199,7 @@ struct MenuBarDashboardView: View {
     case .now: return L10n.Dashboard.nowTab
     case .battery: return L10n.Dashboard.batteryTab
     case .prayer: return L10n.Dashboard.prayerTab
+    case .agents: return L10n.Dashboard.agentsTab
     }
   }
 }

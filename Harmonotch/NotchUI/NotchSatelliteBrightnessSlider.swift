@@ -5,6 +5,7 @@ struct NotchSatelliteBrightnessSlider: View {
   var height: CGFloat = 175
 
   @ObservedObject private var brightnessService = SystemBrightnessService.shared
+  @ObservedObject private var notchVM = NotchViewModel.shared
   @State private var dragBrightness: Float?
   @State private var isDragging: Bool = false
   @State private var isHovered: Bool = false
@@ -28,6 +29,12 @@ struct NotchSatelliteBrightnessSlider: View {
     } else {
       return "sun.min"
     }
+  }
+
+  private var topClearance: CGFloat {
+    notchVM.geometry.hasHardwareNotch
+      ? (notchVM.geometry.physicalNotchHeight + 4)
+      : 10
   }
 
   var body: some View {
@@ -69,9 +76,9 @@ struct NotchSatelliteBrightnessSlider: View {
           Text("\(percent)%")
             .font(.system(size: 8, weight: .bold, design: .rounded))
             .monospacedDigit()
-            .foregroundColor(topLabelColor)
+            .foregroundColor(topLabelColor(totalHeight: totalHeight))
             .lineLimit(1)
-            .padding(.top, 7)
+            .padding(.top, topClearance)
 
           Spacer(minLength: 0)
 
@@ -80,7 +87,7 @@ struct NotchSatelliteBrightnessSlider: View {
             .symbolRenderingMode(.monochrome)
             .foregroundColor(bottomIconColor)
             .frame(width: 20, height: 20)
-            .padding(.bottom, 6)
+            .padding(.bottom, 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -127,15 +134,16 @@ struct NotchSatelliteBrightnessSlider: View {
     .accessibilityLabel("Display Brightness \(percent)%")
   }
 
-  private var topLabelColor: Color {
-    if currentLevel >= 0.86 {
+  private func topLabelColor(totalHeight: CGFloat) -> Color {
+    let threshold = max(0.65, 1.0 - (topClearance + 12) / max(1, totalHeight))
+    if currentLevel >= threshold {
       return Color.black.opacity(0.85)
     }
     return Color.white.opacity(0.92)
   }
 
   private var bottomIconColor: Color {
-    if currentLevel >= 0.16 {
+    if currentLevel >= 0.12 {
       return Color.black.opacity(0.85)
     }
     return Color.white.opacity(0.92)

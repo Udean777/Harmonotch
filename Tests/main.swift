@@ -21,6 +21,7 @@ runBatteryTests()
 runAudioTests()
 runGeometryTests()
 runDefaultsTests()
+runAIAgentTests()
 
 if failures > 0 {
   fputs("\(failures) test(s) failed\n", stderr)

@@ -61,6 +61,8 @@ final class MenuBarPanelController: NSObject {
       AdzanPlayer.shared.$isPlaying.map { _ in () }.eraseToAnyPublisher(),
       BatteryMonitor.shared.$state.map { _ in () }.eraseToAnyPublisher(),
       LanguageManager.shared.$currentLanguage.map { _ in () }.eraseToAnyPublisher(),
+      AIAgentQuotaService.shared.$agents.map { _ in () }.eraseToAnyPublisher(),
+      AIAgentQuotaService.shared.$isScanning.map { _ in () }.eraseToAnyPublisher(),
     ]
 
     Publishers.MergeMany(triggers)

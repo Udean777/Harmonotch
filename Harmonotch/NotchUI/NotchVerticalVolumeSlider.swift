@@ -24,8 +24,8 @@ struct NotchVerticalVolumeSlider: View {
   }
 
   private var isMuted: Bool {
-    if audioService.isMuted != nil {
-      return audioService.isMuted!
+    if let muted = audioService.isMuted {
+      return muted
     }
     if let notice = notchVM.volumeNotice {
       return notice.muted
@@ -34,12 +34,18 @@ struct NotchVerticalVolumeSlider: View {
   }
 
   private var percent: Int {
-    guard !isMuted else { return 0 }
+    if isMuted { return 0 }
     return min(100, max(0, Int((currentLevel * 100).rounded())))
   }
 
   private var symbol: String {
     VolumeKeyRouter.volumeSymbol(level: currentLevel, muted: isMuted)
+  }
+
+  private var topClearance: CGFloat {
+    notchVM.geometry.hasHardwareNotch
+      ? (notchVM.geometry.physicalNotchHeight + 4)
+      : 10
   }
 
   var body: some View {
@@ -75,16 +81,15 @@ struct NotchVerticalVolumeSlider: View {
         }
         .clipShape(Capsule(style: .continuous))
         .animation(isDragging ? nil : NotchMotion.quick, value: currentLevel)
-        .animation(isDragging ? nil : NotchMotion.quick, value: isMuted)
 
         // Content Overlays (Percentage at top, Speaker Icon at bottom)
         VStack(spacing: 0) {
           Text("\(percent)%")
             .font(.system(size: 8, weight: .bold, design: .rounded))
             .monospacedDigit()
-            .foregroundColor(topLabelColor)
+            .foregroundColor(topLabelColor(totalHeight: totalHeight))
             .lineLimit(1)
-            .padding(.top, 7)
+            .padding(.top, topClearance)
 
           Spacer(minLength: 0)
 
@@ -101,7 +106,7 @@ struct NotchVerticalVolumeSlider: View {
               .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
-          .padding(.bottom, 6)
+          .padding(.bottom, 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -145,8 +150,12 @@ struct NotchVerticalVolumeSlider: View {
     .accessibilityLabel(L10n.Volume.accessibilityLabel(percent: percent, muted: isMuted))
   }
 
-  private var topLabelColor: Color {
-    if !isMuted && currentLevel >= 0.86 {
+  private func topLabelColor(totalHeight: CGFloat) -> Color {
+    if isMuted {
+      return Color.white.opacity(0.55)
+    }
+    let threshold = max(0.65, 1.0 - (topClearance + 12) / max(1, totalHeight))
+    if currentLevel >= threshold {
       return Color.black.opacity(0.85)
     }
     return Color.white.opacity(0.92)
@@ -156,7 +165,7 @@ struct NotchVerticalVolumeSlider: View {
     if isMuted {
       return Color.white.opacity(0.55)
     }
-    if currentLevel >= 0.16 {
+    if currentLevel >= 0.12 {
       return Color.black.opacity(0.85)
     }
     return Color.white.opacity(0.92)
