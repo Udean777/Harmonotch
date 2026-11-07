@@ -43,6 +43,20 @@ public struct MediaSelector {
     )
   }
 
+  /// Drops playing MediaRemote candidates that the bridge stopped refreshing.
+  /// A closed tab or quit client never sends a final pause line, so without
+  /// this its last "playing" state outranks every player that comes after it.
+  public static func pruneStale(
+    _ candidates: [MediaCandidate],
+    now: TimeInterval = Date().timeIntervalSince1970,
+    maxAge: TimeInterval = 6
+  ) -> [MediaCandidate] {
+    candidates.filter { candidate in
+      guard candidate.awareness == .mediaRemote, candidate.isPlaying else { return true }
+      return now - candidate.lastUpdated <= maxAge
+    }
+  }
+
   // MARK: - Playing Arbitration
 
   private static func selectPlaying(

@@ -485,7 +485,9 @@ final class MediaManager: ObservableObject {
   private func reconcile(pendingArtwork: NSImage? = nil, pendingArtworkURL: URL? = nil) {
     dispatchPrecondition(condition: .onQueue(.main))
 
-    let candidates = candidateRegistry.values.filter { includeOtherAudioApps || $0.hasMetadata }
+    let candidates = MediaSelector.pruneStale(
+      candidateRegistry.values.filter { includeOtherAudioApps || $0.hasMetadata }
+    )
     let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
 
     guard let winner = MediaSelector.select(
@@ -695,7 +697,9 @@ final class MediaManager: ObservableObject {
         awareness: .mediaRemote,
         capabilities: .standardPlayer
       )
-      self.systemIdentity = identity
+      // Only a playing client can be the system's current player; paused clients
+      // are still enumerated and would otherwise win the paused tie-break.
+      if state.playing { self.systemIdentity = identity }
       self.ingest(candidate: candidate, directArtwork: artwork)
     }
   }
@@ -845,6 +849,9 @@ final class MediaManager: ObservableObject {
       // When a local music player is actively playing, web polling is deferred to save CPU
       if isMusicAppPlaying && self.localPollPlaying { return }
       self.pollWebMediaState(localHasTrack: localHasTrack)
+      // Re-run arbitration even when every poll is empty, so a dead client's
+      // last playing state cannot stay on screen.
+      DispatchQueue.main.async { [weak self] in self?.reconcile() }
     }
   }
 

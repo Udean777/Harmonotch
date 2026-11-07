@@ -970,7 +970,17 @@ checkEqual(sel8?.identity.bundleID, "us.zoom.xos", "Playing audio-only presence 
 let sel9 = MediaSelector.select(candidates: [zoomCandidate, youtubeCandidate])
 checkEqual(sel9?.identity.bundleID, "com.apple.Safari", "Playing metadata beats playing audio-only")
 
-// Scenario 10: Two audio-only playing: earlier started wins
+// Scenario 10: A playing MediaRemote client that stopped refreshing is dropped
+// before selection, so the next player can take over.
+let deadSpotify = spotifyCandidate
+let liveYoutube = youtubeCandidate
+let prunedLive = MediaSelector.pruneStale([deadSpotify, liveYoutube], now: 500, maxAge: 6)
+checkEqual(prunedLive.contains(where: { $0.identity == deadSpotify.identity }), false, "Stale playing bridge candidate is pruned")
+checkEqual(prunedLive.contains(where: { $0.identity == liveYoutube.identity }), true, "Script candidate is kept")
+let selPrunedWinner = MediaSelector.select(candidates: prunedLive, previous: deadSpotify.identity)
+checkEqual(selPrunedWinner?.identity.bundleID, "com.apple.Safari", "Live player wins after stale player is pruned")
+
+// Scenario 11: Two audio-only playing: earlier started wins
 var teamsCandidate = MediaCandidate(
     identity: MediaIdentity(bundleID: "com.microsoft.teams", pid: 999),
     app: MediaAppInfo.resolve(bundleID: "com.microsoft.teams"),
