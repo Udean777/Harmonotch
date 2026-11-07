@@ -175,8 +175,14 @@ struct MenuBarDashboardView: View {
 
       DashboardIconButton(
         icon: "arrow.clockwise",
-        helpText: L10n.Menu.checkForUpdates,
-        action: { updateManager.checkForUpdates(isUserInitiated: true) }
+        helpText: viewModel.selectedTab == .agents ? L10n.AIAgents.refreshAgents : L10n.Menu.checkForUpdates,
+        action: {
+          if viewModel.selectedTab == .agents {
+            AIAgentQuotaService.shared.checkInstalledAgents(force: true)
+          } else {
+            updateManager.checkForUpdates(isUserInitiated: true)
+          }
+        }
       )
 
       DashboardIconButton(

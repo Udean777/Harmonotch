@@ -1,6 +1,6 @@
 import Foundation
 
-enum AIAgentKind: String, CaseIterable, Identifiable {
+enum AIAgentKind: String, CaseIterable, Identifiable, Codable {
   case claude = "claude"
   case codex = "codex"
   case opencode = "opencode"
@@ -70,7 +70,7 @@ enum AIAgentKind: String, CaseIterable, Identifiable {
   }
 }
 
-enum AIAgentAuthStatus: Equatable {
+enum AIAgentAuthStatus: Equatable, Codable {
   case authenticated(detail: String?)
   case failed(reason: String)
 
@@ -82,7 +82,7 @@ enum AIAgentAuthStatus: Equatable {
   }
 }
 
-struct AIAgentQuotaMetric: Identifiable, Equatable {
+struct AIAgentQuotaMetric: Identifiable, Equatable, Codable {
   let id: String
   let label: String
   let valueText: String
@@ -90,7 +90,7 @@ struct AIAgentQuotaMetric: Identifiable, Equatable {
   let resetDescription: String?
 }
 
-struct AIAgentStatusItem: Identifiable, Equatable {
+struct AIAgentStatusItem: Identifiable, Equatable, Codable {
   let kind: AIAgentKind
   let binaryPath: String
   let version: String?

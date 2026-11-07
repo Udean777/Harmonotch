@@ -36,7 +36,54 @@ struct DashboardAgentsSection: View {
       ForEach(quotaService.agents) { agent in
         agentCard(for: agent)
       }
+
+      bottomFooterBar
     }
+  }
+
+  private var bottomFooterBar: some View {
+    HStack(spacing: 6) {
+      if let checkedAt = quotaService.lastCheckedAt {
+        Text(TimeFormatting.relativeText(for: checkedAt))
+          .font(AppTypography.micro(.medium))
+          .foregroundColor(AppTheme.textTertiary)
+          .lineLimit(1)
+      }
+
+      Spacer(minLength: 4)
+
+      Button {
+        quotaService.checkInstalledAgents(force: true)
+      } label: {
+        HStack(spacing: 4) {
+          if quotaService.isScanning {
+            ProgressView()
+              .controlSize(.mini)
+          } else {
+            Image(systemName: "arrow.clockwise")
+              .font(.system(size: 9, weight: .bold))
+          }
+          Text(L10n.AIAgents.refreshAgents)
+            .font(AppTypography.micro(.semibold))
+        }
+        .foregroundColor(AppTheme.textSecondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(AppTheme.badgeBackground)
+            .overlay(
+              RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+            )
+        )
+      }
+      .buttonStyle(.plain)
+      .disabled(quotaService.isScanning)
+      .help(L10n.AIAgents.refreshAgents)
+    }
+    .padding(.horizontal, 2)
+    .padding(.top, 2)
   }
 
   private var topStatusHeader: some View {
@@ -64,7 +111,7 @@ struct DashboardAgentsSection: View {
       Spacer(minLength: 4)
 
       Button {
-        quotaService.checkInstalledAgents()
+        quotaService.checkInstalledAgents(force: true)
       } label: {
         HStack(spacing: 4) {
           if quotaService.isScanning {
@@ -545,7 +592,7 @@ struct DashboardAgentsSection: View {
         Spacer(minLength: 4)
 
         Button {
-          quotaService.checkInstalledAgents()
+          quotaService.checkInstalledAgents(force: true)
         } label: {
           Text(L10n.AIAgents.checkButton)
             .font(AppTypography.caption(.semibold))
@@ -588,7 +635,7 @@ struct DashboardAgentsSection: View {
         HStack {
           Spacer()
           Button {
-            quotaService.checkInstalledAgents()
+            quotaService.checkInstalledAgents(force: true)
           } label: {
             HStack(spacing: 4) {
               Image(systemName: "arrow.clockwise")

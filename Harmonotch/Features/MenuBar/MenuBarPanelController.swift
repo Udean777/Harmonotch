@@ -66,6 +66,7 @@ final class MenuBarPanelController: NSObject {
     ]
 
     Publishers.MergeMany(triggers)
+      .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
       .receive(on: DispatchQueue.main)
       .sink { [weak self] _ in
         guard let self, self.isVisible else { return }

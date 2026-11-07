@@ -13,6 +13,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     observeUpdates()
     VolumeHUDController.shared.syncWithPreferences()
 
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+      AIAgentQuotaService.shared.checkInstalledAgents()
+    }
+
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
       UpdateManager.shared.checkForUpdates(isUserInitiated: false)
     }
