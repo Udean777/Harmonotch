@@ -4,6 +4,7 @@ enum DrawerTab: String, CaseIterable, Identifiable {
     case battery = "battery"
     case media = "media"
     case prayer = "prayer"
+    case agents = "agents"
 
     var id: String { rawValue }
 
@@ -15,6 +16,8 @@ enum DrawerTab: String, CaseIterable, Identifiable {
             return L10n.Drawer.mediaTab
         case .prayer:
             return L10n.Drawer.prayerTab
+        case .agents:
+            return L10n.Drawer.agentsTab
         }
     }
 
@@ -26,6 +29,8 @@ enum DrawerTab: String, CaseIterable, Identifiable {
             return "waveform"
         case .prayer:
             return "moon.stars.fill"
+        case .agents:
+            return "cpu.fill"
         }
     }
 }
@@ -42,9 +47,9 @@ struct NotchTabBar: View {
 
     private var visibleTabs: [DrawerTab] {
         if isAudioActive {
-            return [.media, .battery, .prayer]
+            return [.media, .battery, .prayer, .agents]
         } else {
-            return [.battery, .prayer]
+            return [.battery, .prayer, .agents]
         }
     }
 

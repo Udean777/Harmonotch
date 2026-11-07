@@ -6,7 +6,6 @@ struct NotchPillView: View {
   @ObservedObject var notchVM = NotchViewModel.shared
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
   @ObservedObject var mediaManager = MediaManager.shared
-  @State private var isLeftHovered = false
 
   private var geometry: NotchGeometry {
     notchVM.geometry
@@ -20,18 +19,10 @@ struct NotchPillView: View {
     mediaManager.isPlaying && mediaManager.hasMediaSession && !adzanPlayer.isPlaying
   }
 
-  private var leftContentExpansion: CGFloat {
-    if isMediaPlaying {
-      return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
-    }
-    return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
-  }
-
   private var wings: (left: CGFloat, right: CGFloat) {
     geometry.collapsedWingWidths(
       isHovered: notchVM.isHovered,
       isMediaPlaying: isMediaPlaying,
-      leftExtra: leftContentExpansion,
       measured: notchVM.collapsedWingWidths
     )
   }
@@ -80,9 +71,6 @@ struct NotchPillView: View {
         notchVM.collapsedWingWidths = widths
       }
     }
-    .onChange(of: isBatteryMode) { _, _ in
-      updateLeftHover(isLeftHovered)
-    }
   }
 
   private var showsVolumeOnLeft: Bool {
@@ -108,7 +96,6 @@ struct NotchPillView: View {
       .background(wingWidthProbe(isLeft: true))
       .frame(width: wings.left, height: height, alignment: .leading)
       .clipped()
-      .onHover { updateLeftHover($0) }
   }
 
   private var rightWing: some View {
@@ -132,11 +119,6 @@ struct NotchPillView: View {
     }
   }
 
-  private func updateLeftHover(_ hovering: Bool) {
-    if isLeftHovered != hovering { isLeftHovered = hovering }
-    notchVM.setLeftCompanionVisible(hovering && isBatteryMode)
-  }
-
   private var leftContent: some View {
     ZStack {
       leftContentBody
@@ -145,7 +127,6 @@ struct NotchPillView: View {
     }
     .animation(NotchMotion.content, value: contentMode)
     .animation(NotchMotion.content, value: showsVolumeOnLeft)
-    .animation(NotchMotion.quick, value: isLeftHovered)
   }
 
   private var rightContent: some View {
@@ -163,17 +144,9 @@ struct NotchPillView: View {
     if let notice = notchVM.volumeNotice, isMediaPlaying {
       VolumeNoticeView(notice: notice)
     } else if isBatteryMode {
-      HStack(spacing: 4) {
-        if isLeftHovered && notchVM.isCompanionEnabled {
-          PrayerCompanionView(isVisible: !notchVM.isExpanded)
-            .transition(.opacity.combined(with: .scale(scale: 0.82, anchor: .trailing)))
-        }
-        batteryLeft
-      }
+      batteryLeft
     } else if isMediaPlaying {
       mediaLeft
-    } else if notchVM.isCompanionEnabled {
-      PrayerCompanionView(isVisible: !notchVM.isExpanded)
     } else {
       batteryLeft
     }
@@ -259,21 +232,8 @@ struct NotchPillView: View {
   }
 
   private var mediaLeft: some View {
-    HStack(spacing: 5) {
-      // On a virtual notch, the artwork forms the rounded left end of the pill.
-      if !geometry.hasHardwareNotch {
-        thumbnail
-      }
-
-      if notchVM.isCompanionEnabled {
-        PrayerCompanionView(isVisible: !notchVM.isExpanded)
-      }
-
-      if geometry.hasHardwareNotch {
-        thumbnail
-      }
-    }
-    .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
+    thumbnail
+      .animation(NotchMotion.fade, value: mediaManager.artworkImage != nil)
   }
 
   private var thumbnailDiameter: CGFloat {

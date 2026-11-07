@@ -24,6 +24,14 @@ final class AIAgentQuotaService: ObservableObject {
         self.lastCheckedAt = now
         self.hasCompletedInitialScan = true
         self.isScanning = false
+
+        let currentSelected = UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]
+        if !discovered.isEmpty,
+           !discovered.contains(where: { $0.kind.rawValue == currentSelected }) {
+          let preferred = discovered.first(where: { $0.authStatus.isAuthenticated }) ?? discovered[0]
+          UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = preferred.kind.rawValue
+          NotificationCenter.default.post(name: .notchAIAgentChanged, object: preferred.kind.rawValue)
+        }
       }
     }
   }
@@ -71,6 +79,23 @@ final class AIAgentQuotaService: ObservableObject {
     }
   }
 
+  private static func makeFailedStatusItem(
+    kind: AIAgentKind,
+    cli: AIAgentDiscoveryService.DiscoveredCLI,
+    reason: String = L10n.AIAgents.notLoggedInReason,
+    checkedAt: Date
+  ) -> AIAgentStatusItem {
+    AIAgentStatusItem(
+      kind: kind,
+      binaryPath: cli.displayPath,
+      version: cli.version,
+      authStatus: .failed(reason: reason),
+      metrics: [],
+      statusNote: nil,
+      checkedAt: checkedAt
+    )
+  }
+
   private static func fetchClaudeQuota(
     cli: AIAgentDiscoveryService.DiscoveredCLI,
     home: String,
@@ -78,15 +103,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) async -> AIAgentStatusItem {
     let auth = AIAgentDiscoveryService.checkClaudeAuth(binaryPath: cli.binaryPath)
     guard auth.isLoggedIn else {
-      return AIAgentStatusItem(
-        kind: .claude,
-        binaryPath: cli.displayPath,
-        version: cli.version,
-        authStatus: .failed(reason: L10n.AIAgents.notLoggedInReason),
-        metrics: [],
-        statusNote: nil,
-        checkedAt: now
-      )
+      return makeFailedStatusItem(kind: .claude, cli: cli, checkedAt: now)
     }
 
     let claudeCfg = AIAgentDiscoveryService.readClaudeConfig(home: home)
@@ -238,15 +255,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) async -> AIAgentStatusItem {
     let auth = AIAgentDiscoveryService.checkCodexAuth(home: home)
     guard auth.isLoggedIn else {
-      return AIAgentStatusItem(
-        kind: .codex,
-        binaryPath: cli.displayPath,
-        version: cli.version,
-        authStatus: .failed(reason: L10n.AIAgents.notLoggedInReason),
-        metrics: [],
-        statusNote: nil,
-        checkedAt: now
-      )
+      return makeFailedStatusItem(kind: .codex, cli: cli, checkedAt: now)
     }
 
     let codexCfg = AIAgentDiscoveryService.readCodexConfig(home: home)
@@ -377,15 +386,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) -> AIAgentStatusItem {
     let configuredProviders = AIAgentDiscoveryService.checkOpenCodeAuth(home: home)
     guard !configuredProviders.isEmpty else {
-      return AIAgentStatusItem(
-        kind: .opencode,
-        binaryPath: cli.displayPath,
-        version: cli.version,
-        authStatus: .failed(reason: L10n.AIAgents.notLoggedInReason),
-        metrics: [],
-        statusNote: nil,
-        checkedAt: now
-      )
+      return makeFailedStatusItem(kind: .opencode, cli: cli, checkedAt: now)
     }
 
     let opencodeCfg = AIAgentDiscoveryService.readOpenCodeConfig(home: home)
@@ -473,15 +474,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) async -> AIAgentStatusItem {
     let auth = AIAgentDiscoveryService.checkGeminiAuth(home: home)
     guard auth.isLoggedIn else {
-      return AIAgentStatusItem(
-        kind: .gemini,
-        binaryPath: cli.displayPath,
-        version: cli.version,
-        authStatus: .failed(reason: L10n.AIAgents.notLoggedInReason),
-        metrics: [],
-        statusNote: nil,
-        checkedAt: now
-      )
+      return makeFailedStatusItem(kind: .gemini, cli: cli, checkedAt: now)
     }
 
     let activeModel = AIAgentDiscoveryService.readGeminiActiveModel(home: home)
@@ -628,15 +621,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) -> AIAgentStatusItem {
     let isLoggedIn = AIAgentDiscoveryService.checkCopilotAuth(home: home)
     guard isLoggedIn else {
-      return AIAgentStatusItem(
-        kind: .copilot,
-        binaryPath: cli.displayPath,
-        version: cli.version,
-        authStatus: .failed(reason: L10n.AIAgents.notLoggedInReason),
-        metrics: [],
-        statusNote: nil,
-        checkedAt: now
-      )
+      return makeFailedStatusItem(kind: .copilot, cli: cli, checkedAt: now)
     }
 
     let copilotInfo = AIAgentDiscoveryService.readCopilotAccount(cli: cli, home: home)

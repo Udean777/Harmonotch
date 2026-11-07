@@ -18,14 +18,7 @@ final class NotchViewModel: ObservableObject {
 
   @Published var isExpanded: Bool = false
   @Published var isHovered: Bool = false
-  @Published var isLeftCompanionVisible: Bool = false
   @Published private(set) var volumeNotice: VolumeNotice?
-  @Published var isCompanionEnabled: Bool {
-    didSet {
-      UserDefaults.standard[UserDefaultsKeys.companionEnabled] = isCompanionEnabled
-      if !isCompanionEnabled { isLeftCompanionVisible = false }
-    }
-  }
   @Published var selectedTab: DrawerTab = .battery
   @Published var geometry: NotchGeometry = NotchGeometry.current()
   /// Content-driven wing widths reported by the collapsed pill.
@@ -44,8 +37,6 @@ final class NotchViewModel: ObservableObject {
   }
 
   init() {
-    self.isCompanionEnabled = UserDefaults.standard[UserDefaultsKeys.companionEnabled]
-
     // Switch to Media tab when Adzan starts playing
     AdzanPlayer.shared.$isPlaying
       .receive(on: DispatchQueue.main)
@@ -97,12 +88,6 @@ final class NotchViewModel: ObservableObject {
 
   func setHovered(_ hovered: Bool) {
     isHovered = hovered
-  }
-
-  func setLeftCompanionVisible(_ visible: Bool) {
-    let next = visible && isCompanionEnabled
-    guard isLeftCompanionVisible != next else { return }
-    isLeftCompanionVisible = next
   }
 
   func collapse() {

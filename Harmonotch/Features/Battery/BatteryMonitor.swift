@@ -16,7 +16,7 @@ final class BatteryMonitor: ObservableObject {
     @Published private(set) var refreshError: String? = nil
     @Published private(set) var isRefreshing = false
 
-    // Legacy fields consumed by the notch pill, drawer and companion views.
+    // Legacy fields consumed by the notch pill and drawer views.
     @Published var currentCapacity: Int = 100
     @Published var isCharging: Bool = false
     @Published var isPluggedIn: Bool = false

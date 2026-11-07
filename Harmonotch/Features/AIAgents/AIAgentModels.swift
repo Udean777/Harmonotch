@@ -24,6 +24,21 @@ enum AIAgentKind: String, CaseIterable, Identifiable {
     }
   }
 
+  var shortName: String {
+    switch self {
+    case .claude:
+      return "Claude"
+    case .codex:
+      return "Codex"
+    case .opencode:
+      return "OpenCode"
+    case .gemini:
+      return "Gemini"
+    case .copilot:
+      return "Copilot"
+    }
+  }
+
   var icon: String {
     switch self {
     case .claude:
@@ -85,4 +100,26 @@ struct AIAgentStatusItem: Identifiable, Equatable {
   let checkedAt: Date
 
   var id: String { kind.rawValue }
+
+  var quotaProgressMetrics: [AIAgentQuotaMetric] {
+    metrics.filter { $0.remainingRatio != nil }
+  }
+
+  var metadataMetrics: [AIAgentQuotaMetric] {
+    metrics.filter { $0.remainingRatio == nil }
+  }
+
+  var primaryQuotaMetric: AIAgentQuotaMetric? {
+    quotaProgressMetrics.first
+  }
+
+  var activeModelSummary: String? {
+    if let modelMetric = metadataMetrics.first(where: { $0.id.contains("model") }) {
+      return modelMetric.valueText
+    }
+    if case .authenticated(let detail) = authStatus, let detail, !detail.isEmpty {
+      return detail
+    }
+    return metadataMetrics.first?.valueText
+  }
 }

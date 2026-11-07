@@ -16,18 +16,10 @@ struct NotchContainerView: View {
     mediaManager.isPlaying && mediaManager.hasMediaSession && !adzanPlayer.isPlaying
   }
 
-  private var leftContentExpansion: CGFloat {
-    if isMediaPlaying {
-      return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
-    }
-    return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
-  }
-
   private var collapsedWings: (left: CGFloat, right: CGFloat) {
     geometry.collapsedWingWidths(
       isHovered: notchVM.isHovered,
       isMediaPlaying: isMediaPlaying,
-      leftExtra: leftContentExpansion,
       measured: notchVM.collapsedWingWidths
     )
   }
@@ -38,7 +30,6 @@ struct NotchContainerView: View {
     return geometry.collapsedWidth(
       isHovered: notchVM.isHovered,
       isMediaPlaying: isMediaPlaying,
-      leftExtra: leftContentExpansion,
       measured: notchVM.collapsedWingWidths
     )
   }
@@ -72,6 +63,8 @@ struct NotchContainerView: View {
         + (adzanPlayer.isPlaying
           ? NotchLayout.expandedAdzanHeight
           : NotchLayout.expandedPrayerHeight)
+    case .agents:
+      return topClearance + NotchLayout.expandedAgentsHeight
     }
   }
 
@@ -181,6 +174,9 @@ struct NotchContainerView: View {
             .transition(NotchMotion.drawer)
         case .prayer:
           PrayerDrawerView()
+            .transition(NotchMotion.drawer)
+        case .agents:
+          AIAgentDrawerView()
             .transition(NotchMotion.drawer)
         }
       }

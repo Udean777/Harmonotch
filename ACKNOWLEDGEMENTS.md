@@ -73,6 +73,7 @@ THE SOFTWARE.
 
 - **SF Symbols:** Apple Inc. Human Interface Guidelines and native macOS system iconography.
 - **MediaRemote & IOKit (`AppleSmartBattery`):** Darwin / Apple system frameworks for real-time media remote transport and direct, daemon-free hardware battery health telemetry. Harmonotch's MediaRemote adapter is written from scratch (see the Vorssaint credit above) and uses the framework's undocumented symbols at runtime; no third-party bridge code is included.
+- **CoreAudio & DisplayServices:** Native macOS CoreAudio property dispatching (`AudioObjectSetPropertyData`) and DisplayServices brightness APIs for responsive hardware control without relying on third-party daemon processes.
 
 ---
 
@@ -80,6 +81,19 @@ THE SOFTWARE.
 
 - **Research Credits:** [actuallymentor/battery](https://github.com/actuallymentor/battery), [hholtmann/smcFanControl](https://github.com/hholtmann/smcFanControl), and macOS reverse engineering of `AppleSMCKeysEndpoint`.
 - **Purpose in Harmonotch:** Informed Harmonotch's native hardware SMC control registers (`CH0B` on Apple Silicon and `BCLM` on Intel) for power pass-through and charging limit enforcement.
+
+---
+
+## 7. AI CLI Developer Tools & API Integrations
+
+Harmonotch detects and surfaces quota metrics for the developer tools you use daily:
+- **Claude Code CLI** ([Anthropic](https://anthropic.com)): Configuration structure in `~/.claude.json` and OAuth usage endpoint integration for 5-hour and 7-day rate-limit monitoring.
+- **OpenAI Codex CLI** ([OpenAI](https://openai.com)): Local auth tokens in `~/.codex/` and ChatGPT Wham backend usage endpoints for primary/secondary quota windows and credit balances.
+- **OpenCode CLI**: Local state discovery in `~/.config/opencode/` and cache inspection for configured models and active provider groups.
+- **Antigravity & Google Gemini CLI**: Local credential handling and automated command evaluation (`agy -p /usage --output-format json`) for bucketed 5h and weekly quota fraction parsing.
+- **GitHub Copilot CLI** ([GitHub](https://github.com)): Session verification and credential status via GitHub CLI (`gh`).
+
+All trademarked product names are the property of their respective owners. Harmonotch is an independent open-source utility and is not affiliated with or endorsed by Anthropic, OpenAI, Google, or GitHub.
 
 ---
 

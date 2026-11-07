@@ -116,9 +116,40 @@ service_tier = "default"
   check(opencodeCfg.models.contains("Opus 4.6 Thinking"), "readOpenCodeConfig contains Opus 4.6 Thinking")
   check(opencodeCfg.models.contains("GPT 6 Astra"), "readOpenCodeConfig contains GPT 6 Astra")
 
-  // 9. Localization
+  // 9. Localization & Unified Agent Model Helpers
   check(!L10n.AIAgents.activeModelLabel.isEmpty, "L10n.AIAgents.activeModelLabel should not be empty")
   check(!L10n.AIAgents.detailQuotaTitle.isEmpty, "L10n.AIAgents.detailQuotaTitle should not be empty")
   check(!L10n.AIAgents.providerLabel.isEmpty, "L10n.AIAgents.providerLabel should not be empty")
   check(!L10n.AIAgents.configuredModels.isEmpty, "L10n.AIAgents.configuredModels should not be empty")
+  check(!L10n.AIAgents.copyCommand.isEmpty, "L10n.AIAgents.copyCommand should not be empty")
+  checkEqual(AIAgentKind.claude.shortName, "Claude", "AIAgentKind.claude.shortName")
+
+  let sampleItem = AIAgentStatusItem(
+    kind: .claude,
+    binaryPath: "~/.local/bin/claude",
+    version: "2.1.104",
+    authStatus: .authenticated(detail: "OAuth"),
+    metrics: [
+      AIAgentQuotaMetric(
+        id: "claude-active-model",
+        label: "Active Model",
+        valueText: "claude-sonnet-4-6",
+        remainingRatio: nil,
+        resetDescription: "Effort: high"
+      ),
+      AIAgentQuotaMetric(
+        id: "claude-5h",
+        label: "5h Window",
+        valueText: "82% left",
+        remainingRatio: 0.82,
+        resetDescription: "Resets in 3h"
+      ),
+    ],
+    statusNote: "OAuth active",
+    checkedAt: Date()
+  )
+  checkEqual(sampleItem.quotaProgressMetrics.count, 1, "quotaProgressMetrics filters ratio metrics")
+  checkEqual(sampleItem.metadataMetrics.count, 1, "metadataMetrics filters non-ratio metrics")
+  checkEqual(sampleItem.primaryQuotaMetric?.valueText, "82% left", "primaryQuotaMetric returns first ratio metric")
+  checkEqual(sampleItem.activeModelSummary, "claude-sonnet-4-6", "activeModelSummary extracts model metric")
 }

@@ -3,31 +3,30 @@ import ApplicationServices
 import Foundation
 
 extension VolumeHUDController {
-  /// Resets the stale TCC entry of ad-hoc builds so the System Settings switch is valid again.
-  func requestAccessibilityPermission(resetStaleEntry: Bool = true, openSettings: Bool = true) {
+  /// Prompts the macOS system accessibility permission alert dialog if not already trusted.
+  /// Resets stale TCC entries of ad-hoc/debug builds so macOS triggers the system prompt cleanly.
+  func requestAccessibilityPermission(resetStaleEntry: Bool = true) {
     let bundleID = Bundle.main.bundleIdentifier ?? "com.ssajudn.Harmonotch"
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       if resetStaleEntry && !AXIsProcessTrusted() {
         ProcessRunner.runQuietly("/usr/bin/tccutil", ["reset", "Accessibility", bundleID])
+        usleep(150_000)
       }
       DispatchQueue.main.async {
-        let options =
-          [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(options)
-        if openSettings {
-          if let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-          ) {
-            NSWorkspace.shared.open(url)
-          }
-        }
-        self?.syncWithPreferences()
+        self?.promptAccessibilityDialog()
       }
     }
   }
 
+  private func promptAccessibilityDialog() {
+    let options =
+      [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+    _ = AXIsProcessTrustedWithOptions(options)
+    syncWithPreferences()
+  }
+
   static func openAccessibilitySettings() {
-    shared.requestAccessibilityPermission(resetStaleEntry: true, openSettings: true)
+    shared.requestAccessibilityPermission(resetStaleEntry: true)
   }
 
   func updatePermissionPolling(enabled: Bool, trusted: Bool) {

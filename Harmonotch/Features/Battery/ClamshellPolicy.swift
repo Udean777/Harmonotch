@@ -1,10 +1,52 @@
 import Foundation
+import SwiftUI
 
 enum ClamshellState: Equatable {
     case off
     case active
     case standby
     case pausedLowBattery
+}
+
+enum ClamshellPresentation {
+    static func statusLabel(for state: ClamshellState) -> String {
+        switch state {
+        case .active:
+            return L10n.Clamshell.active
+        case .standby:
+            return L10n.Clamshell.standby
+        case .pausedLowBattery:
+            return L10n.Clamshell.pausedLowBattery
+        case .off:
+            return L10n.Clamshell.off
+        }
+    }
+
+    static func iconName(for state: ClamshellState) -> String {
+        switch state {
+        case .active:
+            return "display.2"
+        case .standby:
+            return "display.trianglebadge.exclamationmark"
+        case .pausedLowBattery:
+            return "bolt.slash.fill"
+        case .off:
+            return "display"
+        }
+    }
+
+    static func accentColor(for state: ClamshellState) -> Color {
+        switch state {
+        case .active:
+            return AppTheme.accentGreen
+        case .standby:
+            return AppTheme.accentAmber
+        case .pausedLowBattery:
+            return AppTheme.accentRed
+        case .off:
+            return AppTheme.textSecondary
+        }
+    }
 }
 
 enum ClamshellPolicy {

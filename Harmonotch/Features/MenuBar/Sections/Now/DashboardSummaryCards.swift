@@ -13,26 +13,11 @@ struct PrayerSummaryCard: View {
   var body: some View {
     DashboardCard(minHeight: 76, alignment: .topLeading) {
       VStack(alignment: .leading, spacing: 5) {
-        HStack(spacing: 5) {
-          Image(systemName: "moon.stars.fill")
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(AppTheme.accentAmber)
-            .accessibilityHidden(true)
-
-          Text(L10n.Menu.nextPrayer)
-            .font(.system(size: 9, weight: .bold))
-            .tracking(0.4)
-            .foregroundColor(AppTheme.textTertiary)
-            .textCase(.uppercase)
-            .lineLimit(1)
-
-          Spacer(minLength: 2)
-
-          Image(systemName: "chevron.right")
-            .font(.system(size: 8, weight: .bold))
-            .foregroundColor(AppTheme.textTertiary)
-            .accessibilityHidden(true)
-        }
+        SummaryCardHeader(
+          icon: "moon.stars.fill",
+          iconColor: AppTheme.accentAmber,
+          title: L10n.Menu.nextPrayer
+        )
 
         switch prayerState {
         case .loaded(let prayer, _):
@@ -85,26 +70,11 @@ struct BatterySummaryCard: View {
   var body: some View {
     DashboardCard(minHeight: 76, alignment: .topLeading) {
       VStack(alignment: .leading, spacing: 5) {
-        HStack(spacing: 5) {
-          Image(systemName: "bolt.batteryblock.fill")
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(AppTheme.accentGreen)
-            .accessibilityHidden(true)
-
-          Text(L10n.Dashboard.battery)
-            .font(.system(size: 9, weight: .bold))
-            .tracking(0.4)
-            .foregroundColor(AppTheme.textTertiary)
-            .textCase(.uppercase)
-            .lineLimit(1)
-
-          Spacer(minLength: 2)
-
-          Image(systemName: "chevron.right")
-            .font(.system(size: 8, weight: .bold))
-            .foregroundColor(AppTheme.textTertiary)
-            .accessibilityHidden(true)
-        }
+        SummaryCardHeader(
+          icon: "bolt.batteryblock.fill",
+          iconColor: AppTheme.accentGreen,
+          title: L10n.Dashboard.battery
+        )
 
         switch batteryMonitor.state {
         case .loaded(let snapshot, _):
@@ -154,6 +124,35 @@ struct BatterySummaryCard: View {
             .foregroundColor(AppTheme.textSecondary)
         }
       }
+    }
+  }
+}
+
+private struct SummaryCardHeader: View {
+  let icon: String
+  let iconColor: Color
+  let title: String
+
+  var body: some View {
+    HStack(spacing: 5) {
+      Image(systemName: icon)
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundColor(iconColor)
+        .accessibilityHidden(true)
+
+      Text(title)
+        .font(.system(size: 9, weight: .bold))
+        .tracking(0.4)
+        .foregroundColor(AppTheme.textTertiary)
+        .textCase(.uppercase)
+        .lineLimit(1)
+
+      Spacer(minLength: 2)
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 8, weight: .bold))
+        .foregroundColor(AppTheme.textTertiary)
+        .accessibilityHidden(true)
     }
   }
 }

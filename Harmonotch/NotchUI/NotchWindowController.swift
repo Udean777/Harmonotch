@@ -37,12 +37,6 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
       MediaManager.shared.isPlaying
       && MediaManager.shared.hasMediaSession
       && !AdzanPlayer.shared.isPlaying
-    let leftContentExpansion: CGFloat = {
-      if isMediaPlaying {
-        return notchVM.isCompanionEnabled ? NotchLayout.mediaLeftExpansion : 0
-      }
-      return notchVM.isLeftCompanionVisible ? NotchLayout.companionExpansion : 0
-    }()
 
     let topY = bounds.height
     let currentWidth: CGFloat
@@ -50,7 +44,6 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     let collapsedWings = geometry.collapsedWingWidths(
       isHovered: notchVM.isHovered,
       isMediaPlaying: isMediaPlaying,
-      leftExtra: leftContentExpansion,
       measured: notchVM.collapsedWingWidths
     )
 
@@ -65,7 +58,6 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
       currentWidth = geometry.collapsedWidth(
         isHovered: notchVM.isHovered,
         isMediaPlaying: isMediaPlaying,
-        leftExtra: leftContentExpansion,
         measured: notchVM.collapsedWingWidths
       )
       currentHeight = geometry.collapsedHeight
@@ -364,6 +356,8 @@ final class NotchWindowController: ObservableObject {
           + (AdzanPlayer.shared.isPlaying
             ? NotchLayout.expandedAdzanHeight
             : NotchLayout.expandedPrayerHeight)
+      case .agents:
+        contentHeight = topClearance + NotchLayout.expandedAgentsHeight
       }
     }
 

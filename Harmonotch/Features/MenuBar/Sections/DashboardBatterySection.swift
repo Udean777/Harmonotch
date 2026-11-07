@@ -189,7 +189,7 @@ struct DashboardBatterySection: View {
       }
 
       HStack {
-        Text(L10n.Dashboard.batteryUpdated(Self.relativeTime(reading.refreshedAt)))
+        Text(L10n.Dashboard.batteryUpdated(TimeFormatting.relativeText(for: reading.refreshedAt)))
           .font(.system(size: 9, weight: .medium))
           .foregroundColor(AppTheme.textTertiary)
 
@@ -290,26 +290,5 @@ struct DashboardBatterySection: View {
 
   private func icon(for reading: BatteryReading) -> String {
     BatteryPresentation.iconName(capacity: reading.capacity, isCharging: reading.isCharging)
-  }
-
-  private static let enRelativeFormatter: RelativeDateTimeFormatter = {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "en")
-    formatter.unitsStyle = .short
-    return formatter
-  }()
-
-  private static let idRelativeFormatter: RelativeDateTimeFormatter = {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "id")
-    formatter.unitsStyle = .short
-    return formatter
-  }()
-
-  private static func relativeTime(_ date: Date) -> String {
-    let formatter = LanguageManager.shared.currentLanguage == .english
-      ? enRelativeFormatter
-      : idRelativeFormatter
-    return formatter.localizedString(for: date, relativeTo: Date())
   }
 }

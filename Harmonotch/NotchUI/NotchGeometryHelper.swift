@@ -12,8 +12,6 @@ enum NotchLayout {
   static let mediaWingWidth: CGFloat = 42
   static let noNotchPillWidth: CGFloat = 154
   static let hoverWingExpansion: CGFloat = 2
-  static let companionExpansion: CGFloat = 28
-  static let mediaLeftExpansion: CGFloat = 28
   static let maxShoulder: CGFloat = 10
   static let wingInnerInset: CGFloat = 3
   /// Left hover zone on non-notched displays, as a fraction of pill width.
@@ -41,6 +39,7 @@ enum NotchLayout {
   static let expandedPrayerHeight: CGFloat = 185
   static let expandedAdzanHeight: CGFloat = 195
   static let expandedBatteryHeight: CGFloat = 235
+  static let expandedAgentsHeight: CGFloat = 230
   static let expandedMediaHeight: CGFloat = 190
   static let expandedMediaTrackHeight: CGFloat = 360
   static let expandedHitAreaHeight: CGFloat = 280

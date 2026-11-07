@@ -94,6 +94,11 @@ final class MenuBarPanelController: NSObject {
     panel.makeKeyAndOrderFront(nil)
     panel.makeFirstResponder(panel.contentView)
     viewModel.panelDidOpen()
+    if !AIAgentQuotaService.shared.hasCompletedInitialScan
+      && !AIAgentQuotaService.shared.isScanning
+    {
+      AIAgentQuotaService.shared.checkInstalledAgents()
+    }
 
     NSAnimationContext.runAnimationGroup { context in
       context.duration = 0.16

@@ -95,7 +95,7 @@ async function fetchLatestRelease() {
       }
     }
   } catch (err) {
-    console.warn("Could not query GitHub releases API, using default values:", err);
+    console.warn("Could not query GitHub releases API, using fallback:", err);
   }
 }
 
@@ -103,8 +103,6 @@ for (const a of document.querySelectorAll("a.js-download")) {
   a.setAttribute("href", DL_ENDPOINT);
   a.setAttribute("download", "Harmonotch.dmg");
   a.addEventListener("click", (event) => {
-    // Take over the navigation so a failed probe does not start a download
-    // and open GitHub at the same time.
     event.preventDefault();
     const targetUrl = a.getAttribute("href") || DL_ENDPOINT;
     fetch(targetUrl, { method: "HEAD" })
@@ -116,7 +114,7 @@ for (const a of document.querySelectorAll("a.js-download")) {
         const lang = document.documentElement.lang === "en" ? "en" : "id";
         showToast(
           lang === "en"
-            ? "Direct download unavailable. Opening the GitHub Releases page."
+            ? "Direct download unavailable. Opening GitHub Releases page."
             : "Unduhan langsung tidak tersedia. Membuka halaman rilis GitHub."
         );
         setTimeout(() => window.open(GITHUB_FALLBACK_URL, "_blank", "noopener"), 1000);
@@ -127,165 +125,22 @@ for (const a of document.querySelectorAll("a.js-download")) {
   });
 }
 
-const copyCommandBtn = document.getElementById("copyCommandBtn");
-if (copyCommandBtn) {
-  copyCommandBtn.addEventListener("click", () => {
-    const code = "xattr -cr /Applications/Harmonotch.app";
-    navigator.clipboard.writeText(code).then(() => {
+document.querySelectorAll(".copy-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const textToCopy = btn.getAttribute("data-copy") || "xattr -cr /Applications/Harmonotch.app";
+    navigator.clipboard.writeText(textToCopy).then(() => {
       const lang = document.documentElement.lang || "id";
-      const originalText = copyCommandBtn.textContent;
+      const originalText = btn.textContent;
       const copiedText = lang === "en" ? "Copied!" : "Tersalin!";
-      copyCommandBtn.textContent = copiedText;
-      copyCommandBtn.classList.add("copied");
+      btn.textContent = copiedText;
+      btn.classList.add("copied");
       setTimeout(() => {
-        copyCommandBtn.textContent = originalText;
-        copyCommandBtn.classList.remove("copied");
+        btn.textContent = originalText;
+        btn.classList.remove("copied");
       }, 2500);
     }).catch(err => {
       console.error("Clipboard copy failed:", err);
     });
-  });
-}
-
-const showcaseTabs = document.querySelectorAll(".showcase-tab");
-const mockupDrawers = document.querySelectorAll(".mockup-drawer");
-const showcaseInfos = document.querySelectorAll(".showcase-info-pane");
-
-const showcaseVideoWrapper = document.getElementById("showcaseVideoWrapper");
-const showcaseVideo = document.getElementById("showcaseVideo");
-const videoCenterPlayBtn = document.getElementById("videoCenterPlayBtn");
-const videoPlayToggleBtn = document.getElementById("videoPlayToggleBtn");
-const videoPlayIcon = document.getElementById("videoPlayIcon");
-const videoPlayLabel = document.getElementById("videoPlayLabel");
-const videoProgressTrack = document.getElementById("videoProgressTrack");
-const videoProgressFill = document.getElementById("videoProgressFill");
-const videoRestartBtn = document.getElementById("videoRestartBtn");
-
-const PAUSE_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
-const PLAY_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
-
-function updateVideoUI(isPlaying) {
-  if (!showcaseVideoWrapper) return;
-  showcaseVideoWrapper.classList.toggle("is-paused", !isPlaying);
-  if (videoPlayIcon) {
-    videoPlayIcon.innerHTML = isPlaying ? PAUSE_ICON_SVG : PLAY_ICON_SVG;
-  }
-  if (videoPlayLabel) {
-    const lang = document.documentElement.lang === "en" ? "en" : "id";
-    videoPlayLabel.textContent = isPlaying
-      ? (lang === "en" ? "Pause" : "Jeda")
-      : (lang === "en" ? "Play" : "Putar");
-  }
-}
-
-function toggleVideoPlayback() {
-  if (!showcaseVideo) return;
-  if (showcaseVideo.paused || showcaseVideo.ended) {
-    showcaseVideo.play().then(() => {
-      updateVideoUI(true);
-    }).catch(err => {
-      console.warn("Video play failed:", err);
-      updateVideoUI(false);
-    });
-  } else {
-    showcaseVideo.pause();
-    updateVideoUI(false);
-  }
-}
-
-if (showcaseVideo) {
-  const playPromise = showcaseVideo.play();
-  if (playPromise !== undefined) {
-    playPromise.then(() => {
-      updateVideoUI(true);
-    }).catch(() => {
-      updateVideoUI(false);
-    });
-  }
-
-  showcaseVideo.addEventListener("play", () => updateVideoUI(true));
-  showcaseVideo.addEventListener("pause", () => updateVideoUI(false));
-  showcaseVideo.addEventListener("ended", () => updateVideoUI(false));
-
-  showcaseVideo.addEventListener("timeupdate", () => {
-    if (!videoProgressFill || !showcaseVideo.duration) return;
-    const pct = (showcaseVideo.currentTime / showcaseVideo.duration) * 100;
-    videoProgressFill.style.width = `${pct}%`;
-    if (videoProgressTrack) {
-      videoProgressTrack.setAttribute("aria-valuenow", String(Math.round(pct)));
-    }
-  });
-
-  if (videoCenterPlayBtn) {
-    videoCenterPlayBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => {});
-    });
-  }
-
-  if (videoPlayToggleBtn) {
-    videoPlayToggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleVideoPlayback();
-    });
-  }
-
-  if (videoRestartBtn) {
-    videoRestartBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showcaseVideo.currentTime = 0;
-      showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => {});
-    });
-  }
-
-  if (videoProgressTrack) {
-    videoProgressTrack.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const rect = videoProgressTrack.getBoundingClientRect();
-      const clickPos = (e.clientX - rect.left) / rect.width;
-      if (showcaseVideo.duration) {
-        showcaseVideo.currentTime = clickPos * showcaseVideo.duration;
-      }
-    });
-  }
-
-  if (showcaseVideoWrapper) {
-    showcaseVideoWrapper.addEventListener("click", (e) => {
-      if (e.target.closest(".video-controls-bar") || e.target.closest(".video-center-play-btn")) return;
-      toggleVideoPlayback();
-    });
-  }
-}
-
-function selectShowcaseTab(targetTabId) {
-  showcaseTabs.forEach(tab => {
-    const isActive = tab.getAttribute("data-tab") === targetTabId;
-    tab.classList.toggle("active", isActive);
-    tab.setAttribute("aria-selected", String(isActive));
-  });
-
-  mockupDrawers.forEach(drawer => {
-    const isTarget = drawer.getAttribute("data-drawer") === targetTabId;
-    drawer.classList.toggle("active", isTarget);
-  });
-
-  showcaseInfos.forEach(info => {
-    const isTarget = info.getAttribute("data-info") === targetTabId;
-    info.classList.toggle("active", isTarget);
-  });
-
-  if (targetTabId === "video" && showcaseVideo) {
-    showcaseVideo.play().then(() => updateVideoUI(true)).catch(() => updateVideoUI(false));
-  } else if (targetTabId !== "video" && showcaseVideo) {
-    showcaseVideo.pause();
-    updateVideoUI(false);
-  }
-}
-
-showcaseTabs.forEach(tab => {
-  tab.addEventListener("click", () => {
-    const tabId = tab.getAttribute("data-tab");
-    if (tabId) selectShowcaseTab(tabId);
   });
 });
 
@@ -351,18 +206,16 @@ function applyLang(lang) {
 
   document.title =
     lang === "en"
-      ? "Harmonotch: prayer times, battery, and music in your MacBook notch"
-      : "Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook";
+      ? "Harmonotch: Prayer times, battery, media controls & AI agent quotas in your MacBook notch"
+      : "Harmonotch: Jadwal sholat, baterai, media & kuota AI di notch MacBook";
 
   const metaDesc = document.querySelector('meta[name="description"]');
   if (metaDesc) {
     metaDesc.content =
       lang === "en"
-        ? "Prayer times, battery status, and media controls with synced lyrics in your MacBook notch. Free and open source for macOS 14 and later."
-        : "Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas.";
+        ? "Astronomical prayer times, battery telemetry & hardware SMC limiter, media playback with lyrics, AI agent quotas, and satellite sliders for macOS."
+        : "Jadwal sholat astronomis, status baterai & limiter SMC hardware, media playback dengan lirik, kuota AI Agents, dan satellite sliders untuk macOS.";
   }
-
-  if (showcaseVideo) updateVideoUI(!showcaseVideo.paused);
 }
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -410,9 +263,8 @@ if (progressBar) {
 }
 
 const revealTargets = document.querySelectorAll(
-  ".section-header, .showcase-tabs, .mockup-wrapper, " +
-    ".showcase-info-container, .feature-card, .install-container, " +
-    ".step-card, .terminal-box, .faq-item, .cta-banner"
+  ".section-header, .overview-card, .feature-card, .tech-card, .credit-card, " +
+    ".install-container, .step-card, .terminal-box, .faq-item, .cta-banner"
 );
 
 if (!prefersReducedMotion && "IntersectionObserver" in window) {
@@ -435,25 +287,6 @@ if (!prefersReducedMotion && "IntersectionObserver" in window) {
     groupIndex.set(parent, next + 1);
     el.classList.add("reveal");
     observer.observe(el);
-  });
-}
-
-const mockup = document.querySelector(".mockup-wrapper");
-const mockupScreen = document.querySelector(".macbook-screen");
-if (
-  mockup &&
-  mockupScreen &&
-  !prefersReducedMotion &&
-  window.matchMedia("(pointer: fine)").matches
-) {
-  mockup.addEventListener("pointermove", (event) => {
-    const rect = mockup.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    mockupScreen.style.transform = `perspective(1000px) rotateY(${x * 3}deg) rotateX(${-y * 2.5}deg)`;
-  });
-  mockup.addEventListener("pointerleave", () => {
-    mockupScreen.style.transform = "perspective(1000px) rotateY(0deg) rotateX(0deg)";
   });
 }
 

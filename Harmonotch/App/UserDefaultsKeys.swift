@@ -37,12 +37,17 @@ enum UserDefaultsKeys {
     static let clamshellLastKnownDisabled = UserDefaultsKey<Bool>(name: "Harmonotch_ClamshellLastKnownDisabled", defaultValue: false)
     // Kept only for legacy migration; ClamshellManager no longer reads or writes this key.
     static let sudoConfigured = UserDefaultsKey<Bool>(name: "Harmonotch_SudoConfigured", defaultValue: false)
-    static let companionEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_CompanionEnabled", defaultValue: true)
     static let chargeLimitEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_ChargeLimitEnabled", defaultValue: false)
     static let chargeLimitThreshold = UserDefaultsKey<Int>(name: "Harmonotch_ChargeLimitThreshold", defaultValue: 80)
     static let chargeLimitSudoConfigured = UserDefaultsKey<Bool>(name: "Harmonotch_ChargeLimitSudoConfigured", defaultValue: false)
     static let volumeHUDEnabled = UserDefaultsKey<Bool>(name: "Harmonotch_VolumeHUDEnabled", defaultValue: false)
     static let includeOtherAudioApps = UserDefaultsKey<Bool>(name: "Harmonotch_IncludeOtherAudioApps", defaultValue: true)
+    static let notchAIAgentFilter = UserDefaultsKey<String>(name: "Harmonotch_NotchAIAgentFilter", defaultValue: "all")
+    static let selectedNotchAIAgent = UserDefaultsKey<String>(name: "Harmonotch_SelectedNotchAIAgent", defaultValue: "gemini")
+}
+
+extension Notification.Name {
+    static let notchAIAgentChanged = Notification.Name("Harmonotch_NotchAIAgentChanged")
 }
 
 extension UserDefaults {
