@@ -110,7 +110,7 @@ struct AIAgentDrawerView: View {
 
   private var refreshButton: some View {
     Button {
-      quotaService.checkInstalledAgents()
+      quotaService.checkInstalledAgents(force: true)
     } label: {
       Group {
         if quotaService.isScanning {
@@ -344,7 +344,7 @@ struct AIAgentDrawerView: View {
         .padding(.horizontal, 16)
 
       Button {
-        quotaService.checkInstalledAgents()
+        quotaService.checkInstalledAgents(force: true)
       } label: {
         HStack(spacing: 6) {
           Image(systemName: "magnifyingglass")
@@ -492,6 +492,25 @@ struct AIAgentDrawerView: View {
           .font(.system(size: 8.5, weight: .regular))
           .foregroundColor(AppTheme.textTertiary)
       }
+
+      Button {
+        quotaService.checkInstalledAgents(force: true)
+      } label: {
+        Group {
+          if quotaService.isScanning {
+            ProgressView()
+              .controlSize(.mini)
+          } else {
+            Image(systemName: "arrow.clockwise")
+              .font(.system(size: 8.5, weight: .semibold))
+              .foregroundColor(AppTheme.textSecondary)
+          }
+        }
+        .frame(width: 14, height: 14)
+      }
+      .buttonStyle(.plain)
+      .disabled(quotaService.isScanning)
+      .help(L10n.AIAgents.refreshAgents)
     }
     .padding(.horizontal, 2)
   }

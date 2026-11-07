@@ -152,4 +152,20 @@ service_tier = "default"
   checkEqual(sampleItem.metadataMetrics.count, 1, "metadataMetrics filters non-ratio metrics")
   checkEqual(sampleItem.primaryQuotaMetric?.valueText, "82% left", "primaryQuotaMetric returns first ratio metric")
   checkEqual(sampleItem.activeModelSummary, "claude-sonnet-4-6", "activeModelSummary extracts model metric")
+
+  // 10. Codable persistence test for AIAgentStatusItem
+  do {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+    let encodedData = try encoder.encode([sampleItem])
+    let decodedItems = try decoder.decode([AIAgentStatusItem].self, from: encodedData)
+    checkEqual(decodedItems.count, 1, "Decoded items count should match encoded count")
+    checkEqual(decodedItems[0].kind, .claude, "Decoded kind should match")
+    checkEqual(decodedItems[0].version, "2.1.104", "Decoded version should match")
+    check(decodedItems[0].authStatus.isAuthenticated, "Decoded authStatus should be authenticated")
+    checkEqual(decodedItems[0].metrics.count, 2, "Decoded metrics count should match")
+    checkEqual(decodedItems[0].metrics[1].valueText, "82% left", "Decoded metric valueText should match")
+  } catch {
+    check(false, "AIAgentStatusItem Codable serialization failed: \(error)")
+  }
 }

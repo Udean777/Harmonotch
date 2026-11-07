@@ -4,58 +4,106 @@ import Foundation
 final class AIAgentQuotaService: ObservableObject {
   static let shared = AIAgentQuotaService()
 
+  private static let cacheKey = "Harmonotch_AIAgentsCache"
+  private static let lastCheckedKey = "Harmonotch_AIAgentsLastChecked"
+  private static let cacheValidityDuration: TimeInterval = 120 // 2 minutes
+
   @Published private(set) var hasCompletedInitialScan = false
   @Published private(set) var isScanning = false
   @Published private(set) var agents: [AIAgentStatusItem] = []
   @Published private(set) var lastCheckedAt: Date?
 
-  private init() {}
+  /// Memastikan pemindaian otomatis hanya berjalan tepat 1x selama sesi berjalan.
+  /// Setelah pemindaian pertama selesai, pembaruan HANYA dilakukan jika pengguna menekan retry (force == true).
+  private var hasScannedOnceThisSession = false
 
-  func checkInstalledAgents() {
-    guard !isScanning else { return }
-    isScanning = true
+  private init() {
+    loadCachedAgents()
+  }
 
-    Task.detached(priority: .userInitiated) {
-      let discovered = await Self.probeAllInstalledAgents()
-      let now = Date()
-
-      await MainActor.run {
-        self.agents = discovered
-        self.lastCheckedAt = now
-        self.hasCompletedInitialScan = true
-        self.isScanning = false
-
-        let currentSelected = UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]
-        if !discovered.isEmpty,
-           !discovered.contains(where: { $0.kind.rawValue == currentSelected }) {
-          let preferred = discovered.first(where: { $0.authStatus.isAuthenticated }) ?? discovered[0]
-          UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = preferred.kind.rawValue
-          NotificationCenter.default.post(name: .notchAIAgentChanged, object: preferred.kind.rawValue)
-        }
+  private func loadCachedAgents() {
+    if let data = UserDefaults.standard.data(forKey: Self.cacheKey),
+       let cached = try? JSONDecoder().decode([AIAgentStatusItem].self, from: data),
+       !cached.isEmpty {
+      self.agents = cached
+      self.hasCompletedInitialScan = true
+      if let date = UserDefaults.standard.object(forKey: Self.lastCheckedKey) as? Date {
+        self.lastCheckedAt = date
       }
     }
   }
 
-  private static func probeAllInstalledAgents() async -> [AIAgentStatusItem] {
-    let home = FileManager.default.homeDirectoryForCurrentUser.path
+  private func saveCachedAgents(_ items: [AIAgentStatusItem], at date: Date) {
+    if let data = try? JSONEncoder().encode(items) {
+      UserDefaults.standard.set(data, forKey: Self.cacheKey)
+      UserDefaults.standard.set(date, forKey: Self.lastCheckedKey)
+    }
+  }
 
-    return await withTaskGroup(of: (Int, AIAgentStatusItem?).self) { group in
-      let allKinds = AIAgentKind.allCases
-      for (index, kind) in allKinds.enumerated() {
-        group.addTask {
-          let item = await probeAgent(kind: kind, home: home)
-          return (index, item)
+  func checkInstalledAgents(force: Bool = false) {
+    guard !isScanning else { return }
+
+    // Pengecekan otomatis hanya dilakukan 1x saja.
+    // Untuk setelahnya, pembaruan hanya berjalan jika pengguna menekan icon retry (force == true).
+    if !force && hasScannedOnceThisSession {
+      return
+    }
+
+    hasScannedOnceThisSession = true
+    isScanning = true
+
+    Task.detached(priority: .userInitiated) { [weak self] in
+      guard let self else { return }
+      let home = FileManager.default.homeDirectoryForCurrentUser.path
+
+      await withTaskGroup(of: (AIAgentKind, AIAgentStatusItem?).self) { group in
+        let allKinds = AIAgentKind.allCases
+        for kind in allKinds {
+          group.addTask {
+            let item = await Self.probeAgent(kind: kind, home: home)
+            return (kind, item)
+          }
+        }
+
+        var currentMap: [AIAgentKind: AIAgentStatusItem] = [:]
+        let initialAgents = await MainActor.run { self.agents }
+        for agent in initialAgents {
+          currentMap[agent.kind] = agent
+        }
+
+        for await (kind, item) in group {
+          if let item {
+            currentMap[kind] = item
+          } else {
+            currentMap.removeValue(forKey: kind)
+          }
+
+          let updatedList = allKinds.compactMap { currentMap[$0] }
+          await MainActor.run {
+            self.agents = updatedList
+            self.hasCompletedInitialScan = true
+          }
+        }
+
+        let finalList = allKinds.compactMap { currentMap[$0] }
+        let now = Date()
+
+        await MainActor.run {
+          self.agents = finalList
+          self.lastCheckedAt = now
+          self.hasCompletedInitialScan = true
+          self.isScanning = false
+          self.saveCachedAgents(finalList, at: now)
+
+          let currentSelected = UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]
+          if !finalList.isEmpty,
+             !finalList.contains(where: { $0.kind.rawValue == currentSelected }) {
+            let preferred = finalList.first(where: { $0.authStatus.isAuthenticated }) ?? finalList[0]
+            UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = preferred.kind.rawValue
+            NotificationCenter.default.post(name: .notchAIAgentChanged, object: preferred.kind.rawValue)
+          }
         }
       }
-
-      var collected: [(Int, AIAgentStatusItem)] = []
-      for await (idx, item) in group {
-        if let item {
-          collected.append((idx, item))
-        }
-      }
-
-      return collected.sorted(by: { $0.0 < $1.0 }).map(\.1)
     }
   }
 
@@ -206,7 +254,7 @@ final class AIAgentQuotaService: ObservableObject {
   private static func fetchAnthropicOAuthQuota(accessToken: String) async -> [AIAgentQuotaMetric]? {
     guard let url = URL(string: "https://api.anthropic.com/api/oauth/usage") else { return nil }
     var request = URLRequest(url: url)
-    request.timeoutInterval = 5.0
+    request.timeoutInterval = 4.0
     request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
     request.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
 
@@ -308,7 +356,7 @@ final class AIAgentQuotaService: ObservableObject {
   ) async -> (planLabel: String, email: String?, metrics: [AIAgentQuotaMetric])? {
     guard let url = URL(string: "https://chatgpt.com/backend-api/wham/usage") else { return nil }
     var request = URLRequest(url: url)
-    request.timeoutInterval = 6.0
+    request.timeoutInterval = 4.0
     request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
     request.setValue("Harmonotch/1.0", forHTTPHeaderField: "User-Agent")
     if let accountId, !accountId.isEmpty {
@@ -363,20 +411,8 @@ final class AIAgentQuotaService: ObservableObject {
       }
     }
 
-    if let resetCredits = json["rate_limit_reset_credits"] as? [String: Any],
-       let available = resetCredits["available_count"] as? Int, available > 0 {
-      metrics.append(
-        AIAgentQuotaMetric(
-          id: "codex-reset-credits",
-          label: L10n.AIAgents.resetCredits,
-          valueText: "\(available) available",
-          remainingRatio: nil,
-          resetDescription: nil
-        )
-      )
-    }
-
-    return ("Plan \(planType)", email, metrics)
+    let displayPlan = planType.capitalized
+    return (displayPlan, email, metrics)
   }
 
   private static func fetchOpenCodeQuota(
@@ -528,7 +564,7 @@ final class AIAgentQuotaService: ObservableObject {
     let out = AIAgentDiscoveryService.runCommand(
       executable: binaryPath,
       arguments: ["-p", "/usage", "--output-format", "json"],
-      timeout: 6.0
+      timeout: 4.0
     )
 
     guard out.exitCode == 0, !out.stdout.isEmpty else {
