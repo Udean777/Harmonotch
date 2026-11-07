@@ -404,7 +404,7 @@ struct DashboardNowSection: View {
 
         if volumeHUD.isEnabled && !volumeHUD.isAccessibilityGranted {
           Button {
-            volumeHUD.requestAccessibilityPermission(resetStaleEntry: true)
+            VolumeHUDController.openAccessibilitySettings()
           } label: {
             Text(L10n.Volume.grantPermissionAction)
               .font(.system(size: 9.5, weight: .bold))

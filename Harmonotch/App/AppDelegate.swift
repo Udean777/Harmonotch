@@ -472,28 +472,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleVolumeHUD() {
     let nextEnabled = !UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled]
-    VolumeHUDController.shared.setEnabled(nextEnabled, promptIfUntrusted: false)
-
-    if nextEnabled && !AXIsProcessTrusted() {
-      presentVolumeHUDAccessibilityAlert()
-    }
+    VolumeHUDController.shared.setEnabled(nextEnabled, promptIfUntrusted: true)
   }
 
   @objc private func toggleIncludeOtherAudioApps() {
     MediaManager.shared.includeOtherAudioApps.toggle()
-  }
-
-  private func presentVolumeHUDAccessibilityAlert() {
-    NSApp.activate(ignoringOtherApps: true)
-    let alert = NSAlert()
-    alert.alertStyle = .informational
-    alert.messageText = L10n.Volume.permissionAlertTitle
-    alert.informativeText = L10n.Volume.permissionAlertMessage
-    alert.addButton(withTitle: L10n.Volume.openAccessibilitySettings)
-    alert.addButton(withTitle: L10n.Volume.cancel)
-    if alert.runModal() == .alertFirstButtonReturn {
-      VolumeHUDController.openAccessibilitySettings()
-    }
   }
 
   @objc private func toggleTestAdzan() {

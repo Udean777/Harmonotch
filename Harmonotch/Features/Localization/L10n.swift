@@ -681,8 +681,8 @@ enum L10n {
         }
         static var vorssaintDesc: String {
             isEnglish
-                ? "Reference for the MediaRemote technique, clamshell behavior, and volume-key HUD ownership"
-                : "Referensi teknik MediaRemote, perilaku clamshell, dan kepemilikan HUD tombol volume"
+                ? "Reference for the MediaRemote technique, playback state reconciliation, clamshell behavior, volume-key HUD, and accessibility permission flow"
+                : "Referensi teknik MediaRemote, rekonsiliasi state playback, perilaku clamshell, HUD tombol volume, dan alur izin aksesibilitas"
         }
         static var lrclibTitle: String {
             "LRCLIB"

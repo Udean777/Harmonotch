@@ -662,9 +662,23 @@ final class MediaManager: ObservableObject {
         awareness: .mediaRemote,
         capabilities: .standardPlayer
       )
+      // An app can publish multiple client/content identities over time (or across tabs).
+      // When a new mediaRemote update arrives for this bundleID, remove other mediaRemote
+      // candidates for the same bundleID so stale 'isPlaying: true' entries never linger.
+      for (existingID, existingCand) in self.candidateRegistry
+      where existingCand.awareness == .mediaRemote
+        && existingCand.app.bundleID == bundleID
+        && existingID != identity {
+        self.candidateRegistry.removeValue(forKey: existingID)
+      }
+
       // Only a playing client can be the system's current player; paused clients
       // are still enumerated and would otherwise win the paused tie-break.
-      if state.playing { self.systemIdentity = identity }
+      if state.playing {
+        self.systemIdentity = identity
+      } else if let sys = self.systemIdentity, sys.bundleID == bundleID {
+        self.systemIdentity = nil
+      }
       self.ingest(candidate: candidate)
     }
   }

@@ -187,10 +187,10 @@ Harmonotch/
 - [Adhan-Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps (MIT License) for astronomical prayer calculations.
 - [LRCLIB](https://lrclib.net/) for synced lyrics.
 - [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html) for the adhan recordings.
-- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique, for research into demand-driven monitoring and modular utility panels, and for the clamshell and volume-key-HUD behavior that informed Harmonotch's implementations. Harmonotch's implementations are written independently from Apple documentation, original testing, and observed runtime behavior; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
+- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique, client process identifier resolution, debounced serial playback state reconciliation, research into demand-driven monitoring and modular utility panels, and for the clamshell, volume-key HUD, and accessibility permission patterns that informed Harmonotch's implementations. Harmonotch's implementations are written independently from Apple documentation, original testing, and observed runtime behavior; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
 - Apple for the iTunes Search API, `MediaRemote`, SF Symbols, and IOKit.
 
-Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Engineering provenance and clean-room boundaries are documented in [docs/IMPLEMENTATION_PROVENANCE.md](docs/IMPLEMENTATION_PROVENANCE.md).
+Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
 
 ## License
 

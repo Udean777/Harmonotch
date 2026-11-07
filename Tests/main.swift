@@ -1126,6 +1126,54 @@ let afterPauseWinner = MediaSelector.select(candidates: Array(isolatedRegistry.v
 checkEqual(afterPauseWinner?.identity.bundleID, "com.spotify.client", "Optimistically paused candidate remains active when no other app is playing")
 checkEqual(afterPauseWinner?.isPlaying, false, "Optimistic state reflects paused")
 
+// MARK: - Firefox / MediaRemote Single-App State & ContentID Transition Tests
+var firefoxRegistry: [MediaIdentity: MediaCandidate] = [:]
+let ffPlayingIdentity = MediaIdentity(bundleID: "org.mozilla.firefox", contentID: "video-tab-1")
+let ffPlayingCandidate = MediaCandidate(
+    identity: ffPlayingIdentity,
+    app: MediaAppInfo.resolve(bundleID: "org.mozilla.firefox"),
+    title: "YouTube Video",
+    artist: "Firefox Channel",
+    duration: 300,
+    position: 45,
+    isPlaying: true,
+    awareness: .mediaRemote,
+    capabilities: .standardPlayer,
+    startedPlayingAt: 100.0,
+    lastUpdated: 110.0
+)
+firefoxRegistry[ffPlayingCandidate.identity] = ffPlayingCandidate
+let ffWinner1 = MediaSelector.select(candidates: Array(firefoxRegistry.values), previous: nil)
+checkEqual(ffWinner1?.identity, ffPlayingIdentity, "Firefox video is winner when playing")
+checkEqual(ffWinner1?.isPlaying, true, "Firefox is playing")
+
+// When Firefox updates state with a paused payload (even if contentID or title shifted),
+// MediaManager removes old entries for the same bundleID so stale 'isPlaying: true' candidates
+// never prevent it from transitioning to paused immediately.
+let ffPausedIdentity = MediaIdentity(bundleID: "org.mozilla.firefox", contentID: "video-tab-1-updated")
+let ffPausedCandidate = MediaCandidate(
+    identity: ffPausedIdentity,
+    app: MediaAppInfo.resolve(bundleID: "org.mozilla.firefox"),
+    title: "YouTube Video",
+    artist: "Firefox Channel",
+    duration: 300,
+    position: 45,
+    isPlaying: false,
+    awareness: .mediaRemote,
+    capabilities: .standardPlayer,
+    startedPlayingAt: 100.0,
+    lastUpdated: 112.0
+)
+// Simulate MediaManager eviction logic: remove previous .mediaRemote entries for org.mozilla.firefox
+for (id, cand) in firefoxRegistry where cand.awareness == .mediaRemote && cand.app.bundleID == "org.mozilla.firefox" && id != ffPausedCandidate.identity {
+    firefoxRegistry.removeValue(forKey: id)
+}
+firefoxRegistry[ffPausedCandidate.identity] = ffPausedCandidate
+checkEqual(firefoxRegistry.count, 1, "Only 1 candidate remains in registry for Firefox")
+let ffWinner2 = MediaSelector.select(candidates: Array(firefoxRegistry.values), previous: ffPlayingIdentity)
+checkEqual(ffWinner2?.identity, ffPausedIdentity, "Firefox remains active candidate when paused")
+checkEqual(ffWinner2?.isPlaying, false, "Firefox immediately reflects isPlaying == false without stale shadow")
+
 
 
 

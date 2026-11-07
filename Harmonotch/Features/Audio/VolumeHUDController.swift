@@ -115,9 +115,9 @@ final class VolumeHUDController: ObservableObject {
   }
 
   /// Requests Accessibility permission. For ad-hoc signed local builds, resetting
-  /// the bundle's stale TCC entry via `tccutil` first ensures macOS prompts for
-  /// the current binary's CDHash instead of ignoring it behind a stale entry.
-  func requestAccessibilityPermission(resetStaleEntry: Bool = true) {
+  /// the bundle's stale TCC entry via `tccutil` ensures macOS clears stale permissions
+  /// so that toggling it ON in System Settings grants valid event tap rights.
+  func requestAccessibilityPermission(resetStaleEntry: Bool = true, openSettings: Bool = true) {
     let bundleID = Bundle.main.bundleIdentifier ?? "com.ssajudn.Harmonotch"
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       if resetStaleEntry && !AXIsProcessTrusted() {
@@ -131,10 +131,12 @@ final class VolumeHUDController: ObservableObject {
         let options =
           [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
-        if let url = URL(
-          string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ) {
-          NSWorkspace.shared.open(url)
+        if openSettings {
+          if let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+          ) {
+            NSWorkspace.shared.open(url)
+          }
         }
         self?.syncWithPreferences()
       }
@@ -142,7 +144,7 @@ final class VolumeHUDController: ObservableObject {
   }
 
   static func openAccessibilitySettings() {
-    shared.requestAccessibilityPermission(resetStaleEntry: true)
+    shared.requestAccessibilityPermission(resetStaleEntry: true, openSettings: true)
   }
 
   private func migrateLegacyPreferenceIfNeeded() {
@@ -177,7 +179,7 @@ final class VolumeHUDController: ObservableObject {
       SystemAudioService.shared.stopObserving()
       if enabled && !trusted && isSessionActive && !didPromptAccessibilityThisSession {
         didPromptAccessibilityThisSession = true
-        requestAccessibilityPermission(resetStaleEntry: true)
+        requestAccessibilityPermission(resetStaleEntry: true, openSettings: true)
       }
     }
   }

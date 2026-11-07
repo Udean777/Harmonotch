@@ -25,11 +25,13 @@ typedef Boolean (*MRSendToPlayerFn)(int32_t, CFDictionaryRef, id, uint32_t, disp
                                     void (^)(uint32_t, NSArray *));
 typedef CFDataRef (*MRArtworkCopyFn)(const void *);
 typedef CFStringRef (*MRClientStringFn)(id);
+typedef pid_t (*MRGetClientPIDFn)(id);
 typedef void (*MRRegisterNotificationsFn)(dispatch_queue_t);
 
 @interface MRClient : NSObject
 - (NSString *)bundleIdentifier;
 - (instancetype)initWithBundleIdentifier:(NSString *)bundleID;
+- (void)setProcessIdentifier:(int)pid;
 @end
 
 @interface MRPlayerPath : NSObject
@@ -51,6 +53,7 @@ static struct {
   MRSendToPlayerFn sendToPlayer;
   MRArtworkCopyFn copyArtwork;
   MRClientStringFn getClientParentBundle;
+  MRGetClientPIDFn getClientPID;
   MRRegisterNotificationsFn registerNotifications;
 } MR;
 
@@ -67,6 +70,8 @@ static NSString *const KeyTimestamp = @"kMRMediaRemoteNowPlayingInfoTimestamp";
 static NSString *const OptionSeekPosition = @"kMRMediaRemoteOptionPlaybackPosition";
 
 static dispatch_queue_t WorkQueue;
+static dispatch_queue_t StdinQueue;
+static dispatch_source_t RefreshCoalesceTimer;
 static NSLock *WriteLock;
 static NSObject *StateLock;
 static NSMutableDictionary<NSString *, NSString *> *LastSignaturesBySource;
@@ -105,6 +110,8 @@ static BOOL LoadMediaRemote(void) {
       (MRArtworkCopyFn)Symbol("MRNowPlayingArtworkCopyImageData");
   MR.getClientParentBundle =
       (MRClientStringFn)Symbol("MRNowPlayingClientGetParentAppBundleIdentifier");
+  MR.getClientPID =
+      (MRGetClientPIDFn)Symbol("MRNowPlayingClientGetProcessIdentifier");
   MR.registerNotifications =
       (MRRegisterNotificationsFn)Symbol("MRMediaRemoteRegisterForNowPlayingNotifications");
   return MR.getInfo && MR.getDisplayID && MR.getClients && MR.sendToPlayer &&
@@ -149,12 +156,27 @@ static void EmitState(NSDictionary *info, NSString *displayID, NSString *clientI
   BOOL playing = NO;
   if (overrideState != nil) {
     unsigned int st = [overrideState unsignedIntValue];
-    playing = (st == 1);
-    if (playing && rate == 0) {
-      rate = 1.0;
+    // 0 = Unknown, 1 = Playing, 2 = Paused, 3 = Stopped, 4 = Interrupted, 5 = Seeking
+    if (st == 1) {
+      playing = YES;
+      if (rate <= 0) {
+        rate = 1.0;
+      }
+    } else if (st >= 2 && st <= 4) {
+      playing = NO;
+      rate = 0.0;
+    } else {
+      // st == 0 (Unknown) or st == 5 (Seeking): fall back to rate
+      playing = rate > 0.5;
+      if (!playing) {
+        rate = 0.0;
+      }
     }
   } else {
     playing = rate > 0.5;
+    if (!playing) {
+      rate = 0.0;
+    }
   }
 
   NSDate *timestamp = [info[KeyTimestamp] isKindOfClass:[NSDate class]] ? info[KeyTimestamp] : nil;
@@ -289,11 +311,7 @@ static id ClientForDisplayID(NSArray *clients, NSString *displayID) {
   return matched ?: clients.firstObject;
 }
 
-// Build the per-app player path the way MediaRemote itself does: copy the
-// local path and swap in a client for the app's own bundle. Passing an
-// MRClient from the client list into initWithOrigin: returns an empty info
-// dict for players like Music, which hid them from the app entirely.
-static id PlayerPathForBundle(NSString *bundleID) {
+static id PlayerPathForBundle(NSString *bundleID, pid_t pid) {
   if (bundleID.length == 0) return nil;
   id pathClass = NSClassFromString(@"MRPlayerPath");
   id clientClass = NSClassFromString(@"MRClient");
@@ -301,6 +319,9 @@ static id PlayerPathForBundle(NSString *bundleID) {
   id path = [[(id)pathClass localPlayerPath] copy];
   id client = [[clientClass alloc] initWithBundleIdentifier:bundleID];
   if (!path || !client) return nil;
+  if (pid > 0 && [client respondsToSelector:@selector(setProcessIdentifier:)]) {
+    [client setProcessIdentifier:pid];
+  }
   [path setClient:client];
   // Nil resolves this app's active player; "default" is a different session.
   [path setPlayer:nil];
@@ -310,7 +331,31 @@ static id PlayerPathForBundle(NSString *bundleID) {
 static id PlayerPathForClient(id client) {
   if (!client) return nil;
   NSString *bundleID = ((MRClient *)client).bundleIdentifier;
-  return [bundleID isKindOfClass:[NSString class]] ? PlayerPathForBundle(bundleID) : nil;
+  pid_t pid = (MR.getClientPID != NULL) ? MR.getClientPID(client) : 0;
+  return [bundleID isKindOfClass:[NSString class]] ? PlayerPathForBundle(bundleID, pid) : nil;
+}
+
+static void RefreshState(void);
+
+static void ScheduleRefresh(void) {
+  dispatch_async(WorkQueue, ^{
+    if (RefreshCoalesceTimer) {
+      dispatch_source_cancel(RefreshCoalesceTimer);
+      RefreshCoalesceTimer = nil;
+    }
+    RefreshCoalesceTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, WorkQueue);
+    dispatch_source_set_timer(RefreshCoalesceTimer,
+                              dispatch_time(DISPATCH_TIME_NOW, 40 * NSEC_PER_MSEC),
+                              DISPATCH_TIME_FOREVER, 10 * NSEC_PER_MSEC);
+    dispatch_source_set_event_handler(RefreshCoalesceTimer, ^{
+      if (RefreshCoalesceTimer) {
+        dispatch_source_cancel(RefreshCoalesceTimer);
+        RefreshCoalesceTimer = nil;
+      }
+      RefreshState();
+    });
+    dispatch_resume(RefreshCoalesceTimer);
+  });
 }
 
 static void RefreshState(void) {
@@ -342,11 +387,15 @@ static void RefreshState(void) {
           });
         }
 
-        NSString *displayID = DisplayIDSync();
-        if (displayID.length > 0 && !ClientForBundleID(clients, displayID) && MR.getInfo) {
-          MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
-            NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
-            EmitState(info, displayID, displayID, nil);
+        if (MR.getDisplayID && MR.getInfo) {
+          MR.getDisplayID(WorkQueue, ^(CFStringRef value) {
+            NSString *displayID = value ? (__bridge NSString *)value : @"";
+            if (displayID.length > 0 && !ClientForBundleID(clients, displayID)) {
+              MR.getInfo(WorkQueue, ^(CFDictionaryRef information) {
+                NSDictionary *info = information ? (__bridge NSDictionary *)information : @{};
+                EmitState(info, displayID, displayID, nil);
+              });
+            }
           });
         }
         return;
@@ -471,17 +520,16 @@ static void ObserveChanges(void) {
   for (NSString *name in names) {
     [[NSNotificationCenter defaultCenter] addObserverForName:name
                                                       object:nil
-                                                       queue:nil
+                                                       queue:[NSOperationQueue mainQueue]
                                                   usingBlock:^(NSNotification *note) {
-                                                    dispatch_async(WorkQueue, ^{
-                                                      RefreshState();
-                                                    });
+                                                    ScheduleRefresh();
                                                   }];
   }
 }
 
 void hnp_run(void) {
-  WorkQueue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+  WorkQueue = dispatch_queue_create("com.harmonotch.nowplaying.work", DISPATCH_QUEUE_SERIAL);
+  StdinQueue = dispatch_queue_create("com.harmonotch.nowplaying.stdin", DISPATCH_QUEUE_SERIAL);
   WriteLock = [NSLock new];
   StateLock = [NSObject new];
   LastSignaturesBySource = [NSMutableDictionary new];
@@ -492,7 +540,7 @@ void hnp_run(void) {
     exit(1);
   }
 
-  MR.registerNotifications(WorkQueue);
+  MR.registerNotifications(dispatch_get_main_queue());
   ObserveChanges();
 
   dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, WorkQueue);
@@ -502,10 +550,12 @@ void hnp_run(void) {
   });
   dispatch_resume(timer);
 
-  dispatch_async(WorkQueue, ^{
+  dispatch_async(StdinQueue, ^{
     ReadCommands();
   });
-  RefreshState();
+  dispatch_async(WorkQueue, ^{
+    RefreshState();
+  });
 
-  dispatch_main();
+  [[NSRunLoop mainRunLoop] run];
 }
