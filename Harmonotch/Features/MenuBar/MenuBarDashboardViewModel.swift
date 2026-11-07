@@ -5,6 +5,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
   case now
   case battery
   case prayer
+  case agents
 
   var id: String { rawValue }
 
@@ -16,6 +17,8 @@ enum DashboardTab: String, CaseIterable, Identifiable {
       return "battery.100"
     case .prayer:
       return "moon.stars.fill"
+    case .agents:
+      return "cpu.fill"
     }
   }
 
@@ -27,6 +30,8 @@ enum DashboardTab: String, CaseIterable, Identifiable {
       return "Battery"
     case .prayer:
       return "Prayer"
+    case .agents:
+      return "AI Agent"
     }
   }
 }

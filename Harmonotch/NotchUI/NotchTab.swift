@@ -32,13 +32,12 @@ enum DrawerTab: String, CaseIterable, Identifiable {
 
 struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
-    @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var mediaManager = MediaManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
     @Namespace private var tabAnimation
 
     private var isAudioActive: Bool {
-        adzanPlayer.isPlaying || mediaManager.hasMediaSession
+        adzanPlayer.isPlaying || mediaManager.summary.hasMediaSession
     }
 
     private var visibleTabs: [DrawerTab] {
@@ -60,10 +59,10 @@ struct NotchTabBar: View {
                 }) {
                     HStack(spacing: 5) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                            .font(AppTypography.subheadline(isSelected ? .semibold : .regular))
 
                         Text(tab.title)
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                            .font(AppTypography.subheadline(isSelected ? .semibold : .medium))
                             .lineLimit(1)
                     }
                     .foregroundColor(isSelected ? AppTheme.tabActiveText : AppTheme.tabInactiveText)

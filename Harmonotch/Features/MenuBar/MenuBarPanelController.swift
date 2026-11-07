@@ -47,24 +47,11 @@ final class MenuBarPanelController: NSObject {
   private override init() {
     super.init()
     observeLayoutAndLifecycle()
-    viewModel.onPanelOpened = { [weak self] in
-      self?.syncProcessSampling()
-    }
-    viewModel.onPanelClosed = {
-      ProcessActivityMonitor.shared.stop(keepCache: true)
-    }
-    viewModel.onTabChanged = { [weak self] _ in
-      self?.syncProcessSampling()
-    }
     viewModel.onCardHeightChanged = { [weak self] height in
       guard height > 0, height.isFinite else { return }
       self?.hostingView?.cardHeight = height
       self?.resizePanel(to: height)
     }
-  }
-
-  private func syncProcessSampling() {
-    ProcessActivityMonitor.shared.stop(keepCache: true)
   }
 
   private func observeLayoutAndLifecycle() {
@@ -73,8 +60,9 @@ final class MenuBarPanelController: NSObject {
       MediaManager.shared.$trackTitle.map { _ in () }.eraseToAnyPublisher(),
       AdzanPlayer.shared.$isPlaying.map { _ in () }.eraseToAnyPublisher(),
       BatteryMonitor.shared.$state.map { _ in () }.eraseToAnyPublisher(),
-      ProcessActivityMonitor.shared.$state.map { _ in () }.eraseToAnyPublisher(),
       LanguageManager.shared.$currentLanguage.map { _ in () }.eraseToAnyPublisher(),
+      AIAgentQuotaService.shared.$agents.map { _ in () }.eraseToAnyPublisher(),
+      AIAgentQuotaService.shared.$isScanning.map { _ in () }.eraseToAnyPublisher(),
     ]
 
     Publishers.MergeMany(triggers)

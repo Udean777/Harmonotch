@@ -53,6 +53,89 @@ struct AppTheme {
   static var tabInactiveText: Color { palette.tabInactiveText }
 }
 
+enum AppTypography {
+  static func micro(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 9, weight: weight, design: design)
+  }
+
+  static func caption2(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 9.5, weight: weight, design: design)
+  }
+
+  static func caption(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 10, weight: weight, design: design)
+  }
+
+  static func footnote(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 10.5, weight: weight, design: design)
+  }
+
+  static func subheadline(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 11, weight: weight, design: design)
+  }
+
+  static func body(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 12, weight: weight, design: design)
+  }
+}
+
+private struct CardChromeModifier: ViewModifier {
+  let cornerRadius: CGFloat
+  let horizontalPadding: CGFloat?
+  let verticalPadding: CGFloat?
+  let lineWidth: CGFloat
+
+  func body(content: Content) -> some View {
+    content
+      .padding(.horizontal, horizontalPadding ?? 0)
+      .padding(.vertical, verticalPadding ?? 0)
+      .background(
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+          .fill(AppTheme.cardBackground)
+          .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+              .stroke(AppTheme.cardBorder, lineWidth: lineWidth)
+          )
+      )
+  }
+}
+
+private struct LocalizedThemedRootModifier: ViewModifier {
+  @ObservedObject private var themeManager = ThemeManager.shared
+  @ObservedObject private var languageManager = LanguageManager.shared
+
+  func body(content: Content) -> some View {
+    content
+      .environmentObject(themeManager)
+      .environmentObject(languageManager)
+      .environment(\.locale, Locale(identifier: languageManager.currentLanguage.rawValue))
+      .preferredColorScheme(themeManager.colorScheme)
+  }
+}
+
+extension View {
+  func cardChrome(
+    cornerRadius: CGFloat = 10,
+    padding: CGFloat? = nil,
+    horizontalPadding: CGFloat? = nil,
+    verticalPadding: CGFloat? = nil,
+    lineWidth: CGFloat = 0.6
+  ) -> some View {
+    modifier(
+      CardChromeModifier(
+        cornerRadius: cornerRadius,
+        horizontalPadding: horizontalPadding ?? padding,
+        verticalPadding: verticalPadding ?? padding,
+        lineWidth: lineWidth
+      )
+    )
+  }
+
+  func localizedThemedRoot() -> some View {
+    modifier(LocalizedThemedRootModifier())
+  }
+}
+
 extension ThemePalette {
   fileprivate static let monochromeDark = ThemePalette(
     surfaceBackground: .black,

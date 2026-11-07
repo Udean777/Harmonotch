@@ -6,7 +6,8 @@ import Combine
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
 
-    private static let healthCacheDuration: TimeInterval = 300
+    // Battery health changes at most once per cycle; avoid a subprocess every few minutes.
+    private static let healthCacheDuration: TimeInterval = 1800
 
     /// Dashboard-facing state. Stays `.loading` until the first read finishes, so
     /// no number is shown before it is real.
@@ -86,26 +87,18 @@ final class BatteryMonitor: ObservableObject {
 
     /// Expensive probe; the caller must go through `fetchOfficialHealthIfNeeded`.
     private func queryOfficialBatteryHealth() -> Int? {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/system_profiler")
-        proc.arguments = ["SPPowerDataType"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        do {
-            try proc.run()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            proc.waitUntilExit()
-            if let str = String(data: data, encoding: .utf8) {
-                let pattern = "Maximum Capacity:\\s*(\\d+)%"
-                if let regex = try? NSRegularExpression(pattern: pattern),
-                   let match = regex.firstMatch(in: str, range: NSRange(str.startIndex..., in: str)),
-                   let range = Range(match.range(at: 1), in: str),
-                   let val = Int(str[range]) {
-                    return val
-                }
-            }
-        } catch {
-            NSLog("[Harmonotch:Battery] Failed to query battery health: %@", error.localizedDescription)
+        let result = ProcessRunner.run("/usr/sbin/system_profiler", ["SPPowerDataType"])
+        guard result.status == 0 else {
+            NSLog("[Harmonotch:Battery] Failed to query battery health (status %d)", result.status)
+            return nil
+        }
+        let str = result.stdout
+        let pattern = "Maximum Capacity:\\s*(\\d+)%"
+        if let regex = try? NSRegularExpression(pattern: pattern),
+           let match = regex.firstMatch(in: str, range: NSRange(str.startIndex..., in: str)),
+           let range = Range(match.range(at: 1), in: str),
+           let val = Int(str[range]) {
+            return val
         }
         return nil
     }

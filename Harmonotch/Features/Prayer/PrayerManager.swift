@@ -4,7 +4,6 @@ import CoreLocation
 import MapKit
 #endif
 import Combine
-import UserNotifications
 
 struct PrayerScheduleItem: Identifiable, Hashable {
     let id: String
@@ -318,7 +317,7 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }
 
     private func requestNotificationPermissions() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+        UserNotificationService.requestAuthorization { granted in
             if granted {
                 NSLog("[Harmonotch:Prayer] Notification permission granted.")
             }
@@ -326,17 +325,15 @@ final class PrayerManager: NSObject, ObservableObject, CLLocationManagerDelegate
     }
 
     private func sendUserNotification(prayerName: String, timeString: String) {
-        let content = UNMutableNotificationContent()
-        content.title = L10n.Prayer.notificationTitle(name: prayerName)
-        content.body = L10n.Prayer.notificationBody(
-            name: prayerName,
-            time: timeString,
-            location: currentLocationName
+        UserNotificationService.post(
+            identifier: UUID().uuidString,
+            title: L10n.Prayer.notificationTitle(name: prayerName),
+            body: L10n.Prayer.notificationBody(
+                name: prayerName,
+                time: timeString,
+                location: currentLocationName
+            )
         )
-        content.sound = .default
-
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {

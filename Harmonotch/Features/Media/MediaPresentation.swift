@@ -1,4 +1,54 @@
 import Foundation
+import SwiftUI
+
+enum MediaSource: String {
+  case spotify = "Spotify"
+  case appleMusic = "Apple Music"
+  case safari = "YouTube"
+  case web = "Web"
+  case iina = "IINA"
+  case vlc = "VLC"
+  case quicktime = "QuickTime"
+  case podcasts = "Podcasts"
+  case system = "Media"
+  case none = "None"
+
+  var iconName: String {
+    switch self {
+    case .spotify: return "waveform"
+    case .appleMusic: return "apple.logo"
+    case .safari: return "play.rectangle.fill"
+    case .web: return "globe"
+    case .iina: return "play.circle.fill"
+    case .vlc: return "cone.fill"
+    case .quicktime: return "play.tv.fill"
+    case .podcasts: return "antenna.radiowaves.left.and.right"
+    case .system: return "music.note"
+    case .none: return "music.note"
+    }
+  }
+
+  var brandColor: Color {
+    switch self {
+    case .spotify: return Color(red: 0.20, green: 0.82, blue: 0.48)
+    case .appleMusic: return Color(red: 0.98, green: 0.35, blue: 0.55)
+    case .safari: return Color(red: 0.95, green: 0.25, blue: 0.25)
+    case .web: return Color(red: 0.25, green: 0.55, blue: 0.95)
+    case .iina, .vlc: return Color(red: 0.98, green: 0.55, blue: 0.15)
+    case .quicktime: return Color(red: 0.25, green: 0.75, blue: 0.95)
+    case .podcasts: return Color(red: 0.70, green: 0.40, blue: 0.95)
+    case .system: return Color.white
+    case .none: return Color.gray
+    }
+  }
+}
+
+/// Queue item shown when user opens the queue from the notch.
+struct QueueItem: Identifiable, Hashable {
+  let id = UUID()
+  let title: String
+  let artist: String
+}
 
 /// Pure presentation state consumed by the user interface (Pill, Drawer, MenuBar).
 public struct MediaPresentation: Equatable, Sendable {

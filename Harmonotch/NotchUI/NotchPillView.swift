@@ -165,7 +165,7 @@ struct NotchPillView: View {
     } else if isBatteryMode {
       HStack(spacing: 4) {
         if isLeftHovered && notchVM.isCompanionEnabled {
-          PrayerCompanionView()
+          PrayerCompanionView(isVisible: !notchVM.isExpanded)
             .transition(.opacity.combined(with: .scale(scale: 0.82, anchor: .trailing)))
         }
         batteryLeft
@@ -173,7 +173,7 @@ struct NotchPillView: View {
     } else if isMediaPlaying {
       mediaLeft
     } else if notchVM.isCompanionEnabled {
-      PrayerCompanionView()
+      PrayerCompanionView(isVisible: !notchVM.isExpanded)
     } else {
       batteryLeft
     }
@@ -217,13 +217,10 @@ struct NotchPillView: View {
   }
 
   private var batteryIconName: String {
-    let cap = batteryMonitor.currentCapacity
-    // Only battery.100.bolt exists in SF Symbols; lower bolt variants are not available.
-    if batteryMonitor.isCharging && cap >= 90 { return "battery.100.bolt" }
-    if cap >= 60 { return "battery.75" }
-    if cap >= 35 { return "battery.50" }
-    if cap >= 10 { return "battery.25" }
-    return "battery.0"
+    BatteryPresentation.iconName(
+      capacity: batteryMonitor.currentCapacity,
+      isCharging: batteryMonitor.isCharging
+    )
   }
 
   @ViewBuilder
@@ -269,7 +266,7 @@ struct NotchPillView: View {
       }
 
       if notchVM.isCompanionEnabled {
-        PrayerCompanionView()
+        PrayerCompanionView(isVisible: !notchVM.isExpanded)
       }
 
       if geometry.hasHardwareNotch {
@@ -340,7 +337,7 @@ struct NotchPillView: View {
   private var mediaRight: some View {
     ZStack {
       if mediaManager.isPlaying {
-        EqualizerWaveformView(barColor: mediaAccentColor)
+        EqualizerWaveformView(barColor: mediaAccentColor, isActive: !notchVM.isExpanded)
           .transition(NotchMotion.swap)
       } else {
         Image(systemName: "pause.fill")
@@ -369,39 +366,47 @@ private struct NotchWingWidthsKey: PreferenceKey {
 
 struct EqualizerWaveformView: View {
   var barColor: Color = .white
+  /// False when the pill is not on screen (expanded), so bars stop animating.
+  var isActive: Bool = true
   @State private var isAnimating = false
+
+  private func refresh() {
+    isAnimating = isActive
+  }
 
   var body: some View {
     HStack(alignment: .center, spacing: 2.2) {
       RoundedRectangle(cornerRadius: 1)
         .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 11 : 4)
-        .animation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true), value: isAnimating)
+        .animation(.easeInOut(duration: 0.95).repeatForever(autoreverses: true), value: isAnimating)
 
       RoundedRectangle(cornerRadius: 1)
         .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 5 : 12)
         .animation(
-          .easeInOut(duration: 0.35).repeatForever(autoreverses: true).delay(0.1),
+          .easeInOut(duration: 0.8).repeatForever(autoreverses: true).delay(0.2),
           value: isAnimating)
 
       RoundedRectangle(cornerRadius: 1)
         .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 12 : 5)
         .animation(
-          .easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(0.2), value: isAnimating
+          .easeInOut(duration: 0.85).repeatForever(autoreverses: true).delay(0.4), value: isAnimating
         )
 
       RoundedRectangle(cornerRadius: 1)
         .fill(barColor)
         .frame(width: 2.2, height: isAnimating ? 4 : 9)
         .animation(
-          .easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(0.15),
+          .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.3),
           value: isAnimating)
     }
     .frame(height: 14)
-    .onAppear {
-      isAnimating = true
+    .onAppear(perform: refresh)
+    .onDisappear {
+      isAnimating = false
     }
+    .onChange(of: isActive) { _, _ in refresh() }
   }
 }

@@ -99,29 +99,25 @@ nonisolated enum NowPlayingSourceKind: String, Equatable {
   case system
 
   init(bundleID: String) {
+    if BrowserCatalog.isSafari(bundleID: bundleID) {
+      self = .safari
+      return
+    }
+    if BrowserCatalog.isBrowser(bundleID: bundleID) {
+      self = .web
+      return
+    }
     switch bundleID {
     case "com.spotify.client":
       self = .spotify
     case "com.apple.Music":
       self = .appleMusic
-    case "com.apple.WebKit.GPU", "com.apple.WebKit.WebContent", "com.apple.Safari":
-      self = .safari
     case "com.apple.QuickTimePlayerX":
       self = .quicktime
     case "com.apple.podcasts":
       self = .podcasts
-    case "company.thebrowser.Browser":
-      self = .web
     default:
-      let lower = bundleID.lowercased()
-      let contains: (String) -> Bool = { lower.contains($0) }
-      if contains("chrome") || contains("brave") || contains("arc") || contains("edgemac")
-        || contains("opera") || contains("firefox")
-      {
-        self = .web
-      } else {
-        self = .system
-      }
+      self = .system
     }
   }
 }

@@ -20,8 +20,9 @@ DerivedData/
 timeline.xctimeline
 playground.xcworkspace
 
-# Swift Package Manager
+# Swift Package Manager & Build Cache
 .build/
+.build-*/
 Packages/
 Package.pins
 Package.resolved

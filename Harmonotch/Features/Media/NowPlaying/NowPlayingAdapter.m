@@ -507,9 +507,7 @@ static void ObserveChanges(void) {
     @"kMRMediaRemoteNowPlayingApplicationIsPlayingDidChangeNotification",
     @"kMRMediaRemoteNowPlayingApplicationClientStateDidChange",
     @"kMRMediaRemoteNowPlayingPlaybackQueueDidChangeNotification",
-    // Player-level changes, not only the system's current player. Firefox in
-    // particular posts pause here, and missing it left the app waiting for
-    // the one-second poll before it stopped showing playback.
+    // Player-level notifications: Firefox posts pause only here.
     @"kMRMediaRemotePlayerIsPlayingDidChangeNotification",
     @"kMRMediaRemotePlayerNowPlayingInfoDidChangeNotification",
     @"kMRMediaRemoteNowPlayingPlayerStateDidChange",
