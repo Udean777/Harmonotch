@@ -29,11 +29,13 @@ typedef void (*MRRegisterNotificationsFn)(dispatch_queue_t);
 
 @interface MRClient : NSObject
 - (NSString *)bundleIdentifier;
+- (instancetype)initWithBundleIdentifier:(NSString *)bundleID;
 @end
 
 @interface MRPlayerPath : NSObject
-- (instancetype)initWithOrigin:(id)origin client:(id)client player:(id)player;
-- (id)localResolvedPlayerPath;
++ (instancetype)localPlayerPath;
+- (void)setClient:(id)client;
+- (void)setPlayer:(id)player;
 @end
 
 static const char *kFrameworkPath =
@@ -194,7 +196,10 @@ static void EmitState(NSDictionary *info, NSString *displayID, NSString *clientI
       emit = artworkChanged || ![signature isEqualToString:lastSig];
       if (emit) {
         LastSignaturesBySource[stateKey] = signature;
-        if (artworkChanged || (keyChanged && artwork.length == 0)) {
+        // Only remember the key once artwork actually arrived. Marking it on
+        // an empty poll made MediaRemote's first artwork-less read permanent,
+        // so the cover never showed for that track.
+        if (artworkChanged) {
           LastArtworkKeyBySource[stateKey] = artworkKey;
         }
       }
@@ -274,13 +279,28 @@ static id ClientForDisplayID(NSArray *clients, NSString *displayID) {
   return matched ?: clients.firstObject;
 }
 
+// Build the per-app player path the way MediaRemote itself does: copy the
+// local path and swap in a client for the app's own bundle. Passing an
+// MRClient from the client list into initWithOrigin: returns an empty info
+// dict for players like Music, which hid them from the app entirely.
+static id PlayerPathForBundle(NSString *bundleID) {
+  if (bundleID.length == 0) return nil;
+  id pathClass = NSClassFromString(@"MRPlayerPath");
+  id clientClass = NSClassFromString(@"MRClient");
+  if (!pathClass || !clientClass) return nil;
+  id path = [[(id)pathClass localPlayerPath] copy];
+  id client = [[clientClass alloc] initWithBundleIdentifier:bundleID];
+  if (!path || !client) return nil;
+  [path setClient:client];
+  // Nil resolves this app's active player; "default" is a different session.
+  [path setPlayer:nil];
+  return path;
+}
+
 static id PlayerPathForClient(id client) {
-  Class pathClass = NSClassFromString(@"MRPlayerPath");
-  if (!pathClass || !client) return nil;
-  id path = [[pathClass alloc] initWithOrigin:nil client:client player:nil];
-  if (!path) return nil;
-  id resolved = [path localResolvedPlayerPath];
-  return resolved ?: path;
+  if (!client) return nil;
+  NSString *bundleID = ((MRClient *)client).bundleIdentifier;
+  return [bundleID isKindOfClass:[NSString class]] ? PlayerPathForBundle(bundleID) : nil;
 }
 
 static void RefreshState(void) {

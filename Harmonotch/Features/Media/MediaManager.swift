@@ -436,11 +436,7 @@ final class MediaManager: ObservableObject {
 
   // MARK: - Arbitration (Single Ingestion & Reconcile)
 
-  private func ingest(
-    candidate: MediaCandidate,
-    directArtwork: NSImage? = nil,
-    artworkURL: URL? = nil
-  ) {
+  private func ingest(candidate: MediaCandidate) {
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
 
@@ -461,6 +457,24 @@ final class MediaManager: ObservableObject {
         updated.artwork = existing.artwork
       }
 
+      // The same track can arrive twice: once from the MediaRemote bridge
+      // (which carries the cover) and once from an AppleScript/notification
+      // twin. Share the cover so whichever twin wins can draw it.
+      if updated.hasMetadata {
+        if updated.artwork == nil {
+          updated.artwork = self.candidateRegistry.values.first {
+            $0.app.bundleID == updated.app.bundleID && $0.title == updated.title
+              && $0.artist == updated.artist && $0.artwork != nil
+          }?.artwork
+        } else {
+          for (id, sibling) in self.candidateRegistry where
+            sibling.awareness != .presence && sibling.app.bundleID == updated.app.bundleID
+              && sibling.title == updated.title && sibling.artist == updated.artist {
+            self.candidateRegistry[id]?.artwork = updated.artwork
+          }
+        }
+      }
+
       // If this candidate has metadata, remove any audioOnly presence candidate for the same app
       if updated.hasMetadata {
         for (id, existing) in self.candidateRegistry where existing.awareness == .presence && existing.app.bundleID == updated.app.bundleID {
@@ -478,11 +492,11 @@ final class MediaManager: ObservableObject {
       }
 
       self.candidateRegistry[updated.identity] = updated
-      self.reconcile(pendingArtwork: directArtwork, pendingArtworkURL: artworkURL)
+      self.reconcile()
     }
   }
 
-  private func reconcile(pendingArtwork: NSImage? = nil, pendingArtworkURL: URL? = nil) {
+  private func reconcile() {
     dispatchPrecondition(condition: .onQueue(.main))
 
     let candidates = MediaSelector.pruneStale(
@@ -503,7 +517,7 @@ final class MediaManager: ObservableObject {
       return
     }
 
-    applyCandidate(winner, directArtwork: pendingArtwork, artworkURL: pendingArtworkURL)
+    applyCandidate(winner)
   }
 
   public static func isBrowserBundleID(_ bundleID: String) -> Bool {
@@ -532,11 +546,7 @@ final class MediaManager: ObservableObject {
     return nil
   }
 
-  private func applyCandidate(
-    _ winner: MediaCandidate,
-    directArtwork: NSImage? = nil,
-    artworkURL: URL? = nil
-  ) {
+  private func applyCandidate(_ winner: MediaCandidate) {
     let identityChanged = (currentIdentity != winner.identity)
     let trackChanged = (trackTitle != winner.title || artistName != winner.artist)
     if identityChanged || trackChanged {
@@ -561,13 +571,13 @@ final class MediaManager: ObservableObject {
       artistName = winner.artist
       albumName = winner.album
 
-      let resolvedDirectArtwork: NSImage? = directArtwork ?? {
+      let resolvedDirectArtwork: NSImage? = {
         if case .data(let data)? = winner.artwork {
           return NSImage(data: data)
         }
         return nil
       }()
-      let resolvedURL = resolveBrowserArtworkURL(for: winner, explicitURL: artworkURL)
+      let resolvedURL = resolveBrowserArtworkURL(for: winner, explicitURL: nil)
 
       if let direct = resolvedDirectArtwork {
         let cacheKey = MediaArtworkCacheKey.make(
@@ -604,53 +614,9 @@ final class MediaManager: ObservableObject {
     }
   }
 
-  private func updateTrack(
-    source: MediaSource,
-    title: String,
-    artist: String,
-    album: String,
-    duration: TimeInterval,
-    position: TimeInterval,
-    isPlaying: Bool,
-    artworkURL: URL? = nil,
-    directArtwork: NSImage? = nil
-  ) {
-    // Legacy shim routing through the single ingest arbiter
-    let bundleID: String
-    switch source {
-    case .spotify: bundleID = "com.spotify.client"
-    case .appleMusic: bundleID = "com.apple.Music"
-    case .safari: bundleID = "com.apple.Safari"
-    case .quicktime: bundleID = "com.apple.QuickTimePlayerX"
-    case .podcasts: bundleID = "com.apple.podcasts"
-    case .iina: bundleID = "com.colliderli.iina"
-    case .vlc: bundleID = "org.videolan.vlc"
-    default: bundleID = "com.apple.Safari"
-    }
-
-    let identity = MediaIdentity(bundleID: bundleID, contentID: "\(title)|\(artist)")
-    let candidate = MediaCandidate(
-      identity: identity,
-      app: MediaAppInfo.resolve(bundleID: bundleID),
-      title: title,
-      artist: artist,
-      album: album,
-      duration: duration,
-      position: position,
-      isPlaying: isPlaying,
-      artwork: directArtwork.flatMap { _ in nil },
-      awareness: .script,
-      capabilities: .standardPlayer
-    )
-    ingest(candidate: candidate, directArtwork: directArtwork, artworkURL: artworkURL)
-  }
-
   // MARK: - MediaRemote bridge
 
   private func handleNowPlayingState(_ state: NowPlayingState) {
-    let artwork = state.artwork.flatMap { Data(base64Encoded: $0) }
-      .flatMap { NSImage(data: $0) }
-
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
       guard !state.title.isEmpty else {
@@ -700,7 +666,7 @@ final class MediaManager: ObservableObject {
       // Only a playing client can be the system's current player; paused clients
       // are still enumerated and would otherwise win the paused tie-break.
       if state.playing { self.systemIdentity = identity }
-      self.ingest(candidate: candidate, directArtwork: artwork)
+      self.ingest(candidate: candidate)
     }
   }
 
@@ -1203,7 +1169,7 @@ final class MediaManager: ObservableObject {
       guard let self = self else { return }
       self.traceProducer(producer: "WebSnapshot", source: source, title: title, isPlaying: isPlaying, details: "artist='\(artist)' browser='\(snapshot.browser)' url='\(snapshot.url)'")
       self.activeWebTarget = snapshot
-      self.ingest(candidate: candidate, directArtwork: nil, artworkURL: artworkURL)
+      self.ingest(candidate: candidate)
     }
   }
 
