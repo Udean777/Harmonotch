@@ -68,4 +68,9 @@ enum ChargeLimitPolicy {
         }
         return !isCharging && capacity >= (targetThreshold - hysteresisMargin)
     }
+
+    /// True when charging is currently inhibited in hardware and must be restored to normal.
+    static func needsRestore(currentlyInhibited: Bool, shouldInhibit: Bool) -> Bool {
+        currentlyInhibited && !shouldInhibit
+    }
 }

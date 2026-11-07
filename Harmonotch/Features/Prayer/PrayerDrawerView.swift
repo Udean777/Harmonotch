@@ -3,7 +3,6 @@ import SwiftUI
 struct PrayerDrawerView: View {
     @ObservedObject var prayerManager = PrayerManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
-    @ObservedObject var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 12) {

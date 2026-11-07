@@ -51,27 +51,19 @@ enum WebMediaScripts {
     mediaURLFragments.map { "u contains \"\($0)\"" }.joined(separator: " or ")
   }
 
-  private static func literal(_ text: String) -> String {
-    let escaped =
-      text
-      .replacingOccurrences(of: "\\", with: "\\\\")
-      .replacingOccurrences(of: "\"", with: "\\\"")
-    return "\"\(escaped)\""
-  }
-
   /// Lists every media tab with its player state. Safari and Chromium share one shape.
   static func probe(browser: String) -> String {
-    let isSafari = browser == "Safari"
+    let isSafari = BrowserCatalog.scriptKind(forBrowserName: browser) == .safari
     let tabsName = "tabs of w"
     let run =
       isSafari
-      ? "do JavaScript \(literal(probeJS)) in t"
-      : "execute t javascript \(literal(probeJS))"
+      ? "do JavaScript \(AppleScriptRunner.quotedLiteral(probeJS)) in t"
+      : "execute t javascript \(AppleScriptRunner.quotedLiteral(probeJS))"
     return """
       set out to ""
       set errText to ""
       try
-          tell application \(literal(browser))
+          tell application \(AppleScriptRunner.quotedLiteral(browser))
               repeat with wi from 1 to count of windows
                   set w to window wi
                   repeat with ti from 1 to count of \(tabsName)
@@ -100,19 +92,19 @@ enum WebMediaScripts {
 
   /// Runs `js` in the tab whose URL equals `url`, so a tab that moved is still found.
   static func control(browser: String, url: String, js: String) -> String {
-    let isSafari = browser == "Safari"
+    let isSafari = BrowserCatalog.scriptKind(forBrowserName: browser) == .safari
     let run =
       isSafari
-      ? "do JavaScript \(literal(js)) in t"
-      : "execute t javascript \(literal(js))"
+      ? "do JavaScript \(AppleScriptRunner.quotedLiteral(js)) in t"
+      : "execute t javascript \(AppleScriptRunner.quotedLiteral(js))"
     return """
       try
-          tell application \(literal(browser))
+          tell application \(AppleScriptRunner.quotedLiteral(browser))
               repeat with wi from 1 to count of windows
                   set w to window wi
                   repeat with ti from 1 to count of tabs of w
                       set t to tab ti of w
-                      if (URL of t) is \(literal(url)) then
+                      if (URL of t) is \(AppleScriptRunner.quotedLiteral(url)) then
                           return \(run)
                       end if
                   end repeat

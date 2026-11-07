@@ -11,7 +11,7 @@
 
 </div>
 
-Harmonotch turns the camera cutout on a MacBook into a small control surface. Hover the notch to open a drawer with four tabs: prayer times, battery status, media with synced lyrics, and AI agent quota telemetry. On a Mac without a notch, the same controls live in the menu bar.
+Harmonotch turns the camera cutout on a MacBook into a small control surface. Hover the notch to open a drawer with three tabs: prayer times, battery status, and media with synced lyrics. On a Mac without a notch, the same controls live in the menu bar.
 
 Prayer times are calculated on device. The app has no account, no analytics, and no server for prayer or battery data. Lyrics and update checks use the network.
 
@@ -35,7 +35,7 @@ Prayer times are calculated on device. The app has no account, no analytics, and
   - Controls hardware SMC registers (`CH0B` for Apple Silicon M1–M4 in bypass mode; `BCLM` for Intel Macs) across macOS versions (Tahoe / Golden Gate, Sequoia, Sonoma, and Ventura).
   - Smart hysteresis (2% buffer) prevents rapid charging on/off cycles when hovering at the threshold.
   - Automatic fail-safe: restores normal charging state when quitting the app or unplugging the power cable.
-  - One-click privilege setup via `/etc/sudoers.d/harmonotch`, with fallbacks to CLI tools (`battery`, `smc`) and smart audio/visual notifications.
+  - One-click privilege setup via `/etc/sudoers.d/harmonotch` scoped to your user UID, with fallbacks to CLI tools (`battery`, `smc`) and smart audio/visual notifications.
 - **Clamshell Mode (Stay Awake with Lid Closed)**:
   - Keeps the Mac awake and the external monitor active as the primary display when the MacBook lid is closed.
   - **Requirements**: An external display must be connected; without an external display, the mode stays in `Standby (No Display)` and never disables system sleep.
@@ -66,22 +66,20 @@ The MediaRemote bridge uses an undocumented Apple framework, so it can change or
 - **Native Feedback Parity**: Honors macOS "Play feedback when volume is changed" setting and Shift key inversion using Apple's official `volume.aiff` audio sample.
 - **Third-Party App Note**: Harmonotch uses a `.cgSessionEventTap` to intercept volume keys. Do not run Harmonotch simultaneously with other utilities that consume volume keys (e.g. Vorssaint, BetterDisplay, or MonitorControl), as multiple competing event taps cannot coordinate key consumption.
 
-### AI agent quota telemetry
-
-- Live tracking of quota remaining and reset countdowns across active coding agents: **Google Antigravity**, **Claude Code**, **Ollama**, **Cursor**, and **GitHub Copilot**.
-- Non-interactive local CLI evaluation (e.g. `agy -p "/usage"`), querying authorized quotas without storing API keys, passwords, or personal credentials (100% passive & ban-safe).
-- In-memory 30-second cache prevents excessive subshell calls and eliminates CPU overhead.
-- Dynamic notch drawer height: the drawer dynamically expands (between ~180pt and ~350pt) to fit discovered model tiers, and provides smooth vertical scrolling when more than 5 models are present.
-- Built-in Antigravity onboarding guide: if `agy` is not installed or logged in, a clean onboarding card provides 3-step setup guidance, a direct link to documentation (`https://antigravity.google`), and a one-click copy button for `agy`.
-
 ### Interface
 
-- Pure monochrome black-and-white (`#000000` / `#FFFFFF`) aesthetic engineered to blend invisibly into the physical MacBook camera housing.
+- Pure monochrome black-and-white (`#000000` / `#FFFFFF`) and Catppuccin theme palettes engineered to blend cleanly into the MacBook camera housing.
 - Interactive battery-aware notch companion (`PrayerCompanionView`) that appears on left-wing hover or active playback/adhan states with expressive mood animations.
 - Fluid spring shrink/expand geometry (`NotchMotion`) with selective cursor hit-testing so the macOS menu bar only activates outside the notch radius.
 - English and Indonesian, switched from the menu bar without a restart.
-- Streamlined monochrome menu bar panel with the next prayer, battery telemetry, language switcher, clamshell mode, and update checks.
+- Streamlined menu bar dashboard with the next prayer, battery telemetry, language switcher, clamshell mode, and update checks.
 - Notch drawer with keyboard shortcuts for tabs, adhan mute, and hiding the overlay.
+
+## Architecture
+
+- **Feature Managers & State:** UI state is owned by main-actor-isolated observable managers (`PrayerManager`, `BatteryMonitor`, `ClamshellManager`, `BatteryChargeLimiter`, `MediaManager`, `VolumeHUDController`, `UpdateManager`, `ThemeManager`, `LanguageManager`). Heavy I/O (process execution, AppleScript, network requests, IOKit/pmset probes) is delegated to dedicated background queues and shared helpers (`ProcessRunner`, `AppleScriptRunner`, `SudoersRuleInstaller`).
+- **Media Pipeline:** `MediaManager` ingests candidates from three sources: (1) the Perl/Objective-C `NowPlayingBridge` (`MediaNotificationIngest`), (2) local AppleScript & distributed notifications (`MediaScriptRunner`), and (3) browser tab probes (`MediaWebProbe` + `BrowserCatalog`), plus CoreAudio active-process detection (`AudioProcessPresence`). `MediaSelector` arbitrates a single winning `MediaCandidate` into a `MediaPresentation`, while `MediaArtworkService` and `MediaLyricsService` asynchronously resolve artwork palettes and synced LRCLIB/Apple Music lyrics.
+- **Prayer Pipeline:** `PrayerManager` resolves coordinates from Indonesian `CityPreset` entries or CoreLocation, computes daily schedules and Qibla direction via `Adhan` and `PrayerScheduleResolver`, schedules system notifications via `UserNotificationService`, and triggers `AdzanPlayer` at prayer times.
 
 ## Requirements
 
@@ -135,15 +133,24 @@ Users upgrading from an ad-hoc build must remove and re-add the app in System Se
 ./Tests/run-tests.sh
 ```
 
-The harness compiles the pure logic and checks prayer times, version comparison, the LRC parser, compass headings, and the clamshell policy.
+The test runner discovers all domain suites in `Tests/` (`PrayerTests`, `MediaTests`, `MediaSelectionTests`, `BatteryTests`, `AudioTests`, `UpdateTests`, `GeometryTests`, `DefaultsTests`) and verifies prayer calculations, version & update installer policies, LRC parsing, media candidate arbitration, browser catalog lookup, clamshell & charge limit policies, battery presentation, volume key routing, notch geometry, and typed `UserDefaults` keys.
 
 ## Project structure
 
 ```text
 Harmonotch/
 ├── App/
-│   ├── AppDelegate.swift             // AppKit lifecycle and menu bar item
-│   └── UserDefaultsKeys.swift        // Centralized UserDefaults keys
+│   ├── AppDelegate.swift             // AppKit lifecycle and status item observer
+│   ├── StatusBarMenuBuilder.swift    // Status bar context menu construction
+│   ├── AppMenuActions.swift          // Status bar menu @objc actions
+│   └── UserDefaultsKeys.swift        // Centralized typed UserDefaults keys
+├── Shared/
+│   ├── ProcessRunner.swift           // Safe subprocess execution & pipe draining
+│   ├── AppleScriptRunner.swift       // Serial cached NSAppleScript & admin shell runner
+│   ├── SudoersRuleInstaller.swift    // UID-scoped /etc/sudoers.d installer & probe
+│   ├── AppLauncher.swift             // Bundle activation and URL fallback
+│   ├── UserNotificationService.swift // UNUserNotificationCenter wrapper
+│   └── TimeFormatting.swift          // Playback clock and countdown formatting
 ├── HarmonotchApp.swift               // App entry point
 ├── NotchUI/
 │   ├── NotchGeometryHelper.swift     // Notch geometry detection
@@ -153,26 +160,17 @@ Harmonotch/
 │   ├── NotchTab.swift                // Tab enum and segmented control
 │   ├── NotchChip.swift               // Shared chip and motion tokens
 │   ├── NotchPillView.swift           // Collapsed notch content
-│   └── PureBlackSurface.swift        // Pure solid black notch silhouette
+│   ├── VolumeNoticeView.swift        // In-notch volume HUD badge
+│   └── PureBlackSurface.swift        // Notch surface fill
 ├── Features/
-│   ├── MenuBar/                      // Monochrome menu bar panel
-│   ├── Theme/                        // Monochrome and palette color tokens
-│   ├── Localization/                 // Language state and strings
+│   ├── MenuBar/                      // Menu bar dashboard and section views (Now, Battery, Prayer)
+│   ├── Theme/                        // Monochrome/Catppuccin palettes, AppTypography, cardChrome
+│   ├── Localization/                 // Language state and localized strings (L10n)
 │   ├── Prayer/                       // Prayer engine, adhan audio, companion, city presets
-│   ├── Battery/                      // IOKit monitor and clamshell mode
-│   ├── AI/                           // Multi-provider AI agent quota monitoring and telemetry
-│   │   ├── AIModelQuota.swift        // Model quota and countdown data models
-│   │   ├── AIUsageDrawerView.swift   // Dynamic scrollable notch drawer card & CLI onboarding
-│   │   ├── AIUsageManager.swift      // Multi-provider telemetry coordinator
-│   │   ├── AntigravityProcessDetector.swift // Safe local process and socket scanner
-│   │   ├── AntigravityQuotaService.swift    // Antigravity CLI `/usage` integration
-│   │   ├── ClaudeCodeQuotaService.swift
-│   │   ├── CopilotQuotaService.swift
-│   │   ├── CursorQuotaService.swift
-│   │   └── OllamaQuotaService.swift
-│   ├── KeyboardBacklight/            // Built-in keyboard light level
-│   ├── Media/                        // MediaRemote bridge, lyrics, and metadata
-│   ├── Update/                       // GitHub release checks
+│   ├── Battery/                      // IOKit monitor, charge limiter, and Clamshell mode
+│   ├── Audio/                        // CoreAudio service, volume key router, CGEventTap, TCC
+│   ├── Media/                        // MediaRemote bridge, web probe, artwork, lyrics, and drawer views
+│   ├── Update/                       // GitHub release checks, bounded downloader, and installer
 │   └── About/                        // About window and credits
 ├── web/                              // Landing page (HTML, CSS, JS)
 ├── Assets.xcassets/
@@ -180,6 +178,15 @@ Harmonotch/
 │   ├── adzan.m4a
 │   └── adzan_subuh.m4a
 └── Tests/
+    ├── main.swift                    // Test harness entry point
+    ├── PrayerTests.swift
+    ├── MediaTests.swift
+    ├── MediaSelectionTests.swift
+    ├── BatteryTests.swift
+    ├── AudioTests.swift
+    ├── UpdateTests.swift
+    ├── GeometryTests.swift
+    └── DefaultsTests.swift
 ```
 
 ## Credits

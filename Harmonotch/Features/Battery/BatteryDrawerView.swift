@@ -4,7 +4,6 @@ struct BatteryDrawerView: View {
   @ObservedObject var batteryMonitor = BatteryMonitor.shared
   @ObservedObject var chargeLimiter = BatteryChargeLimiter.shared
   @ObservedObject var clamshell = ClamshellManager.shared
-  @ObservedObject var languageManager = LanguageManager.shared
 
   var body: some View {
     VStack(spacing: 12) {
@@ -170,24 +169,15 @@ struct BatteryDrawerView: View {
       if clamshell.setupFailed && !clamshell.isPerformingSetup {
         HStack(spacing: 4) {
           Image(systemName: "exclamationmark.triangle.fill")
-            .font(.system(size: 9))
+            .font(AppTypography.micro())
           Text(L10n.Clamshell.setupFailedMessage)
-            .font(.system(size: 9.5, weight: .medium))
+            .font(AppTypography.caption2(.medium))
             .lineLimit(1)
         }
         .foregroundColor(AppTheme.accentRed)
       }
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 7)
-    .background(
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .fill(AppTheme.cardBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-        )
-    )
+    .cardChrome(cornerRadius: 8, horizontalPadding: 10, verticalPadding: 7, lineWidth: 0.5)
   }
 
   private var clamshellStatusLabel: String {
@@ -243,13 +233,7 @@ struct BatteryDrawerView: View {
   }
 
   private var healthAccentColor: Color {
-    if batteryMonitor.healthPercent >= 80 {
-      return AppTheme.accentGreen
-    }
-    if batteryMonitor.healthPercent >= 50 {
-      return AppTheme.accentAmber
-    }
-    return AppTheme.accentRed
+    BatteryPresentation.healthColor(percent: batteryMonitor.healthPercent)
   }
 
   private var powerSourceLabel: String {
@@ -266,13 +250,10 @@ struct BatteryDrawerView: View {
   }
 
   private var batteryIconName: String {
-    let cap = batteryMonitor.currentCapacity
-    // Only battery.100.bolt exists in SF Symbols; lower bolt variants are not available.
-    if batteryMonitor.isCharging && cap >= 90 { return "battery.100.bolt" }
-    if cap >= 60 { return "battery.75" }
-    if cap >= 35 { return "battery.50" }
-    if cap >= 10 { return "battery.25" }
-    return "battery.0"
+    BatteryPresentation.iconName(
+      capacity: batteryMonitor.currentCapacity,
+      isCharging: batteryMonitor.isCharging
+    )
   }
 
   private var batteryAccentColor: Color {
@@ -280,13 +261,10 @@ struct BatteryDrawerView: View {
   }
 
   private var batteryProgressColor: Color {
-    if batteryMonitor.isCharging || batteryMonitor.currentCapacity >= 35 {
-      return AppTheme.accentGreen
-    }
-    if batteryMonitor.currentCapacity >= 15 {
-      return AppTheme.accentAmber
-    }
-    return AppTheme.accentRed
+    BatteryPresentation.progressColor(
+      capacity: batteryMonitor.currentCapacity,
+      isCharging: batteryMonitor.isCharging
+    )
   }
 }
 
@@ -299,32 +277,23 @@ struct BatteryStatCard: View {
   var body: some View {
     HStack(spacing: 7) {
       Image(systemName: icon)
-        .font(.system(size: 12, weight: .semibold))
+        .font(AppTypography.body(.semibold))
         .foregroundColor(iconColor)
 
       Text(title)
-        .font(.system(size: 11, weight: .medium))
+        .font(AppTypography.subheadline(.medium))
         .foregroundColor(AppTheme.textSecondary)
         .lineLimit(1)
 
       Spacer(minLength: 4)
 
       Text(value)
-        .font(.system(size: 12, weight: .bold, design: .rounded))
+        .font(AppTypography.body(.bold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(AppTheme.textPrimary)
         .lineLimit(1)
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 8)
     .frame(maxWidth: .infinity)
-    .background(
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .fill(AppTheme.cardBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-        )
-    )
+    .cardChrome(cornerRadius: 8, horizontalPadding: 10, verticalPadding: 8, lineWidth: 0.5)
   }
 }

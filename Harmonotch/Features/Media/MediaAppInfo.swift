@@ -80,7 +80,10 @@ public struct MediaAppInfo: Equatable, Hashable, Sendable {
     }
 
     // Fall back to known bundle ID names
-    let knownName = knownDisplayNames[cleanBundleID] ?? fallbackNameFromBundleID(cleanBundleID)
+    let knownName =
+      knownDisplayNames[cleanBundleID]
+      ?? BrowserCatalog.entry(forBundleID: cleanBundleID)?.name
+      ?? fallbackNameFromBundleID(cleanBundleID)
     return MediaAppInfo(
       bundleID: cleanBundleID,
       displayName: knownName,
@@ -100,8 +103,8 @@ public struct MediaAppInfo: Equatable, Hashable, Sendable {
       return .call
     }
 
-    if knownVideoBundleIDs.contains(lower) || lower.contains("safari") || lower.contains("chrome") ||
-       lower.contains("browser") || lower.contains("iina") || lower.contains("vlc") ||
+    if BrowserCatalog.isBrowser(bundleID: bundleID) || knownVideoBundleIDs.contains(lower) ||
+       lower.contains("iina") || lower.contains("vlc") ||
        lower.contains("quicktime") || lower.contains("podcasts") {
       return .video
     }
@@ -114,10 +117,8 @@ public struct MediaAppInfo: Equatable, Hashable, Sendable {
 
     if lower.contains("spotify") { return "waveform" }
     if lower == "com.apple.music" { return "apple.logo" }
-    if lower == "com.apple.safari" { return "play.rectangle.fill" }
-    if lower.contains("chrome") || lower.contains("arc") || lower.contains("browser") || lower.contains("edge") || lower.contains("opera") {
-      return "globe"
-    }
+    if BrowserCatalog.isSafari(bundleID: bundleID) { return "play.rectangle.fill" }
+    if BrowserCatalog.isBrowser(bundleID: bundleID) { return "globe" }
     if lower.contains("iina") { return "play.circle.fill" }
     if lower.contains("vlc") { return "cone.fill" }
     if lower.contains("quicktime") { return "play.tv.fill" }
@@ -148,13 +149,6 @@ public struct MediaAppInfo: Equatable, Hashable, Sendable {
   ]
 
   private static let knownVideoBundleIDs: Set<String> = [
-    "com.apple.safari",
-    "com.google.chrome",
-    "company.thebrowser.browser",
-    "com.brave.browser",
-    "com.microsoft.edgemac",
-    "com.operasoftware.opera",
-    "com.operasoftware.operagx",
     "com.apple.quicktimeplayerx",
     "com.apple.podcasts",
     "com.colliderli.iina",
@@ -176,14 +170,6 @@ public struct MediaAppInfo: Equatable, Hashable, Sendable {
     "com.spotify.client": "Spotify",
     "com.apple.Music": "Apple Music",
     "com.apple.music": "Apple Music",
-    "com.apple.Safari": "Safari",
-    "com.apple.safari": "Safari",
-    "com.google.Chrome": "Google Chrome",
-    "company.thebrowser.Browser": "Arc",
-    "com.brave.Browser": "Brave Browser",
-    "com.microsoft.edgemac": "Microsoft Edge",
-    "com.operasoftware.Opera": "Opera",
-    "com.operasoftware.OperaGX": "Opera GX",
     "com.apple.QuickTimePlayerX": "QuickTime",
     "com.apple.podcasts": "Podcasts",
     "com.colliderli.iina": "IINA",

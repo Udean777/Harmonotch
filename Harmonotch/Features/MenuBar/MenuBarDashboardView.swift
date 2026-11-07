@@ -5,15 +5,14 @@ struct MenuBarDashboardView: View {
   @ObservedObject var viewModel: MenuBarDashboardViewModel
   var onClose: () -> Void
 
-  @ObservedObject private var themeManager = ThemeManager.shared
   @ObservedObject private var updateManager = UpdateManager.shared
-  @ObservedObject private var languageManager = LanguageManager.shared
 
   var body: some View {
     GeometryReader { proxy in
       cardContent
         .frame(width: proxy.size.width, alignment: .top)
     }
+    .localizedThemedRoot()
     .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
       viewModel.onCardHeightChanged?(height)
     }
@@ -95,7 +94,7 @@ struct MenuBarDashboardView: View {
           .lineLimit(1)
 
         Text(L10n.Menu.headerSubtitle)
-          .font(.system(size: 9.5, weight: .medium))
+          .font(AppTypography.caption2(.medium))
           .foregroundColor(AppTheme.textTertiary)
           .lineLimit(1)
       }
@@ -347,31 +346,13 @@ struct DashboardHeightPreferenceKey: PreferenceKey {
 }
 
 struct DashboardCard<Content: View>: View {
+  var minHeight: CGFloat? = nil
+  var alignment: Alignment = .leading
   @ViewBuilder var content: Content
 
   var body: some View {
     content
-      .padding(10)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-          .fill(AppTheme.cardBackground)
-          .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-              .stroke(AppTheme.cardBorder, lineWidth: 0.6)
-          )
-      )
-  }
-}
-
-struct DashboardSectionTitle: View {
-  let text: String
-
-  var body: some View {
-    Text(text)
-      .font(.system(size: 9.5, weight: .bold))
-      .tracking(0.6)
-      .foregroundColor(AppTheme.textTertiary)
-      .textCase(.uppercase)
+      .frame(maxWidth: .infinity, minHeight: minHeight, alignment: alignment)
+      .cardChrome(cornerRadius: 10, padding: 10, lineWidth: 0.6)
   }
 }

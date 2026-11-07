@@ -3,8 +3,6 @@ import SwiftUI
 struct DashboardPrayerSection: View {
   @ObservedObject private var prayerManager = PrayerManager.shared
   @ObservedObject private var adzanPlayer = AdzanPlayer.shared
-  @ObservedObject private var themeManager = ThemeManager.shared
-  @ObservedObject private var languageManager = LanguageManager.shared
 
   var body: some View {
     if prayerManager.prayerItems.isEmpty {
@@ -96,7 +94,7 @@ struct DashboardPrayerSection: View {
             .accessibilityHidden(true)
 
           Text(prayerManager.currentLocationName)
-            .font(.system(size: 11, weight: .bold))
+            .font(AppTypography.subheadline(.bold))
             .foregroundColor(AppTheme.textPrimary)
             .lineLimit(1)
 
@@ -105,16 +103,7 @@ struct DashboardPrayerSection: View {
             .foregroundColor(AppTheme.textTertiary)
             .accessibilityHidden(true)
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .background(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(AppTheme.cardBackground)
-            .overlay(
-              RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
-            )
-        )
+        .cardChrome(cornerRadius: 8, horizontalPadding: 9, verticalPadding: 5, lineWidth: 0.6)
       }
       .menuStyle(.borderlessButton)
       .fixedSize()

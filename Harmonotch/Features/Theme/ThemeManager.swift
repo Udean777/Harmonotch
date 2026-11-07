@@ -7,24 +7,6 @@ enum ThemeStyle: String, CaseIterable, Identifiable {
   case catppuccin = "catppuccin"
 
   var id: String { rawValue }
-
-  var displayName: String {
-    switch self {
-    case .monochrome:
-      return "Monochrome"
-    case .catppuccin:
-      return "Catppuccin"
-    }
-  }
-
-  var icon: String {
-    switch self {
-    case .monochrome:
-      return "circle.lefthalf.filled"
-    case .catppuccin:
-      return "paintpalette.fill"
-    }
-  }
 }
 
 enum AppThemeMode: String, CaseIterable, Identifiable {
@@ -33,28 +15,6 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
   case light = "light"
 
   var id: String { rawValue }
-
-  var displayName: String {
-    switch self {
-    case .system:
-      return "System"
-    case .dark:
-      return "Dark"
-    case .light:
-      return "Light"
-    }
-  }
-
-  var icon: String {
-    switch self {
-    case .system:
-      return "display"
-    case .dark:
-      return "moon.fill"
-    case .light:
-      return "sun.max.fill"
-    }
-  }
 }
 
 extension UserDefaultsKeys {

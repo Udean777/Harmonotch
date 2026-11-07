@@ -14,6 +14,7 @@
 		D0BCA8F93086863C0080715B /* Exceptions for "Harmonotch" folder in "Harmonotch" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"Features/Battery/Helper/harmonotch-smc.c",
 				Features/Media/NowPlaying/nowplaying.pl,
 				Features/Media/NowPlaying/NowPlayingAdapter.m,
 			);
@@ -129,11 +130,13 @@
 			inputPaths = (
 				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/NowPlayingAdapter.m",
 				"$(SRCROOT)/Harmonotch/Features/Media/NowPlaying/nowplaying.pl",
+				"$(SRCROOT)/Harmonotch/Features/Battery/Helper/harmonotch-smc.c",
 			);
 			name = "Build NowPlaying bridge";
 			outputPaths = (
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/libHarmonotchNowPlaying.dylib",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/nowplaying.pl",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/harmonotch-smc.c",
 			);
 			shellPath = /bin/sh;
 			shellScript = (
@@ -148,6 +151,7 @@
 				"lipo -create \"$@\" -output \"$DYLIB\"",
 				"rm -f \"$DYLIB\".*",
 				"cp \"$SRCROOT/Harmonotch/Features/Media/NowPlaying/nowplaying.pl\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/nowplaying.pl\"",
+				"cp \"$SRCROOT/Harmonotch/Features/Battery/Helper/harmonotch-smc.c\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/harmonotch-smc.c\"",
 				"codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$DYLIB\"",
 				"",
 			);

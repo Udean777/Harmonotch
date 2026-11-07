@@ -217,13 +217,10 @@ struct NotchPillView: View {
   }
 
   private var batteryIconName: String {
-    let cap = batteryMonitor.currentCapacity
-    // Only battery.100.bolt exists in SF Symbols; lower bolt variants are not available.
-    if batteryMonitor.isCharging && cap >= 90 { return "battery.100.bolt" }
-    if cap >= 60 { return "battery.75" }
-    if cap >= 35 { return "battery.50" }
-    if cap >= 10 { return "battery.25" }
-    return "battery.0"
+    BatteryPresentation.iconName(
+      capacity: batteryMonitor.currentCapacity,
+      isCharging: batteryMonitor.isCharging
+    )
   }
 
   @ViewBuilder

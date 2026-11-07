@@ -1,6 +1,5 @@
 import Foundation
 
-/// Strongly-typed semantic version model supporting comparison, hashing, and string conversion.
 struct Version: Comparable, Hashable, LosslessStringConvertible, CustomStringConvertible, Sendable {
     let components: [Int]
     let rawString: String

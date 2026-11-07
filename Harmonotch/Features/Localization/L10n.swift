@@ -15,10 +15,6 @@ enum L10n {
         static var mediaTab: String {
             isEnglish ? "Audio" : "Audio"
         }
-        static var aiTab: String {
-            isEnglish ? "AI Agents" : "AI Agen"
-        }
-
     }
 
     enum Prayer {
@@ -51,13 +47,6 @@ enum L10n {
         }
         static var currentBadge: String {
             isEnglish ? "NOW" : "SEKARANG"
-        }
-        static func adzanBannerTitle(name: String) -> String {
-            let prayer = localizedPrayerName(name)
-            return isEnglish ? "\(prayer) Adzan is Playing" : "Adzan \(prayer) Sedang Berkumandang"
-        }
-        static var adzanBannerSubtitle: String {
-            "Hayya 'alash Shalaah..."
         }
         static var stop: String {
             isEnglish ? "Stop" : "Hentikan"
@@ -148,18 +137,6 @@ enum L10n {
         static var capacityTitle: String {
             isEnglish ? "Full Capacity" : "Kapasitas Penuh"
         }
-        static var designPrefix: String {
-            isEnglish ? "Design: " : "Desain: "
-        }
-        static var maxPrefix: String {
-            isEnglish ? "Max. " : "Maks. "
-        }
-        static var conditionNormal: String {
-            isEnglish ? "Normal Condition" : "Kondisi Normal"
-        }
-        static var conditionService: String {
-            isEnglish ? "Service Recommended" : "Disarankan Servis"
-        }
         static var fullChargeAc: String {
             isEnglish ? "Full Charge (AC Adapter)" : "Daya Penuh (Adaptor AC)"
         }
@@ -172,75 +149,8 @@ enum L10n {
         static func timeToFull(hours: Int, mins: Int) -> String {
             isEnglish ? "\(hours)h \(mins)m until full" : "\(hours)j \(mins)m hingga penuh"
         }
-        static var healthSuffix: String {
-            isEnglish ? "Health" : "Sehat"
-        }
-        static var chargeLimitTitle: String {
-            isEnglish ? "Charge Limit" : "Batas Pengisian"
-        }
-        static func chargeLimitDescription(for limit: Int) -> String {
-            if limit >= 100 {
-                return isEnglish
-                    ? "Full charging to 100% with no capacity cap"
-                    : "Mengisi penuh hingga 100% tanpa batasan"
-            } else {
-                return isEnglish
-                    ? "Preserve battery health by capping charge at \(limit)%"
-                    : "Jaga kesehatan baterai dengan membatasi daya di \(limit)%"
-            }
-        }
-        static var customLimitSetupHint: String {
-            isEnglish
-                ? "Custom limits can be set when unplugged and battery < 80%"
-                : "Batas kustom dapat diatur saat charger dicabut dan baterai < 80%"
-        }
-        static func holdingAtLimit(_ limit: Int) -> String {
-            isEnglish ? "Battery held at \(limit)%" : "Baterai ditahan di \(limit)%"
-        }
-        static var holdingAtLimitDesc: String {
-            isEnglish ? "Power is drawn directly from the adapter" : "Daya diambil langsung dari adaptor AC"
-        }
-        static func chargingToLimit(_ limit: Int) -> String {
-            isEnglish ? "Charging to \(limit)% limit" : "Mengisi daya menuju batas \(limit)%"
-        }
-        static var chargingToLimitDesc: String {
-            isEnglish ? "Switches to adapter power once reached" : "Beralih ke adaptor saat batas tercapai"
-        }
-        static var fullCharge100: String {
-            isEnglish ? "100% Full" : "100% Penuh"
-        }
-        static var nativeLimitActive: String {
-            isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
-        }
-        static var openBatterySettings: String {
-            isEnglish ? "Open Battery Settings" : "Buka Pengaturan Baterai"
-        }
         static var chargeLimitStatusBypass: String {
             isEnglish ? "AC Bypass Active" : "Bypass AC Aktif"
-        }
-        static var chargeLimitStatusCharging: String {
-            isEnglish ? "Charging to Limit" : "Mengisi Daya Menuju Batas"
-        }
-        static var chargeLimitStatusPaused: String {
-            isEnglish ? "Limit Inactive" : "Batas Nonaktif"
-        }
-        static var chargeLimitHelperTitle: String {
-            isEnglish ? "Hardware SMC Helper" : "Helper SMC Hardware"
-        }
-        static var chargeLimitHelperConfigured: String {
-            isEnglish ? "SMC Helper Configured" : "Helper SMC Siap"
-        }
-        static var chargeLimitSetupAction: String {
-            isEnglish ? "Setup Helper" : "Pasang Helper"
-        }
-        static var chargeLimitSettingUp: String {
-            isEnglish ? "Configuring..." : "Memasang..."
-        }
-        static var chargeLimitSetupDesc: String {
-            isEnglish ? "One-time admin setup required to manage hardware charging on macOS." : "Pengaturan hak admin sekali diperlukan untuk mengontrol pengisian daya di macOS."
-        }
-        static var chargeLimitThresholdLabel: String {
-            isEnglish ? "Target Limit" : "Batas Target"
         }
     }
 
@@ -309,9 +219,6 @@ enum L10n {
         }
         static var nowPlaying: String {
             isEnglish ? "Now Playing" : "Sedang Diputar"
-        }
-        static var paused: String {
-            isEnglish ? "Paused" : "Dijeda"
         }
         static var noTrackPlaying: String {
             isEnglish ? "No Media Playing" : "Tidak Ada Media"
@@ -385,9 +292,6 @@ enum L10n {
         static var pause: String {
             isEnglish ? "Pause" : "Jeda"
         }
-        static var sync: String {
-            isEnglish ? "Sync" : "Sinkron"
-        }
         static var audioPlaying: String {
             isEnglish ? "Audio playing" : "Sedang memutar audio"
         }
@@ -442,26 +346,17 @@ enum L10n {
         static func updateAvailable(version: String) -> String {
             isEnglish ? "New Version Available (v\(version))" : "Versi Baru Tersedia (v\(version))"
         }
-        static var downloadDMGAction: String {
-            isEnglish ? "Download DMG Installer" : "Unduh Installer DMG"
-        }
         static var viewReleaseNotesAction: String {
             isEnglish ? "View Release Notes on GitHub" : "Lihat Catatan Rilis di GitHub"
         }
         static var launchAtLogin: String {
             isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
         }
-        static var companionToggle: String {
-            isEnglish ? "Show Notch Companion" : "Tampilkan Companion Notch"
-        }
         static var clamshellToggle: String {
             isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
         }
         static var volumeHUDToggle: String {
             isEnglish ? "Volume HUD in Notch" : "Volume HUD di Notch"
-        }
-        static var keyboardBacklight: String {
-            isEnglish ? "Keyboard Backlight" : "Lampu Keyboard"
         }
         static var quit: String {
             isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
@@ -481,14 +376,8 @@ enum L10n {
         static var batteryTab: String {
             isEnglish ? "Battery" : "Baterai"
         }
-        static var processTab: String {
-            isEnglish ? "Activity" : "Aktivitas"
-        }
         static var prayerTab: String {
             isEnglish ? "Prayer" : "Sholat"
-        }
-        static var utilitiesTab: String {
-            isEnglish ? "Utilities" : "Utilitas"
         }
         static var closeDashboard: String {
             isEnglish ? "Close Dashboard" : "Tutup Dashboard"
@@ -497,57 +386,8 @@ enum L10n {
         static var battery: String {
             isEnglish ? "Battery" : "Baterai"
         }
-        static var topResourceActivity: String {
-            "Top Resource Activity"
-        }
-        static var noProcessSamples: String {
-            isEnglish ? "No process samples yet" : "Belum ada sampel proses"
-        }
-        static var processNotEnabled: String {
-            isEnglish
-                ? "Process activity sampling will run only while this panel is open."
-                : "Pengambilan data aktivitas proses akan berjalan hanya saat panel ini terbuka."
-        }
-        static var prayer: String {
-            isEnglish ? "Prayer" : "Sholat"
-        }
-        static var utilities: String {
-            isEnglish ? "Utilities" : "Utilitas"
-        }
         static var loading: String {
             isEnglish ? "Loading..." : "Memuat..."
-        }
-        static var permissionRequired: String {
-            isEnglish ? "Permission required" : "Izin diperlukan"
-        }
-        static var permissionDenied: String {
-            isEnglish ? "Permission denied" : "Izin ditolak"
-        }
-        static var processMeasuring: String {
-            isEnglish ? "Measuring CPU activity..." : "Mengukur aktivitas CPU..."
-        }
-        static var processIdle: String {
-            isEnglish ? "No app is using noticeable CPU right now" : "Tidak ada aplikasi yang memakai CPU secara berarti saat ini"
-        }
-        static var processUnavailable: String {
-            isEnglish ? "No application processes could be read" : "Tidak ada proses aplikasi yang dapat dibaca"
-        }
-        static var processFailed: String {
-            isEnglish ? "Could not sample processes. Try refreshing." : "Gagal mengambil sampel proses. Coba segarkan."
-        }
-        static var processPartial: String {
-            isEnglish ? "Some processes could not be read, so totals may be low." : "Sebagian proses tidak dapat dibaca, sehingga total bisa lebih rendah."
-        }
-        static var processRefresh: String {
-            isEnglish ? "Refresh CPU activity" : "Segarkan aktivitas CPU"
-        }
-        static func processMetricNote(seconds: Int) -> String {
-            isEnglish
-                ? "CPU time per core over the last \(seconds)s. Not the same as Activity Monitor's Energy Impact."
-                : "Waktu CPU per core dalam \(seconds) detik terakhir. Bukan Energy Impact milik Activity Monitor."
-        }
-        static func processCount(_ count: Int) -> String {
-            isEnglish ? "\(count) processes" : "\(count) proses"
         }
         static var batteryReadFailed: String {
             isEnglish ? "Could not read the battery" : "Tidak dapat membaca baterai"
@@ -588,12 +428,6 @@ enum L10n {
         static var power: String {
             isEnglish ? "Power" : "Daya"
         }
-        static var health: String {
-            L10n.Battery.healthTitle
-        }
-        static var cycles: String {
-            L10n.Battery.cycleTitle
-        }
         static var powerSource: String {
             isEnglish ? "Power Source" : "Sumber Daya"
         }
@@ -626,37 +460,7 @@ enum L10n {
         }
     }
 
-    enum Theme {
-        static var themeMenu: String {
-            isEnglish ? "Theme" : "Tema Tampilan"
-        }
-        static var designStyleSection: String {
-            isEnglish ? "Design Style" : "Gaya Desain"
-        }
-        static var liquidGlass: String {
-            isEnglish ? "Liquid Glass (Frosted Blur)" : "Liquid Glass (Kaca Cair)"
-        }
-        static var zenSerenity: String {
-            isEnglish ? "Zen Serenity (Warm Paper)" : "Zen Serenity (Kertas Hangat)"
-        }
-        static var appearanceSection: String {
-            isEnglish ? "Appearance Mode" : "Mode Tampilan"
-        }
-        static var system: String {
-            isEnglish ? "Match System" : "Ikuti Sistem"
-        }
-        static var dark: String {
-            isEnglish ? "Always Dark" : "Selalu Gelap"
-        }
-        static var light: String {
-            isEnglish ? "Always Light" : "Selalu Terang"
-        }
-    }
-
     enum About {
-        static var title: String {
-            isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
-        }
         static var subtitle: String {
             isEnglish ? "Prayer times, battery, and music for the MacBook notch" : "Jadwal sholat, baterai, dan musik untuk notch MacBook"
         }
@@ -740,9 +544,6 @@ enum L10n {
         static var updateAvailablePrompt: String {
             isEnglish ? "A newer version of Harmonotch has been released with improvements and fixes. Would you like to download the DMG installer or view the release notes?" : "Versi terbaru Harmonotch telah dirilis dengan berbagai perbaikan dan peningkatan. Apakah Anda ingin mengunduh installer DMG atau membaca catatan rilis?"
         }
-        static var downloadDMG: String {
-            isEnglish ? "Download DMG" : "Unduh DMG"
-        }
         static var updateNow: String {
             isEnglish ? "Update Now" : "Perbarui Sekarang"
         }
@@ -786,85 +587,12 @@ enum L10n {
         }
     }
 
-    enum AI {
-        static var title: String {
-            isEnglish ? "AI Quota Telemetry" : "Telemetri Kuota AI"
-        }
-        static var connected: String {
-            isEnglish ? "Loopback Active" : "Loopback Aktif"
-        }
-        static var offline: String {
-            isEnglish ? "Standby" : "Standby"
-        }
-        static var remaining: String {
-            isEnglish ? "Remaining" : "Tersisa"
-        }
-        static var resetsIn: String {
-            isEnglish ? "Resets in" : "Reset dlm"
-        }
-        static var noActiveAgent: String {
-            isEnglish ? "No active AI agent or language server detected" : "Tidak ada agen AI atau language server yang aktif"
-        }
-        static var refresh: String {
-            isEnglish ? "Refresh Quota" : "Segarkan Kuota"
-        }
-        static var antigravityNotDetectedTitle: String {
-            isEnglish ? "Antigravity CLI Not Detected" : "Antigravity CLI Belum Terdeteksi"
-        }
-        static var antigravityNotDetectedDesc: String {
-            isEnglish
-                ? "Install Antigravity CLI and log in with your Google account to track live quotas."
-                : "Pasang Antigravity CLI dan login dengan akun Google Anda untuk memantau kuota real-time."
-        }
-        static var antigravityStep1: String {
-            isEnglish ? "1. Install Antigravity CLI or desktop app" : "1. Pasang Antigravity CLI atau aplikasi desktop"
-        }
-        static var antigravityStep2: String {
-            isEnglish ? "2. Run \"agy\" in Terminal to log in" : "2. Jalankan \"agy\" di Terminal untuk login"
-        }
-        static var antigravityStep3: String {
-            isEnglish ? "3. Check quota via \"/usage\" command" : "3. Cek kuota via perintah \"/usage\""
-        }
-        static var openDocs: String {
-            isEnglish ? "Documentation" : "Dokumentasi"
-        }
-        static var copyLoginCommand: String {
-            isEnglish ? "Copy \"agy\"" : "Salin \"agy\""
-        }
-        static var copied: String {
-            isEnglish ? "Copied!" : "Tersalin!"
-        }
-        static var safeReadNote: String {
-            isEnglish
-                ? "Passive read-only inspection. Safe & private."
-                : "Inspeksi pasif baca-saja. Aman & privat."
-        }
-    }
-
     enum Volume {
         static func accessibilityLabel(percent: Int, muted: Bool) -> String {
             if muted {
                 return isEnglish ? "Volume muted, 0 percent" : "Volume dibisukan, 0 persen"
             }
             return isEnglish ? "Volume \(percent) percent" : "Volume \(percent) persen"
-        }
-
-        static var permissionAlertTitle: String {
-            isEnglish ? "Accessibility Permission Required" : "Izin Aksesibilitas Diperlukan"
-        }
-
-        static var permissionAlertMessage: String {
-            isEnglish
-                ? "Harmonotch needs Accessibility permission to intercept volume keys and display the Volume HUD in the notch without showing a duplicate system HUD."
-                : "Harmonotch memerlukan izin Aksesibilitas untuk menangkap tombol volume dan menampilkan Volume HUD di notch tanpa memunculkan HUD sistem ganda."
-        }
-
-        static var openAccessibilitySettings: String {
-            isEnglish ? "Open System Settings" : "Buka Pengaturan Sistem"
-        }
-
-        static var cancel: String {
-            isEnglish ? "Cancel" : "Batal"
         }
 
         static var statusActive: String {

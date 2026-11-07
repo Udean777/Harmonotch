@@ -1,7 +1,6 @@
 import Foundation
 import AppKit
 import Combine
-import UserNotifications
 import IOKit.pwr_mgt
 
 final class ClamshellManager: ObservableObject {
@@ -15,13 +14,15 @@ final class ClamshellManager: ObservableObject {
         }
     }
 
-    @Published private(set) var currentState: ClamshellState = .off
+    @Published var currentState: ClamshellState = .off {
+        didSet { updateSessionBlockingFlag() }
+    }
     @Published private(set) var hasExternalDisplay: Bool = false
     @Published private(set) var externalDisplayCount: Int = 0
     @Published private(set) var externalDisplayName: String = ""
-    @Published private(set) var isSudoConfigured: Bool = false
+    @Published var isSudoConfigured: Bool = false
     @Published var isPerformingSetup: Bool = false
-    @Published private(set) var setupFailed: Bool = false
+    @Published var setupFailed: Bool = false
 
     private static let batteryResetThreshold = 62
     private static let batteryWarningThreshold = 60
@@ -29,20 +30,29 @@ final class ClamshellManager: ObservableObject {
     private static let maxSleepRetries = 10
     private static let sleepRetryIntervalSeconds: TimeInterval = 0.5
 
-    private let clamshellQueue = DispatchQueue(label: "harmonotch.battery.clamshell", qos: .userInitiated)
+    let clamshellQueue = DispatchQueue(label: "harmonotch.battery.clamshell", qos: .userInitiated)
     private let stateLock = NSLock()
 
     private var cancellables = Set<AnyCancellable>()
     private var systemAssertionID: IOPMAssertionID = 0
     private var displayAssertionID: IOPMAssertionID = 0
-    private var hasSystemAssertion: Bool = false
-    private var hasDisplayAssertion: Bool = false
+    private var hasSystemAssertion: Bool = false {
+        didSet { updateSessionBlockingFlag() }
+    }
+    private var hasDisplayAssertion: Bool = false {
+        didSet { updateSessionBlockingFlag() }
+    }
 
-    private(set) var isSleepCurrentlyDisabled: Bool = false
-    private(set) var isEnablePending: Bool = false
+    private(set) var isSleepCurrentlyDisabled: Bool = false {
+        didSet { updateSessionBlockingFlag() }
+    }
+    private(set) var isEnablePending: Bool = false {
+        didSet { updateSessionBlockingFlag() }
+    }
     private(set) var isRestorePending: Bool = false
     private var _isTerminating: Bool = false
     private var _overrideOwned: Bool = false
+    private var _sessionBlocksSleep: Bool = false
     private var operationGeneration: UInt64 = 0
     private var isInitialRecoveryComplete: Bool = false
     private var hasWarnedAt60: Bool = false
@@ -59,7 +69,24 @@ final class ClamshellManager: ObservableObject {
         return _overrideOwned
     }
 
-    private func setOverrideOwned(_ owned: Bool) {
+    var sessionBlocksSleep: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _sessionBlocksSleep
+    }
+
+    private func updateSessionBlockingFlag() {
+        let blocks = currentState == .active
+            || isSleepCurrentlyDisabled
+            || isEnablePending
+            || hasSystemAssertion
+            || hasDisplayAssertion
+        stateLock.lock()
+        _sessionBlocksSleep = blocks
+        stateLock.unlock()
+    }
+
+    func setOverrideOwned(_ owned: Bool) {
         stateLock.lock()
         _overrideOwned = owned
         stateLock.unlock()
@@ -83,7 +110,7 @@ final class ClamshellManager: ObservableObject {
         return operationGeneration
     }
 
-    private func currentGeneration() -> UInt64 {
+    func currentGeneration() -> UInt64 {
         stateLock.lock()
         defer { stateLock.unlock() }
         return operationGeneration
@@ -174,7 +201,7 @@ final class ClamshellManager: ObservableObject {
         let isPlugged = BatteryMonitor.shared.isPluggedIn
 
         if isArmed && currentState == .active && !isPlugged && capacity <= Self.batteryWarningThreshold && !hasWarnedAt60 {
-            sendLowBatteryWarningNotification(capacity: capacity)
+            ClamshellNotifier.sendLowBatteryWarning(capacity: capacity)
             hasWarnedAt60 = true
         }
 
@@ -255,8 +282,8 @@ final class ClamshellManager: ObservableObject {
             // Mark ownership BEFORE running the enable command so crashes/force-quits can recover.
             self.setOverrideOwned(true)
 
-            let cmdSuccess = self.runPmsetCommand(disableSleep: true)
-            let reportedDisabled = Self.pmsetSleepDisabled()
+            let cmdSuccess = PmsetController.setDisableSleep(true)
+            let reportedDisabled = PmsetController.sleepDisabled()
             let verifiedSuccess = cmdSuccess && (reportedDisabled == true)
 
             DispatchQueue.main.async { [weak self] in
@@ -287,8 +314,8 @@ final class ClamshellManager: ObservableObject {
         clamshellQueue.async { [weak self] in
             guard let self, !self.isTerminating else { return }
 
-            let cmdSuccess = self.runPmsetCommand(disableSleep: false)
-            let reportedDisabled = Self.pmsetSleepDisabled()
+            let cmdSuccess = PmsetController.setDisableSleep(false)
+            let reportedDisabled = PmsetController.sleepDisabled()
 
             // Disable succeeds if exit code is 0 and SleepDisabled is 0 (or unreadable).
             // Ownership flag is cleared ONLY when SleepDisabled is confirmed 0.
@@ -305,7 +332,7 @@ final class ClamshellManager: ObservableObject {
                 if restoreSucceeded {
                     self.isSleepCurrentlyDisabled = false
                     self.currentState = targetState
-                    self.requestSleepIfLidClosed(generation: gen)
+                    self.requestSleepIfLidClosed(generation: gen, synchronous: false)
                 } else {
                     NSLog("[Harmonotch:Clamshell] Failed to restore SleepDisabled to 0; keeping recovery state active")
                 }
@@ -315,214 +342,55 @@ final class ClamshellManager: ObservableObject {
 
     // MARK: - Lid-Closed Sleep Enforcement
 
-    func requestSleepIfLidClosed(generation: UInt64? = nil) {
-        let activeGen = generation ?? currentGeneration()
-        attemptSleepIfLidClosed(generation: activeGen, attempt: 1)
+    func requestSleepIfLidClosed(generation: UInt64? = nil, synchronous: Bool = false) {
+        if synchronous {
+            for attempt in 1...Self.maxSleepRetries {
+                guard !sessionBlocksSleep else { return }
+                guard let triggered = Self.evaluateAndTriggerLidSleepOnce() else { return }
+                if triggered { return }
+                if attempt < Self.maxSleepRetries {
+                    Thread.sleep(forTimeInterval: Self.sleepRetryIntervalSeconds)
+                }
+            }
+        } else {
+            let activeGen = generation ?? currentGeneration()
+            attemptSleepIfLidClosedAsync(generation: activeGen, attempt: 1)
+        }
     }
 
-    private func attemptSleepIfLidClosed(generation: UInt64, attempt: Int) {
+    private func attemptSleepIfLidClosedAsync(generation: UInt64, attempt: Int) {
         guard attempt <= Self.maxSleepRetries else { return }
 
         clamshellQueue.async { [weak self] in
             guard let self, !self.isTerminating, self.currentGeneration() == generation else { return }
-
-            // Re-read session state: never force sleep if session became active again.
-            var sessionActiveOrEnabling = false
-            DispatchQueue.main.sync {
-                sessionActiveOrEnabling = self.currentState == .active
-                    || self.isSleepCurrentlyDisabled
-                    || self.isEnablePending
-                    || self.hasSystemAssertion
-                    || self.hasDisplayAssertion
-            }
-            guard !sessionActiveOrEnabling else { return }
-
-            let lidClosed = ClamshellLidSupport.isLidClosed()
-            guard lidClosed == true else { return }
-
-            let systemAllowsSleep = ClamshellLidSupport.systemAllowsClamshellSleep()
-            let assertions = ClamshellLidSupport.activeAssertions()
-
-            guard ClamshellLidSupport.shouldRequestSleep(
-                lidClosed: lidClosed,
-                systemAllowsSleep: systemAllowsSleep,
-                assertions: assertions
-            ) else {
-                return
-            }
-
-            if ClamshellLidSupport.triggerSystemSleep() {
-                return
-            }
+            guard !self.sessionBlocksSleep else { return }
+            guard let triggered = Self.evaluateAndTriggerLidSleepOnce() else { return }
+            if triggered { return }
 
             guard attempt < Self.maxSleepRetries else { return }
             self.clamshellQueue.asyncAfter(deadline: .now() + Self.sleepRetryIntervalSeconds) { [weak self] in
-                self?.attemptSleepIfLidClosed(generation: generation, attempt: attempt + 1)
+                self?.attemptSleepIfLidClosedAsync(generation: generation, attempt: attempt + 1)
             }
         }
     }
 
-    private func requestSleepIfLidClosedSync() {
-        for attempt in 1...Self.maxSleepRetries {
-            guard !isSleepCurrentlyDisabled, !hasSystemAssertion, !hasDisplayAssertion else { return }
+    /// Returns `nil` when sleep should not be requested, `true` when triggered, or `false` to retry.
+    private static func evaluateAndTriggerLidSleepOnce() -> Bool? {
+        let lidClosed = ClamshellLidSupport.isLidClosed()
+        guard lidClosed == true else { return nil }
 
-            let lidClosed = ClamshellLidSupport.isLidClosed()
-            guard lidClosed == true else { return }
+        let systemAllowsSleep = ClamshellLidSupport.systemAllowsClamshellSleep()
+        let assertions = ClamshellLidSupport.activeAssertions()
 
-            let systemAllowsSleep = ClamshellLidSupport.systemAllowsClamshellSleep()
-            let assertions = ClamshellLidSupport.activeAssertions()
-
-            guard ClamshellLidSupport.shouldRequestSleep(
-                lidClosed: lidClosed,
-                systemAllowsSleep: systemAllowsSleep,
-                assertions: assertions
-            ) else {
-                return
-            }
-
-            if ClamshellLidSupport.triggerSystemSleep() {
-                return
-            }
-
-            if attempt < Self.maxSleepRetries {
-                Thread.sleep(forTimeInterval: Self.sleepRetryIntervalSeconds)
-            }
-        }
-    }
-
-    private func runPmsetCommand(disableSleep: Bool) -> Bool {
-        let value = disableSleep ? "1" : "0"
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-        process.arguments = ["-n", "/usr/bin/pmset", "-a", "disablesleep", value]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            return process.terminationStatus == 0
-        } catch {
-            NSLog("[Harmonotch:Clamshell] Failed to run pmset command: %@", error.localizedDescription)
-            return false
-        }
-    }
-
-    static func pmsetSleepDisabled() -> Bool? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
-        process.arguments = ["-g"]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0 else { return nil }
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(decoding: data, as: UTF8.self)
-            let parsed = ClamshellPolicy.parseSleepDisabled(output)
-            if let parsed {
-                UserDefaults.standard[UserDefaultsKeys.clamshellLastKnownDisabled] = parsed
-            }
-            return parsed
-        } catch {
-            NSLog("[Harmonotch:Clamshell] Failed to check pmset sleep status: %@", error.localizedDescription)
+        guard ClamshellLidSupport.shouldRequestSleep(
+            lidClosed: lidClosed,
+            systemAllowsSleep: systemAllowsSleep,
+            assertions: assertions
+        ) else {
             return nil
         }
-    }
 
-    // MARK: - Sudo Probe & Setup
-
-    func checkSudoConfiguration() {
-        clamshellQueue.async { [weak self] in
-            guard let self, !self.isTerminating else { return }
-            let configured = self.probeSudoConfigurationSync()
-            DispatchQueue.main.async { [weak self] in
-                guard let self, !self.isTerminating else { return }
-                self.isSudoConfigured = configured
-                if configured {
-                    self.setupFailed = false
-                }
-            }
-        }
-    }
-
-    private func probeSudoConfigurationSync() -> Bool {
-        guard let currentDisabled = Self.pmsetSleepDisabled() else {
-            return false
-        }
-        return runPmsetCommand(disableSleep: currentDisabled)
-    }
-
-    func setupPasswordlessSudo(completion: @escaping (Bool) -> Void) {
-        isPerformingSetup = true
-        setupFailed = false
-        clamshellQueue.async { [weak self] in
-            guard let self, !self.isTerminating else {
-                DispatchQueue.main.async {
-                    self?.isPerformingSetup = false
-                    self?.setupFailed = true
-                    completion(false)
-                }
-                return
-            }
-
-            let uid = getuid()
-            let ruleContent = "#\(uid) ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 1, /usr/bin/pmset -a disablesleep 0"
-            let targetPath = Self.sudoersFilePath
-
-            let shell = "tmp=$(mktemp) && printf '%s\\n' '\(ruleContent)' > \"$tmp\" "
-                + "&& chown root:wheel \"$tmp\" && chmod 0440 \"$tmp\" "
-                + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" \(targetPath)"
-            let scriptSource = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
-
-            var errorDict: NSDictionary?
-            var scriptSucceeded = false
-            if let appleScript = NSAppleScript(source: scriptSource) {
-                _ = appleScript.executeAndReturnError(&errorDict)
-                scriptSucceeded = (errorDict == nil)
-            }
-
-            let verified = scriptSucceeded && self.probeSudoConfigurationSync()
-
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.isPerformingSetup = false
-                self.isSudoConfigured = verified
-                self.setupFailed = !verified
-                if verified {
-                    self.recalculateState()
-                }
-                completion(verified)
-            }
-        }
-    }
-
-    func removePasswordlessSudo(completion: ((Bool) -> Void)? = nil) {
-        clamshellQueue.async { [weak self] in
-            let targetPath = Self.sudoersFilePath
-            let shell = "rm -f \(targetPath)"
-            let scriptSource = "do shell script \"\(shell)\" with administrator privileges"
-
-            var errorDict: NSDictionary?
-            var removed = false
-            if let appleScript = NSAppleScript(source: scriptSource) {
-                _ = appleScript.executeAndReturnError(&errorDict)
-                removed = (errorDict == nil)
-            }
-
-            let stillConfigured = self?.probeSudoConfigurationSync() ?? false
-            DispatchQueue.main.async { [weak self] in
-                self?.isSudoConfigured = stillConfigured
-                completion?(removed && !stillConfigured)
-            }
-        }
+        return ClamshellLidSupport.triggerSystemSleep()
     }
 
     // MARK: - Recovery & Termination
@@ -540,7 +408,7 @@ final class ClamshellManager: ObservableObject {
                 return
             }
 
-            let currentDisabled = Self.pmsetSleepDisabled()
+            let currentDisabled = PmsetController.sleepDisabled()
             if currentDisabled == false {
                 // Already back to normal sleep policy.
                 self.setOverrideOwned(false)
@@ -552,8 +420,8 @@ final class ClamshellManager: ObservableObject {
             }
 
             // SleepDisabled is 1 (or unreadable while overrideOwned is true): attempt restore.
-            let cmdSuccess = self.runPmsetCommand(disableSleep: false)
-            let afterDisabled = Self.pmsetSleepDisabled()
+            let cmdSuccess = PmsetController.setDisableSleep(false)
+            let afterDisabled = PmsetController.sleepDisabled()
             let verifiedRestored = cmdSuccess && (afterDisabled == false)
 
             if verifiedRestored {
@@ -587,16 +455,13 @@ final class ClamshellManager: ObservableObject {
         clamshellQueue.async { [weak self] in
             defer { semaphore.signal() }
             guard let self else { return }
-            guard self.overrideOwned || self.isSleepCurrentlyDisabled || self.isEnablePending else { return }
 
-            let cmdSuccess = self.runPmsetCommand(disableSleep: false)
-            let afterDisabled = Self.pmsetSleepDisabled()
+            let cmdSuccess = PmsetController.setDisableSleep(false)
+            let afterDisabled = PmsetController.sleepDisabled()
             if cmdSuccess && afterDisabled == false {
                 self.setOverrideOwned(false)
-                self.isSleepCurrentlyDisabled = false
                 restored = true
             } else if cmdSuccess && afterDisabled == nil {
-                self.isSleepCurrentlyDisabled = false
                 restored = true
             }
         }
@@ -604,40 +469,19 @@ final class ClamshellManager: ObservableObject {
         let waitResult = semaphore.wait(timeout: .now() + Self.terminationTimeoutSeconds)
         if waitResult == .timedOut {
             NSLog("[Harmonotch:Clamshell] Timed out waiting for clamshellQueue during termination; attempting direct restore")
-            let cmdSuccess = runPmsetCommand(disableSleep: false)
-            let afterDisabled = Self.pmsetSleepDisabled()
+            let cmdSuccess = PmsetController.setDisableSleep(false)
+            let afterDisabled = PmsetController.sleepDisabled()
             if cmdSuccess && afterDisabled == false {
                 setOverrideOwned(false)
-                isSleepCurrentlyDisabled = false
                 restored = true
             } else if cmdSuccess && afterDisabled == nil {
-                isSleepCurrentlyDisabled = false
                 restored = true
             }
         }
 
         if restored {
-            requestSleepIfLidClosedSync()
-        }
-    }
-
-    private func sendLowBatteryWarningNotification(capacity: Int) {
-        let center = UNUserNotificationCenter.current()
-        let content = UNMutableNotificationContent()
-        content.title = L10n.Clamshell.warningNotificationTitle
-        content.body = L10n.Clamshell.warningNotificationBody(capacity: capacity)
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: "Harmonotch_Clamshell_60Warning",
-            content: content,
-            trigger: nil
-        )
-
-        center.add(request) { error in
-            if let error = error {
-                NSLog("[Harmonotch:Clamshell] Failed to deliver clamshell battery notification: %@", error.localizedDescription)
-            }
+            isSleepCurrentlyDisabled = false
+            requestSleepIfLidClosed(synchronous: true)
         }
     }
 }

@@ -4,7 +4,6 @@ struct NotchContainerView: View {
   @ObservedObject var notchVM = NotchViewModel.shared
   @ObservedObject var adzanPlayer = AdzanPlayer.shared
   @ObservedObject var mediaManager = MediaManager.shared
-  @ObservedObject var themeManager = ThemeManager.shared
 
   /// Measured expanded content height from layout; 0 before first measurement.
   @State private var measuredExpandedHeight: CGFloat = 0
@@ -140,7 +139,7 @@ struct NotchContainerView: View {
     .animation(.spring(response: 0.24, dampingFraction: 0.80), value: notchVM.isHovered)
     .animation(NotchMotion.content, value: targetWidth)
     .animation(NotchMotion.content, value: notchVM.selectedTab)
-    .preferredColorScheme(themeManager.colorScheme)
+    .localizedThemedRoot()
     .onPreferenceChange(ExpandedContentHeightKey.self) { height in
       guard height > 0 else { return }
       measuredExpandedHeight = height

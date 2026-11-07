@@ -2,8 +2,6 @@ import SwiftUI
 
 struct DashboardBatterySection: View {
   @ObservedObject private var batteryMonitor = BatteryMonitor.shared
-  @ObservedObject private var themeManager = ThemeManager.shared
-  @ObservedObject private var languageManager = LanguageManager.shared
 
   var body: some View {
     switch batteryMonitor.state {
@@ -151,33 +149,24 @@ struct DashboardBatterySection: View {
     VStack(alignment: .leading, spacing: 3) {
       HStack(spacing: 4) {
         Image(systemName: icon)
-          .font(.system(size: 9.5, weight: .semibold))
+          .font(AppTypography.caption2(.semibold))
           .foregroundColor(color)
           .accessibilityHidden(true)
 
         Text(title)
-          .font(.system(size: 9, weight: .medium))
+          .font(AppTypography.micro(.medium))
           .foregroundColor(AppTheme.textSecondary)
           .lineLimit(1)
       }
 
       Text(value)
-        .font(.system(size: 12, weight: .bold, design: .rounded))
+        .font(AppTypography.body(.bold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(AppTheme.textPrimary)
         .lineLimit(1)
     }
-    .padding(.horizontal, 9)
-    .padding(.vertical, 7)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      RoundedRectangle(cornerRadius: 9, style: .continuous)
-        .fill(AppTheme.cardBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-        )
-    )
+    .cardChrome(cornerRadius: 9, horizontalPadding: 9, verticalPadding: 7, lineWidth: 0.5)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(title): \(value)")
   }
@@ -234,14 +223,14 @@ struct DashboardBatterySection: View {
   private func row(_ title: String, _ value: String?) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
       Text(title)
-        .font(.system(size: 10, weight: .medium))
+        .font(AppTypography.caption(.medium))
         .foregroundColor(AppTheme.textSecondary)
         .lineLimit(1)
 
       Spacer(minLength: 4)
 
       Text(value ?? L10n.Dashboard.notAvailable)
-        .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+        .font(AppTypography.footnote(.semibold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(value == nil ? AppTheme.textTertiary : AppTheme.textPrimary)
         .lineLimit(1)
@@ -292,24 +281,15 @@ struct DashboardBatterySection: View {
   }
 
   private func progressColor(for reading: BatteryReading) -> Color {
-    if reading.isCharging || reading.capacity >= 35 { return AppTheme.accentGreen }
-    if reading.capacity >= 15 { return AppTheme.accentAmber }
-    return AppTheme.accentRed
+    BatteryPresentation.progressColor(capacity: reading.capacity, isCharging: reading.isCharging)
   }
 
   private func healthColor(for percent: Int?) -> Color {
-    guard let percent else { return AppTheme.textTertiary }
-    if percent >= 80 { return AppTheme.accentGreen }
-    if percent >= 50 { return AppTheme.accentAmber }
-    return AppTheme.accentRed
+    BatteryPresentation.healthColor(percent: percent)
   }
 
   private func icon(for reading: BatteryReading) -> String {
-    if reading.isCharging && reading.capacity >= 90 { return "battery.100.bolt" }
-    if reading.capacity >= 60 { return "battery.75" }
-    if reading.capacity >= 35 { return "battery.50" }
-    if reading.capacity >= 10 { return "battery.25" }
-    return "battery.0"
+    BatteryPresentation.iconName(capacity: reading.capacity, isCharging: reading.isCharging)
   }
 
   private static let enRelativeFormatter: RelativeDateTimeFormatter = {

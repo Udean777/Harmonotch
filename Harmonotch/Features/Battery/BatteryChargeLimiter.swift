@@ -1,11 +1,11 @@
 import Foundation
 import AppKit
 import Combine
-import UserNotifications
 import ApplicationServices
 
 final class BatteryChargeLimiter: ObservableObject {
     static let shared = BatteryChargeLimiter()
+    static let sudoersFilePath = "/etc/sudoers.d/harmonotch"
 
     /// Target charge percentage chosen by user: 80, 85, 90, 95, 100 (Full/Unrestricted)
     @Published var targetThreshold: Int {
@@ -22,9 +22,11 @@ final class BatteryChargeLimiter: ObservableObject {
             Self.writeNativeChargeLimit(targetThreshold)
 
             if targetThreshold >= 100 {
-                isChargingInhibited = false
-                lastErrorMessage = nil
-                applyInhibit(false, targetLimit: 100, isNativeHandled: false)
+                if ChargeLimitPolicy.needsRestore(currentlyInhibited: isChargingInhibited, shouldInhibit: false) {
+                    applyInhibit(false, targetLimit: 100, isNativeHandled: false)
+                } else {
+                    lastErrorMessage = nil
+                }
                 evaluateLimit()
             } else {
                 evaluateLimit()
@@ -189,13 +191,6 @@ final class BatteryChargeLimiter: ObservableObject {
     }
 
     private func applyInhibit(_ inhibit: Bool, targetLimit: Int, isNativeHandled: Bool) {
-        if !inhibit {
-            DispatchQueue.main.async {
-                self.isChargingInhibited = false
-                self.lastErrorMessage = nil
-            }
-        }
-
         executionQueue.async { [weak self] in
             guard let self else { return }
             let success = self.executeInhibitCommand(inhibit: inhibit, targetLimit: targetLimit)
@@ -208,8 +203,12 @@ final class BatteryChargeLimiter: ObservableObject {
                         self.lastErrorMessage = "Helper execution failed or requires sudo configuration."
                     }
                 } else {
-                    self.isChargingInhibited = false
-                    self.lastErrorMessage = nil
+                    if success || isNativeHandled || !BatteryMonitor.shared.isPluggedIn {
+                        self.isChargingInhibited = false
+                        self.lastErrorMessage = nil
+                    } else {
+                        self.lastErrorMessage = "Failed to restore charging; helper requires sudo configuration."
+                    }
                 }
             }
         }
@@ -219,8 +218,9 @@ final class BatteryChargeLimiter: ObservableObject {
 
     func prepareForTermination() {
         if isChargingInhibited {
-            _ = executeInhibitCommand(inhibit: false, targetLimit: 100)
-            isChargingInhibited = false
+            if executeInhibitCommand(inhibit: false, targetLimit: 100) {
+                isChargingInhibited = false
+            }
         }
     }
 
@@ -234,30 +234,12 @@ final class BatteryChargeLimiter: ObservableObject {
         let argInhibit = inhibit ? "1" : "0"
         let argLimit = String(targetLimit)
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-        process.arguments = ["-n", helperPath, "inhibit", argInhibit, argLimit]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            if process.terminationStatus == 0 {
-                return true
-            }
-        } catch {
-            NSLog("[Harmonotch:ChargeLimiter] sudo -n failed: %@", error.localizedDescription)
+        if ProcessRunner.runQuietly("/usr/bin/sudo", ["-n", helperPath, "inhibit", argInhibit, argLimit]) {
+            return true
         }
 
         // Fallback: check if standard third-party tools are installed (battery / smc)
         if executeThirdPartyFallback(inhibit: inhibit, targetLimit: targetLimit) {
-            return true
-        }
-
-        if !inhibit {
             return true
         }
 
@@ -267,27 +249,20 @@ final class BatteryChargeLimiter: ObservableObject {
     private func executeThirdPartyFallback(inhibit: Bool, targetLimit: Int) -> Bool {
         for path in ["/usr/local/bin/battery", "/opt/homebrew/bin/battery"] {
             if FileManager.default.isExecutableFile(atPath: path) {
-                let proc = Process()
-                proc.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-                proc.arguments = inhibit
+                let args = inhibit
                     ? ["-n", path, "charging", "off"]
                     : ["-n", path, "charging", "on"]
-                if (try? proc.run()) != nil {
-                    proc.waitUntilExit()
-                    if proc.terminationStatus == 0 { return true }
+                if ProcessRunner.runQuietly("/usr/bin/sudo", args) {
+                    return true
                 }
             }
         }
 
         for path in ["/usr/local/bin/smc", "/opt/homebrew/bin/smc"] {
             if FileManager.default.isExecutableFile(atPath: path) {
-                let proc = Process()
-                proc.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
                 let hexVal = inhibit ? "02" : "00"
-                proc.arguments = ["-n", path, "-k", "CH0B", "-w", hexVal]
-                if (try? proc.run()) != nil {
-                    proc.waitUntilExit()
-                    if proc.terminationStatus == 0 { return true }
+                if ProcessRunner.runQuietly("/usr/bin/sudo", ["-n", path, "-k", "CH0B", "-w", hexVal]) {
+                    return true
                 }
             }
         }
@@ -308,34 +283,21 @@ final class BatteryChargeLimiter: ObservableObject {
 
         try? FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
 
-        let sourcePath: String?
-        if let bundlePath = Bundle.main.path(forResource: "harmonotch-smc", ofType: "c") {
-            sourcePath = bundlePath
-        } else {
-            let devPath = "/Users/ssajudn/projects/Harmonotch/Harmonotch/Features/Battery/Helper/harmonotch-smc.c"
-            sourcePath = FileManager.default.fileExists(atPath: devPath) ? devPath : nil
-        }
-
-        guard let source = sourcePath else {
-            NSLog("[Harmonotch:ChargeLimiter] Could not locate harmonotch-smc.c source")
+        guard let source = Bundle.main.path(forResource: "harmonotch-smc", ofType: "c") else {
+            NSLog("[Harmonotch:ChargeLimiter] Could not locate harmonotch-smc.c in bundle resources")
             return nil
         }
 
-        let clangProc = Process()
-        clangProc.executableURL = URL(fileURLWithPath: "/usr/bin/clang")
-        clangProc.arguments = ["-O2", "-DSTANDALONE_HELPER", "-framework", "IOKit", source, "-o", helperBinary.path]
-
-        do {
-            try clangProc.run()
-            clangProc.waitUntilExit()
-            if clangProc.terminationStatus == 0 && FileManager.default.isExecutableFile(atPath: helperBinary.path) {
-                NSLog("[Harmonotch:ChargeLimiter] Successfully compiled harmonotch-smc at %@", helperBinary.path)
-                return helperBinary.path
-            }
-        } catch {
-            NSLog("[Harmonotch:ChargeLimiter] clang compilation failed: %@", error.localizedDescription)
+        let result = ProcessRunner.run(
+            "/usr/bin/clang",
+            ["-O2", "-DSTANDALONE_HELPER", "-framework", "IOKit", source, "-o", helperBinary.path]
+        )
+        if result.succeeded && FileManager.default.isExecutableFile(atPath: helperBinary.path) {
+            NSLog("[Harmonotch:ChargeLimiter] Successfully compiled harmonotch-smc at %@", helperBinary.path)
+            return helperBinary.path
         }
 
+        NSLog("[Harmonotch:ChargeLimiter] clang compilation failed: %@", result.stderr)
         return nil
     }
 
@@ -372,32 +334,25 @@ final class BatteryChargeLimiter: ObservableObject {
 
     // MARK: - Sudo Configuration
 
-    func checkSudoConfiguration() {
-        if UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] {
-            isSudoConfigured = true
-            return
-        }
+    private func sudoersInstaller(for helperPath: String) -> SudoersRuleInstaller {
+        let uid = getuid()
+        let escapedHelper = helperPath.replacingOccurrences(of: " ", with: "\\ ")
+        let ruleContent = "#\(uid) ALL=(root) NOPASSWD: \(escapedHelper) *"
+        return SudoersRuleInstaller(
+            filePath: Self.sudoersFilePath,
+            ruleContent: ruleContent,
+            probe: {
+                ProcessRunner.runQuietly("/usr/bin/sudo", ["-n", "-l", "--", helperPath, "inhibit", "0", "100"])
+            }
+        )
+    }
 
+    func checkSudoConfiguration() {
         executionQueue.async { [weak self] in
             guard let self, let helperPath = self.resolveHelperBinaryPath() else { return }
-
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-            process.arguments = ["-n", "-l", "--", helperPath, "inhibit", "0", "100"]
-
-            var configured = false
-            do {
-                try process.run()
-                process.waitUntilExit()
-                configured = (process.terminationStatus == 0)
-            } catch {
-                configured = false
-            }
-
+            let configured = self.sudoersInstaller(for: helperPath).isConfigured()
             DispatchQueue.main.async {
-                if configured {
-                    UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] = true
-                }
+                UserDefaults.standard[UserDefaultsKeys.chargeLimitSudoConfigured] = configured
                 self.isSudoConfigured = configured
             }
         }
@@ -414,19 +369,7 @@ final class BatteryChargeLimiter: ObservableObject {
                 return
             }
 
-            let escapedHelper = helperPath.replacingOccurrences(of: " ", with: "\\ ")
-            let ruleContent = "%admin ALL=(ALL) NOPASSWD: \(escapedHelper) *"
-
-            let shell = "tmp=$(mktemp) && echo '\(ruleContent)' > \"$tmp\" && chmod 0440 \"$tmp\" "
-                + "&& visudo -c -f \"$tmp\" && mv \"$tmp\" /etc/sudoers.d/harmonotch"
-            let scriptSource = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
-
-            var errorDict: NSDictionary?
-            var success = false
-            if let appleScript = NSAppleScript(source: scriptSource) {
-                _ = appleScript.executeAndReturnError(&errorDict)
-                success = (errorDict == nil)
-            }
+            let success = self.sudoersInstaller(for: helperPath).install()
 
             DispatchQueue.main.async {
                 self.isPerformingSetup = false
@@ -443,22 +386,10 @@ final class BatteryChargeLimiter: ObservableObject {
     // MARK: - Notifications
 
     private func sendLimitReachedNotification(capacity: Int) {
-        let center = UNUserNotificationCenter.current()
-        let content = UNMutableNotificationContent()
-        content.title = "Battery Charge Limit Reached"
-        content.body = "Battery has reached \(capacity)%. Power is now drawn directly from the adapter to preserve battery health."
-        content.sound = .default
-
-        let request = UNNotificationRequest(
+        UserNotificationService.post(
             identifier: "Harmonotch_ChargeLimit_Reached",
-            content: content,
-            trigger: nil
+            title: "Battery Charge Limit Reached",
+            body: "Battery has reached \(capacity)%. Power is now drawn directly from the adapter to preserve battery health."
         )
-
-        center.add(request) { error in
-            if let error {
-                NSLog("[Harmonotch:ChargeLimiter] Notification error: %@", error.localizedDescription)
-            }
-        }
     }
 }
