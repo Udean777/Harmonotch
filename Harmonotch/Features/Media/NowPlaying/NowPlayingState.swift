@@ -32,11 +32,13 @@ nonisolated enum NowPlayingCommand: Equatable, Sendable {
 nonisolated struct NowPlayingCommandMessage: Encodable, Sendable {
   let id: String
   let cmd: String
+  let target: String?
   let position: Double?
 
-  init(id: String = UUID().uuidString, command: NowPlayingCommand) {
+  init(id: String = UUID().uuidString, command: NowPlayingCommand, target: String? = nil) {
     self.id = id
     self.cmd = command.commandName
+    self.target = target
     self.position = command.position
   }
 }

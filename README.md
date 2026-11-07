@@ -36,7 +36,18 @@ Prayer times are calculated on device. The app has no account, no analytics, and
   - Smart hysteresis (2% buffer) prevents rapid charging on/off cycles when hovering at the threshold.
   - Automatic fail-safe: restores normal charging state when quitting the app or unplugging the power cable.
   - One-click privilege setup via `/etc/sudoers.d/harmonotch`, with fallbacks to CLI tools (`battery`, `smc`) and smart audio/visual notifications.
-- Includes Clamshell Awake policy control and shortcuts to refresh telemetry or open macOS Battery settings.
+- **Clamshell Mode (Stay Awake with Lid Closed)**:
+  - Keeps the Mac awake and the external monitor active as the primary display when the MacBook lid is closed.
+  - **Requirements**: An external display must be connected; without an external display, the mode stays in `Standby (No Display)` and never disables system sleep.
+  - **Battery & Power Adapter Policy**: Connecting a power adapter is recommended. When running on battery power, Harmonotch sends a warning notification at `60%` and automatically pauses Clamshell Mode at `≤ 50%`, restoring normal sleep (`SleepDisabled 0`) and putting the Mac to sleep if the lid is closed. Reconnecting the power adapter automatically resumes the session.
+  - **Ownership & Crash Recovery**: Tracks override ownership (`Harmonotch_ClamshellOverrideOwned`) before enabling `disablesleep 1`, restores sleep synchronously on app termination, and recovers stale state on next launch without interfering with `disablesleep` set by other tools.
+  - **Admin Permission & Manual Cleanup**: Uses a dedicated sudoers file at `/etc/sudoers.d/harmonotch-clamshell` scoped to your user UID for `/usr/bin/pmset -a disablesleep 1` and `0` only (separate from the Charge Limiter rule at `/etc/sudoers.d/harmonotch`). To remove and reset manually without the app:
+    ```bash
+    sudo rm -f /etc/sudoers.d/harmonotch-clamshell
+    sudo /usr/bin/pmset -a disablesleep 0
+    defaults delete com.ssajudn.Harmonotch Harmonotch_ClamshellOverrideOwned 2>/dev/null || true
+    ```
+- Shortcuts to refresh telemetry or open macOS Battery settings.
 
 ### Media and lyrics
 
@@ -46,6 +57,14 @@ Prayer times are calculated on device. The app has no account, no analytics, and
 - Lets you click any lyric line to seek directly to its timestamp.
 
 The MediaRemote bridge uses an undocumented Apple framework, so it can change or disappear in a future macOS release. That is why the AppleScript path stays in place, and why this app ships outside the Mac App Store.
+
+### Volume HUD in Notch (Single-Owner)
+
+- Clean volume indicator seamlessly rendered in the notch when volume keys (up, down, mute) are pressed.
+- **Strict Single Ownership Architecture**: Per keypress, only one HUD owns the screen. When Harmonotch handles volume, the native macOS OSD is intercepted without showing dual/duplicate HUDs.
+- **Hardware Fallback**: Directly writes to CoreAudio (`AudioObjectSetPropertyData`). If the active device does not support software volume or write fails, control immediately falls back to native macOS with an automatic grace period.
+- **Native Feedback Parity**: Honors macOS "Play feedback when volume is changed" setting and Shift key inversion using Apple's official `volume.aiff` audio sample.
+- **Third-Party App Note**: Harmonotch uses a `.cgSessionEventTap` to intercept volume keys. Do not run Harmonotch simultaneously with other utilities that consume volume keys (e.g. Vorssaint, BetterDisplay, or MonitorControl), as multiple competing event taps cannot coordinate key consumption.
 
 ### AI agent quota telemetry
 
@@ -168,10 +187,10 @@ Harmonotch/
 - [Adhan-Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps (MIT License) for astronomical prayer calculations.
 - [LRCLIB](https://lrclib.net/) for synced lyrics.
 - [IslamDownload.net](https://islamdownload.net/123801-download-suara-adzan.html) for the adhan recordings.
-- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique and for product-level research into demand-driven monitoring and modular utility panels. Harmonotch's implementations are written independently from Apple documentation and original testing; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
+- [Vorssaint](https://github.com/vorssaint/vorssaint-utils) (GPL-3.0-or-later) for the MediaRemote-through-Perl technique, client process identifier resolution, debounced serial playback state reconciliation, research into demand-driven monitoring and modular utility panels, and for the clamshell, volume-key HUD, and accessibility permission patterns that informed Harmonotch's implementations. Harmonotch's implementations are written independently from Apple documentation, original testing, and observed runtime behavior; no Vorssaint source code, assets, strings, type names, or trade dress are included. Harmonotch is not affiliated with or endorsed by Vorssaint.
 - Apple for the iTunes Search API, `MediaRemote`, SF Symbols, and IOKit.
 
-Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Engineering provenance and clean-room boundaries are documented in [docs/IMPLEMENTATION_PROVENANCE.md](docs/IMPLEMENTATION_PROVENANCE.md).
+Full license texts and attributions are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
 
 ## License
 

@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 import ServiceManagement
 import SwiftUI
@@ -11,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     NotchWindowController.shared.setupAndShowWindow()
     setupStatusBarItem()
     observeUpdates()
+    VolumeHUDController.shared.syncWithPreferences()
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
       UpdateManager.shared.checkForUpdates(isUserInitiated: false)
@@ -18,6 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
+    VolumeHUDController.shared.stop()
+    SystemAudioService.shared.stopObserving()
     MediaManager.shared.stop()
     ClamshellManager.shared.prepareForTermination()
     BatteryChargeLimiter.shared.prepareForTermination()
@@ -99,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       UpdateManager.shared.$isChecking.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$currentState.map { _ in () }.eraseToAnyPublisher(),
       ClamshellManager.shared.$isArmed.map { _ in () }.eraseToAnyPublisher(),
+      ClamshellManager.shared.$isSudoConfigured.map { _ in () }.eraseToAnyPublisher(),
     ]
 
     Publishers.MergeMany(inputs)
@@ -133,6 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func menuNeedsUpdate(_ menu: NSMenu) {
+    VolumeHUDController.shared.syncWithPreferences()
     menu.removeAllItems()
     addDrawerSection(to: menu)
     menu.addItem(NSMenuItem.separator())
@@ -249,6 +255,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     launchItem.state = isLaunchAtLogin ? .on : .off
     menu.addItem(launchItem)
 
+    let isVolumeHUDEnabled = UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled]
+    let volumeHUDItem = NSMenuItem(
+      title: L10n.Menu.volumeHUDToggle,
+      action: #selector(toggleVolumeHUD),
+      keyEquivalent: ""
+    )
+    volumeHUDItem.target = self
+    volumeHUDItem.image = NSImage(
+      systemSymbolName: isVolumeHUDEnabled ? "speaker.wave.2.fill" : "speaker.wave.2",
+      accessibilityDescription: nil
+    )
+    volumeHUDItem.state = isVolumeHUDEnabled ? .on : .off
+    menu.addItem(volumeHUDItem)
+
+    let isIncludeOther = MediaManager.shared.includeOtherAudioApps
+    let includeOtherItem = NSMenuItem(
+      title: L10n.Media.includeOtherAudioApps,
+      action: #selector(toggleIncludeOtherAudioApps),
+      keyEquivalent: ""
+    )
+    includeOtherItem.target = self
+    includeOtherItem.image = NSImage(
+      systemSymbolName: isIncludeOther ? "waveform.badge.plus" : "waveform",
+      accessibilityDescription: nil
+    )
+    includeOtherItem.state = isIncludeOther ? .on : .off
+    menu.addItem(includeOtherItem)
+
     let clamshellState = ClamshellManager.shared.currentState
     let clamshellTitle: String
     let clamshellIcon: String
@@ -275,7 +309,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     clamshellItem.target = self
     clamshellItem.image = NSImage(systemSymbolName: clamshellIcon, accessibilityDescription: nil)
     clamshellItem.state = ClamshellManager.shared.isArmed ? .on : .off
+    clamshellItem.isEnabled = !ClamshellManager.shared.isPerformingSetup
     menu.addItem(clamshellItem)
+
+    if !ClamshellManager.shared.isSudoConfigured {
+      let setupTitle = ClamshellManager.shared.isPerformingSetup
+        ? L10n.Clamshell.authorizing
+        : L10n.Clamshell.menuSetupAction
+      let setupItem = NSMenuItem(
+        title: setupTitle,
+        action: #selector(setupClamshellPermissionFromMenu),
+        keyEquivalent: ""
+      )
+      setupItem.target = self
+      setupItem.image = NSImage(
+        systemSymbolName: "lock.open.fill", accessibilityDescription: nil)
+      setupItem.isEnabled = !ClamshellManager.shared.isPerformingSetup
+      menu.addItem(setupItem)
+    }
   }
 
   private func buildLanguageSubmenu() -> NSMenu {
@@ -414,6 +465,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleNotchVisibility() {
     NotchWindowController.shared.toggleNotchHidden()
+    if NotchWindowController.shared.isNotchHidden {
+      NotchViewModel.shared.dismissVolumeNotice()
+    }
+  }
+
+  @objc private func toggleVolumeHUD() {
+    let nextEnabled = !UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled]
+    VolumeHUDController.shared.setEnabled(nextEnabled, promptIfUntrusted: true)
+  }
+
+  @objc private func toggleIncludeOtherAudioApps() {
+    MediaManager.shared.includeOtherAudioApps.toggle()
   }
 
   @objc private func toggleTestAdzan() {
@@ -438,6 +501,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   @objc private func toggleClamshellStayAwake() {
     ClamshellManager.shared.isArmed.toggle()
+  }
+
+  @objc private func setupClamshellPermissionFromMenu() {
+    NotchViewModel.shared.selectedTab = .battery
+    NotchViewModel.shared.isExpanded = true
+    ClamshellManager.shared.setupPasswordlessSudo { _ in }
   }
 
   @objc private func quitApp() {

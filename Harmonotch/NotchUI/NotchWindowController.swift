@@ -35,7 +35,7 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     let geometry = notchVM.geometry
     let isMediaPlaying =
       MediaManager.shared.isPlaying
-      && MediaManager.shared.hasActiveTrack
+      && MediaManager.shared.hasMediaSession
       && !AdzanPlayer.shared.isPlaying
     let leftContentExpansion: CGFloat = {
       if isMediaPlaying {

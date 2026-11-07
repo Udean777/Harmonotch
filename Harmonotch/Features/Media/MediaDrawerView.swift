@@ -34,6 +34,13 @@ struct MediaDrawerView: View {
     VStack(spacing: 8) {
       if adzanPlayer.isPlaying {
         prayerAudioView.transition(NotchMotion.drawer)
+      } else if let pres = mediaManager.presentation {
+        switch pres.kind {
+        case .track:
+          mediaPlaybackView.transition(NotchMotion.drawer)
+        case .audioOnly(let appInfo):
+          audioOnlyPlaybackView(appInfo: appInfo).transition(NotchMotion.drawer)
+        }
       } else if mediaManager.hasActiveTrack {
         mediaPlaybackView.transition(NotchMotion.drawer)
       } else {
@@ -44,6 +51,7 @@ struct MediaDrawerView: View {
       }
     }
     .frame(width: NotchLayout.expandedContentWidth, alignment: .top)
+    .animation(NotchMotion.content, value: mediaManager.hasMediaSession)
     .animation(NotchMotion.content, value: mediaManager.hasActiveTrack)
     .animation(NotchMotion.content, value: adzanPlayer.isPlaying)
     .animation(NotchMotion.fade, value: mediaManager.trackTitle)
@@ -187,12 +195,23 @@ struct MediaDrawerView: View {
               .aspectRatio(contentMode: .fill)
               .frame(width: 64, height: 64)
               .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+          } else if let appIcon = mediaManager.presentation?.app.appIcon {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+              .fill(AppTheme.badgeBackground)
+              .frame(width: 64, height: 64)
+              .overlay(
+                Image(nsImage: appIcon)
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 48, height: 48)
+                  .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+              )
           } else {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
               .fill(Color(red: 0.12, green: 0.12, blue: 0.12))
               .frame(width: 64, height: 64)
               .overlay(
-                Image(systemName: mediaManager.mediaSource.iconName)
+                Image(systemName: mediaManager.presentation?.app.iconSymbolName ?? mediaManager.mediaSource.iconName)
                   .font(.system(size: 26))
                   .foregroundColor(.white.opacity(0.85))
               )
@@ -205,9 +224,9 @@ struct MediaDrawerView: View {
 
         VStack(alignment: .leading, spacing: 3) {
           HStack(spacing: 5) {
-            Image(systemName: mediaManager.mediaSource.iconName)
+            Image(systemName: mediaManager.presentation?.app.iconSymbolName ?? mediaManager.mediaSource.iconName)
               .font(.system(size: 9.5, weight: .semibold))
-            Text(mediaManager.mediaSource.rawValue)
+            Text(mediaManager.presentation?.app.displayName ?? mediaManager.mediaSource.rawValue)
               .font(.system(size: 9.5, weight: .semibold))
 
             if mediaManager.isPlaying {
@@ -241,45 +260,51 @@ struct MediaDrawerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
 
         HStack(spacing: 10) {
-          Button(action: {
-            mediaManager.previousTrack()
-          }) {
-            Image(systemName: "backward.fill")
-              .font(.system(size: 13, weight: .semibold))
-              .foregroundColor(mediaAccentColor)
-              .frame(width: 34, height: 34)
-              .background(AppTheme.badgeBackground)
-              .clipShape(Circle())
-              .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
+          if mediaManager.presentation?.capabilities.contains(.previousTrack) ?? true {
+            Button(action: {
+              mediaManager.previousTrack()
+            }) {
+              Image(systemName: "backward.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(mediaAccentColor)
+                .frame(width: 34, height: 34)
+                .background(AppTheme.badgeBackground)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
           }
-          .buttonStyle(.plain)
 
-          Button(action: {
-            mediaManager.playPause()
-          }) {
-            Image(systemName: mediaManager.isPlaying ? "pause.fill" : "play.fill")
-              .contentTransition(.symbolEffect(.replace))
-              .font(.system(size: 15, weight: .bold))
-              .foregroundColor(.black)
-              .frame(width: 42, height: 42)
-              .background(mediaAccentColor)
-              .clipShape(Circle())
-              .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.12), radius: 2.5, x: 0, y: 1.5)
+          if mediaManager.presentation?.capabilities.contains(.playPause) ?? true {
+            Button(action: {
+              mediaManager.playPause()
+            }) {
+              Image(systemName: mediaManager.isPlaying ? "pause.fill" : "play.fill")
+                .contentTransition(.symbolEffect(.replace))
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(.black)
+                .frame(width: 42, height: 42)
+                .background(mediaAccentColor)
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.12), radius: 2.5, x: 0, y: 1.5)
+            }
+            .buttonStyle(.plain)
           }
-          .buttonStyle(.plain)
 
-          Button(action: {
-            mediaManager.nextTrack()
-          }) {
-            Image(systemName: "forward.fill")
-              .font(.system(size: 13, weight: .semibold))
-              .foregroundColor(mediaAccentColor)
-              .frame(width: 34, height: 34)
-              .background(AppTheme.badgeBackground)
-              .clipShape(Circle())
-              .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
+          if mediaManager.presentation?.capabilities.contains(.nextTrack) ?? true {
+            Button(action: {
+              mediaManager.nextTrack()
+            }) {
+              Image(systemName: "forward.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(mediaAccentColor)
+                .frame(width: 34, height: 34)
+                .background(AppTheme.badgeBackground)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(AppTheme.cardBorder, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
           }
-          .buttonStyle(.plain)
         }
 
         HStack(spacing: 8) {
@@ -357,6 +382,120 @@ struct MediaDrawerView: View {
         EmptyView()
       }
     }
+  }
+
+  // MARK: - Audio Only Mode View
+
+  private func audioOnlyPlaybackView(appInfo: MediaAppInfo) -> some View {
+    VStack(spacing: 12) {
+      HStack(alignment: .center, spacing: 14) {
+        ZStack {
+          if let appIcon = appInfo.appIcon {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+              .fill(AppTheme.badgeBackground)
+              .frame(width: 64, height: 64)
+              .overlay(
+                Image(nsImage: appIcon)
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 48, height: 48)
+                  .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+              )
+          } else {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+              .fill(AppTheme.badgeBackground)
+              .frame(width: 64, height: 64)
+              .overlay(
+                Image(systemName: appInfo.iconSymbolName)
+                  .font(.system(size: 26))
+                  .foregroundColor(.white.opacity(0.85))
+              )
+          }
+        }
+        .overlay(
+          RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .stroke(Color.white.opacity(0.14), lineWidth: 0.8)
+        )
+
+        VStack(alignment: .leading, spacing: 3) {
+          HStack(spacing: 5) {
+            Image(systemName: appInfo.iconSymbolName)
+              .font(.system(size: 9.5, weight: .semibold))
+            Text(appInfo.displayName)
+              .font(.system(size: 9.5, weight: .semibold))
+
+            if mediaManager.isPlaying {
+              Image(systemName: "waveform")
+                .font(.system(size: 8.5))
+                .symbolEffect(.variableColor.iterative.reversing)
+                .foregroundColor(mediaAccentColor)
+            }
+          }
+          .foregroundColor(AppTheme.textSecondary)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 2.5)
+          .background(
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+              .fill(AppTheme.badgeBackground)
+          )
+
+          Text(L10n.Media.audioPlaying)
+            .font(.system(size: 15, weight: .bold, design: .rounded))
+            .foregroundColor(AppTheme.textPrimary)
+            .lineLimit(1)
+
+          Text(appInfo.displayName)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(AppTheme.textSecondary)
+            .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+        HStack(spacing: 10) {
+          if mediaManager.presentation?.capabilities.contains(.playPause) == true {
+            Button(action: {
+              mediaManager.playPause()
+            }) {
+              Image(systemName: mediaManager.isPlaying ? "pause.fill" : "play.fill")
+                .contentTransition(.symbolEffect(.replace))
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(.black)
+                .frame(width: 38, height: 38)
+                .background(mediaAccentColor)
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(AppTheme.isDark ? 0.35 : 0.12), radius: 2.5, x: 0, y: 1.5)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(mediaManager.isPlaying ? L10n.Media.pause : L10n.Media.play)
+          }
+
+          Button(action: {
+            mediaManager.openActiveApp()
+          }) {
+            HStack(spacing: 5) {
+              Image(systemName: "arrow.up.forward.app")
+                .font(.system(size: 11, weight: .semibold))
+              Text(L10n.Media.openApp(appInfo.displayName))
+                .font(.system(size: 11.5, weight: .semibold))
+                .lineLimit(1)
+            }
+            .foregroundColor(AppTheme.textPrimary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(AppTheme.badgeBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+              RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
+            )
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(L10n.Media.openApp(appInfo.displayName))
+        }
+      }
+    }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(L10n.Media.appPlayingAudio(appInfo.displayName))
   }
 
   /// Lyrics view: shows lyrics when available, sync button on failure,

@@ -111,9 +111,9 @@ final class NowPlayingBridge {
     }
   }
 
-  /// Sends a strongly-typed command to the adapter.
-  func send(_ command: NowPlayingCommand, completion: ((Bool) -> Void)? = nil) {
-    let message = NowPlayingCommandMessage(command: command)
+  /// Sends a strongly-typed command to the adapter, optionally targeting a specific bundle ID.
+  func send(_ command: NowPlayingCommand, target: String? = nil, completion: ((Bool) -> Void)? = nil) {
+    let message = NowPlayingCommandMessage(command: command, target: target)
     guard let payload = try? JSONEncoder().encode(message) else {
       completion?(false)
       return

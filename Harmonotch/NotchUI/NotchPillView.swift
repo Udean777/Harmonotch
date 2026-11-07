@@ -17,7 +17,7 @@ struct NotchPillView: View {
   }
 
   private var isMediaPlaying: Bool {
-    mediaManager.isPlaying && mediaManager.hasActiveTrack && !adzanPlayer.isPlaying
+    mediaManager.isPlaying && mediaManager.hasMediaSession && !adzanPlayer.isPlaying
   }
 
   private var leftContentExpansion: CGFloat {
@@ -46,11 +46,11 @@ struct NotchPillView: View {
 
   /// 0 = battery, 1 = media session, 2 = adzan. Drives swap transitions.
   private var contentMode: Int {
-    return adzanPlayer.isPlaying ? 2 : ((mediaManager.isPlaying && mediaManager.hasActiveTrack) ? 1 : 0)
+    return adzanPlayer.isPlaying ? 2 : (isMediaPlaying ? 1 : 0)
   }
 
   private var isBatteryMode: Bool {
-    !adzanPlayer.isPlaying && !(mediaManager.isPlaying && mediaManager.hasActiveTrack)
+    !adzanPlayer.isPlaying && !isMediaPlaying
   }
 
   var body: some View {
@@ -85,8 +85,16 @@ struct NotchPillView: View {
     }
   }
 
+  private var showsVolumeOnLeft: Bool {
+    notchVM.volumeNotice != nil && isMediaPlaying
+  }
+
+  private var showsVolumeOnRight: Bool {
+    notchVM.volumeNotice != nil && !isMediaPlaying
+  }
+
   private var leftLeadingInset: CGFloat {
-    if isMediaPlaying && !geometry.hasHardwareNotch {
+    if isMediaPlaying && !showsVolumeOnLeft && !geometry.hasHardwareNotch {
       return 0
     }
     return outerInset
@@ -130,19 +138,31 @@ struct NotchPillView: View {
   }
 
   private var leftContent: some View {
-    ZStack { leftContentBody.id(contentMode).transition(NotchMotion.swap) }
-      .animation(NotchMotion.content, value: contentMode)
-      .animation(NotchMotion.quick, value: isLeftHovered)
+    ZStack {
+      leftContentBody
+        .id("\(contentMode)-\(showsVolumeOnLeft)")
+        .transition(NotchMotion.swap)
+    }
+    .animation(NotchMotion.content, value: contentMode)
+    .animation(NotchMotion.content, value: showsVolumeOnLeft)
+    .animation(NotchMotion.quick, value: isLeftHovered)
   }
 
   private var rightContent: some View {
-    ZStack { rightContentBody.id(contentMode).transition(NotchMotion.swap) }
-      .animation(NotchMotion.content, value: contentMode)
+    ZStack {
+      rightContentBody
+        .id("\(contentMode)-\(showsVolumeOnRight)")
+        .transition(NotchMotion.swap)
+    }
+    .animation(NotchMotion.content, value: contentMode)
+    .animation(NotchMotion.content, value: showsVolumeOnRight)
   }
 
   @ViewBuilder
   private var leftContentBody: some View {
-    if isBatteryMode {
+    if let notice = notchVM.volumeNotice, isMediaPlaying {
+      VolumeNoticeView(notice: notice)
+    } else if isBatteryMode {
       HStack(spacing: 4) {
         if isLeftHovered && notchVM.isCompanionEnabled {
           PrayerCompanionView()
@@ -161,7 +181,9 @@ struct NotchPillView: View {
 
   @ViewBuilder
   private var rightContentBody: some View {
-    if adzanPlayer.isPlaying {
+    if let notice = notchVM.volumeNotice, !isMediaPlaying {
+      VolumeNoticeView(notice: notice)
+    } else if adzanPlayer.isPlaying {
       HStack(spacing: 4) {
         Circle()
           .fill(Color.white)
@@ -172,7 +194,7 @@ struct NotchPillView: View {
           .foregroundColor(.white)
           .lineLimit(1)
       }
-    } else if mediaManager.isPlaying && mediaManager.hasActiveTrack {
+    } else if isMediaPlaying {
       mediaRight
     } else {
       batteryRight
@@ -278,12 +300,27 @@ struct NotchPillView: View {
             RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
               .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
           )
+      } else if let appIcon = mediaManager.presentation?.app.appIcon {
+        RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
+          .fill(Color(white: 0.16))
+          .frame(width: thumbnailDiameter, height: thumbnailDiameter)
+          .overlay(
+            Image(nsImage: appIcon)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: thumbnailDiameter - 2, height: thumbnailDiameter - 2)
+              .clipShape(RoundedRectangle(cornerRadius: max(2, thumbnailCornerRadius - 1), style: .continuous))
+          )
+          .overlay(
+            RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
+              .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
+          )
       } else {
         RoundedRectangle(cornerRadius: thumbnailCornerRadius, style: .continuous)
           .fill(Color(white: 0.16))
           .frame(width: thumbnailDiameter, height: thumbnailDiameter)
           .overlay(
-            Image(systemName: mediaManager.mediaSource.iconName)
+            Image(systemName: mediaManager.presentation?.app.iconSymbolName ?? mediaManager.mediaSource.iconName)
               .font(.system(size: 9.5, weight: .semibold))
               .foregroundColor(.white.opacity(0.85))
           )

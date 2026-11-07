@@ -44,17 +44,19 @@ THE SOFTWARE.
 
 ---
 
-## 3. Vorssaint (MediaRemote Technique and Product Research)
+## 3. Vorssaint (MediaRemote, Clamshell, Volume HUD, and Permissions Research)
 
 - **Author:** [Vorssaint](https://github.com/vorssaint)
 - **Repository:** [https://github.com/vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
-- **Reviewed revision:** [`a5da7633e09d0ebbf5b5607c0434ded28a239469`](https://github.com/vorssaint/vorssaint-utils/commit/a5da7633e09d0ebbf5b5607c0434ded28a239469)
+- **Reviewed revision:** [`26d3c9e199eb3afc8f43ce8bd83210b5754421bd`](https://github.com/vorssaint/vorssaint-utils/commit/26d3c9e199eb3afc8f43ce8bd83210b5754421bd)
 - **License:** GNU General Public License v3.0 or later (GPL-3.0-or-later)
-- **Purpose in Harmonotch:** The now-playing bridge loads a small adapter into `/usr/bin/perl` and talks to Apple's private MediaRemote framework from there, a technique demonstrated by Vorssaint. The technique is used with the author's written permission and with credit. Product-level research into demand-driven monitoring and modular utility panels also informed Harmonotch's requirements.
-- **Implementation boundary:** Harmonotch's implementations are written independently from Apple documentation and original testing. No Vorssaint source code, assets, strings, type names, or trade dress are included. The MediaRemote files in this repository (`NowPlayingAdapter.m`, `nowplaying.pl`, and `NowPlayingBridge.swift`) are independent implementations, so Harmonotch remains MIT-licensed.
+- **Purpose in Harmonotch:**
+  - **MediaRemote technique & state reconciliation.** The now-playing bridge loads a small adapter into `/usr/bin/perl` and talks to Apple's private MediaRemote framework from there, a technique demonstrated by Vorssaint. The technique is used with the author's written permission and with credit. In addition, Vorssaint's methods for resolving client process identifiers (`MRNowPlayingClientGetProcessIdentifier` / `setProcessIdentifier:`), serial work queue dispatching, debounced notification coalescing, and reconciling `playbackState` vs `playbackRate` to eliminate pause delays informed Harmonotch's adapter architecture. Product-level research into demand-driven monitoring and modular utility panels also informed Harmonotch's requirements.
+  - **Clamshell / keep lid open.** Vorssaint's approach to keeping a Mac awake with the lid closed (`pmset disablesleep`, power assertions, and safe restoration when the session ends) informed Harmonotch's behavior and safety requirements.
+  - **Volume HUD in the notch.** Vorssaint's method of taking ownership of the media keys (`NX_SYSDEFINED` through a `CGEventTap`), writing volume directly through CoreAudio, and avoiding a second native OSD informed Harmonotch's single-owner key routing and native-HUD suppression window.
+  - **Accessibility & TCC lifecycle patterns.** Vorssaint's clean separation between triggering system-level authorization prompts (`AXIsProcessTrustedWithOptions`), user-initiated settings navigation, and resetting stale TCC approvals (`tccutil reset`) during ad-hoc development informed Harmonotch's permission handling.
+- **Implementation boundary:** Harmonotch's implementations are written independently from Apple documentation, original testing, and observed runtime behavior. No Vorssaint source code, assets, strings, type names, or trade dress are included. The MediaRemote files in this repository (`NowPlayingAdapter.m`, `nowplaying.pl`, and `NowPlayingBridge.swift`) are independent implementations, so Harmonotch remains MIT-licensed.
 - **Trademark notice:** Harmonotch is not affiliated with or endorsed by Vorssaint. The Vorssaint name, logo, icon, bundle identity, trade dress, and official branding are not used by Harmonotch.
-
-The detailed source record and clean-room rules are maintained in [`docs/IMPLEMENTATION_PROVENANCE.md`](docs/IMPLEMENTATION_PROVENANCE.md).
 
 ---
 

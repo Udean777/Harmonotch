@@ -189,12 +189,6 @@ enum L10n {
                     : "Jaga kesehatan baterai dengan membatasi daya di \(limit)%"
             }
         }
-        static var chargeToFull: String {
-            isEnglish ? "Charge to Full (100%)" : "Isi Penuh (100%)"
-        }
-        static var chargeToFullNow: String {
-            isEnglish ? "Charge to Full Now" : "Isi Penuh Sekarang"
-        }
         static var customLimitSetupHint: String {
             isEnglish
                 ? "Custom limits can be set when unplugged and battery < 80%"
@@ -217,11 +211,6 @@ enum L10n {
         }
         static var nativeLimitActive: String {
             isEnglish ? "macOS Limit Active" : "Batas macOS Aktif"
-        }
-        static func macOSHoldingCharge(capacity: Int) -> String {
-            isEnglish
-                ? "macOS is holding charge at \(capacity)%. Turn off '80% Limit' in Battery Settings to charge to 100%."
-                : "macOS menahan pengisian daya di \(capacity)%. Nonaktifkan 'Batas 80%' di Pengaturan Baterai untuk mengisi hingga 100%."
         }
         static var openBatterySettings: String {
             isEnglish ? "Open Battery Settings" : "Buka Pengaturan Baterai"
@@ -259,9 +248,6 @@ enum L10n {
         static var title: String {
             isEnglish ? "Clamshell Mode" : "Mode Clamshell"
         }
-        static var subtitle: String {
-            isEnglish ? "Keep awake with lid closed" : "Tetap hidup saat layar ditutup"
-        }
         static var active: String {
             isEnglish ? "Active" : "Aktif"
         }
@@ -274,23 +260,26 @@ enum L10n {
         static var off: String {
             isEnglish ? "Off" : "Nonaktif"
         }
-        static var externalDisplayLabel: String {
-            isEnglish ? "External Display" : "Monitor Eksternal"
-        }
         static var noExternalDisplay: String {
             isEnglish ? "No external display detected" : "Tidak ada monitor eksternal terhubung"
         }
         static var setupPermission: String {
-            isEnglish ? "Allow Access" : "Izinkan Akses"
-        }
-        static var authorized: String {
-            isEnglish ? "Authorized" : "Akses diizinkan"
+            isEnglish ? "Setup Access" : "Atur Izin"
         }
         static var authorizing: String {
             isEnglish ? "Authorizing..." : "Meminta izin..."
         }
+        static var setupFailedMessage: String {
+            isEnglish ? "Setup failed or cancelled. Admin permission is required." : "Pengaturan izin gagal atau dibatalkan. Izin admin diperlukan."
+        }
+        static var powerAdapterWarning: String {
+            isEnglish ? "Connect power adapter recommended (auto-pauses at ≤ 50%)" : "Disarankan pasang adaptor daya (jeda otomatis saat ≤ 50%)"
+        }
         static var batteryProtectionNote: String {
             isEnglish ? "Auto-pauses at ≤ 50% on battery" : "Otomatis dijeda jika baterai ≤ 50%"
+        }
+        static var menuSetupAction: String {
+            isEnglish ? "Setup Clamshell Permission..." : "Atur Izin Mode Clamshell..."
         }
         static var warningNotificationTitle: String {
             isEnglish ? "Harmonotch stay-awake warning" : "Peringatan mode tetap hidup"
@@ -399,6 +388,18 @@ enum L10n {
         static var sync: String {
             isEnglish ? "Sync" : "Sinkron"
         }
+        static var audioPlaying: String {
+            isEnglish ? "Audio playing" : "Sedang memutar audio"
+        }
+        static func openApp(_ name: String) -> String {
+            isEnglish ? "Open \(name)" : "Buka \(name)"
+        }
+        static func appPlayingAudio(_ name: String) -> String {
+            isEnglish ? "\(name) is playing audio" : "\(name) sedang memutar audio"
+        }
+        static var includeOtherAudioApps: String {
+            isEnglish ? "Include Other Audio Apps" : "Sertakan App Audio Lain"
+        }
     }
 
     enum Menu {
@@ -455,6 +456,9 @@ enum L10n {
         }
         static var clamshellToggle: String {
             isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
+        }
+        static var volumeHUDToggle: String {
+            isEnglish ? "Volume HUD in Notch" : "Volume HUD di Notch"
         }
         static var keyboardBacklight: String {
             isEnglish ? "Keyboard Backlight" : "Lampu Keyboard"
@@ -677,8 +681,8 @@ enum L10n {
         }
         static var vorssaintDesc: String {
             isEnglish
-                ? "MediaRemote technique & product research reference for now-playing media player"
-                : "Referensi teknik MediaRemote & riset produk untuk media player pemutar musik"
+                ? "Reference for the MediaRemote technique, playback state reconciliation, clamshell behavior, volume-key HUD, and accessibility permission flow"
+                : "Referensi teknik MediaRemote, rekonsiliasi state playback, perilaku clamshell, HUD tombol volume, dan alur izin aksesibilitas"
         }
         static var lrclibTitle: String {
             "LRCLIB"
@@ -834,6 +838,49 @@ enum L10n {
             isEnglish
                 ? "Passive read-only inspection. Safe & private."
                 : "Inspeksi pasif baca-saja. Aman & privat."
+        }
+    }
+
+    enum Volume {
+        static func accessibilityLabel(percent: Int, muted: Bool) -> String {
+            if muted {
+                return isEnglish ? "Volume muted, 0 percent" : "Volume dibisukan, 0 persen"
+            }
+            return isEnglish ? "Volume \(percent) percent" : "Volume \(percent) persen"
+        }
+
+        static var permissionAlertTitle: String {
+            isEnglish ? "Accessibility Permission Required" : "Izin Aksesibilitas Diperlukan"
+        }
+
+        static var permissionAlertMessage: String {
+            isEnglish
+                ? "Harmonotch needs Accessibility permission to intercept volume keys and display the Volume HUD in the notch without showing a duplicate system HUD."
+                : "Harmonotch memerlukan izin Aksesibilitas untuk menangkap tombol volume dan menampilkan Volume HUD di notch tanpa memunculkan HUD sistem ganda."
+        }
+
+        static var openAccessibilitySettings: String {
+            isEnglish ? "Open System Settings" : "Buka Pengaturan Sistem"
+        }
+
+        static var cancel: String {
+            isEnglish ? "Cancel" : "Batal"
+        }
+
+        static var statusActive: String {
+            isEnglish ? "Active in Notch" : "Aktif di Notch"
+        }
+
+        static var statusNeedsPermission: String {
+            isEnglish ? "Needs Accessibility Permission" : "Butuh Izin Aksesibilitas"
+        }
+
+        static var statusDisabled: String {
+            isEnglish ? "Using macOS System HUD" : "Menggunakan HUD Bawaan macOS"
+        }
+
+        static var grantPermissionAction: String {
+            isEnglish ? "Grant Access" : "Beri Izin"
         }
     }
 }
