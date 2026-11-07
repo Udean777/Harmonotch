@@ -4,25 +4,21 @@ import Foundation
 
 extension VolumeHUDController {
   /// Prompts the macOS system accessibility permission alert dialog if not already trusted.
-  /// Resets stale TCC entries of ad-hoc/debug builds so macOS triggers the system prompt cleanly.
+  /// Resets stale TCC entries of ad-hoc/local builds so macOS triggers the system prompt cleanly.
   func requestAccessibilityPermission(resetStaleEntry: Bool = true) {
     let bundleID = Bundle.main.bundleIdentifier ?? "com.ssajudn.Harmonotch"
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       if resetStaleEntry && !AXIsProcessTrusted() {
         ProcessRunner.runQuietly("/usr/bin/tccutil", ["reset", "Accessibility", bundleID])
-        usleep(150_000)
+        usleep(100_000)
       }
       DispatchQueue.main.async {
-        self?.promptAccessibilityDialog()
+        let options =
+          [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
+        self?.syncWithPreferences()
       }
     }
-  }
-
-  private func promptAccessibilityDialog() {
-    let options =
-      [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-    _ = AXIsProcessTrustedWithOptions(options)
-    syncWithPreferences()
   }
 
   static func openAccessibilitySettings() {
