@@ -77,6 +77,16 @@ static void *Symbol(const char *name) {
   return dlsym(MR.handle, name);
 }
 
+/// Reads a MediaRemote notification name from its exported string constant.
+/// Some names differ from the symbol (macOS 27 adds a leading underscore),
+/// so a literal would silently never fire.
+static NSString *StringConstant(const char *name) {
+  void *symbol = Symbol(name);
+  if (!symbol) return nil;
+  NSString *value = *(NSString *__unsafe_unretained *)symbol;
+  return [value isKindOfClass:[NSString class]] ? value : nil;
+}
+
 static BOOL LoadMediaRemote(void) {
   MR.handle = dlopen(kFrameworkPath, RTLD_NOW);
   if (!MR.handle) {
@@ -442,13 +452,22 @@ static void ReadCommands(void) {
 }
 
 static void ObserveChanges(void) {
-  NSArray<NSString *> *names = @[
+  NSMutableArray<NSString *> *names = [@[
     @"kMRMediaRemoteNowPlayingInfoDidChangeNotification",
     @"kMRMediaRemoteNowPlayingApplicationDidChangeNotification",
     @"kMRMediaRemoteNowPlayingApplicationIsPlayingDidChangeNotification",
     @"kMRMediaRemoteNowPlayingApplicationClientStateDidChange",
     @"kMRMediaRemoteNowPlayingPlaybackQueueDidChangeNotification",
-  ];
+    // Player-level changes, not only the system's current player. Firefox in
+    // particular posts pause here, and missing it left the app waiting for
+    // the one-second poll before it stopped showing playback.
+    @"kMRMediaRemotePlayerIsPlayingDidChangeNotification",
+    @"kMRMediaRemotePlayerNowPlayingInfoDidChangeNotification",
+    @"kMRMediaRemoteNowPlayingPlayerStateDidChange",
+  ] mutableCopy];
+  NSString *playbackState = StringConstant("kMRMediaRemotePlayerPlaybackStateDidChangeNotification");
+  if (playbackState) [names addObject:playbackState];
+
   for (NSString *name in names) {
     [[NSNotificationCenter defaultCenter] addObserverForName:name
                                                       object:nil
@@ -477,7 +496,7 @@ void hnp_run(void) {
   ObserveChanges();
 
   dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, WorkQueue);
-  dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, NSEC_PER_SEC, 200 * NSEC_PER_MSEC);
+  dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, NSEC_PER_SEC / 2, 100 * NSEC_PER_MSEC);
   dispatch_source_set_event_handler(timer, ^{
     RefreshState();
   });
