@@ -8,6 +8,10 @@ enum AIAgentDiscoveryService {
     let version: String?
   }
 
+  private static let cacheLock = NSLock()
+  private static var resolvedPathCache: [AIAgentKind: String] = [:]
+  private static var resolvedVersionCache: [String: String] = [:]
+
   static func discoverInstalledBinary(for kind: AIAgentKind, home: String = FileManager.default.homeDirectoryForCurrentUser.path) -> DiscoveredCLI? {
     guard let binaryPath = resolveBinaryPath(for: kind, home: home) else {
       return nil
@@ -23,6 +27,14 @@ enum AIAgentDiscoveryService {
 
   static func resolveBinaryPath(for kind: AIAgentKind, home: String) -> String? {
     let fm = FileManager.default
+
+    cacheLock.lock()
+    if let cached = resolvedPathCache[kind], fm.isExecutableFile(atPath: cached) {
+      cacheLock.unlock()
+      return cached
+    }
+    cacheLock.unlock()
+
     let candidates: [String]
 
     switch kind {
@@ -68,6 +80,9 @@ enum AIAgentDiscoveryService {
 
     for path in candidates {
       if fm.isExecutableFile(atPath: path) {
+        cacheLock.lock()
+        resolvedPathCache[kind] = path
+        cacheLock.unlock()
         return path
       }
     }
@@ -75,41 +90,59 @@ enum AIAgentDiscoveryService {
   }
 
   static func resolveVersion(for kind: AIAgentKind, binaryPath: String, home: String) -> String? {
+    cacheLock.lock()
+    if let cached = resolvedVersionCache[binaryPath] {
+      cacheLock.unlock()
+      return cached
+    }
+    cacheLock.unlock()
+
+    let resolved: String?
     switch kind {
     case .claude:
-      let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.5)
-      return parseCleanVersion(out.stdout)
+      let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.0)
+      resolved = parseCleanVersion(out.stdout)
 
     case .codex:
       let versionPath = "\(home)/.codex/version.json"
       if let data = try? Data(contentsOf: URL(fileURLWithPath: versionPath)),
          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
          let ver = (json["version"] ?? json["latest_version"]) as? String {
-        return ver
+        resolved = ver
+      } else {
+        let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.0)
+        resolved = parseCleanVersion(out.stdout)
       }
-      let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.5)
-      return parseCleanVersion(out.stdout)
 
     case .opencode:
-      let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.5)
-      return parseCleanVersion(out.stdout)
+      let out = runCommand(executable: binaryPath, arguments: ["--version"], timeout: 2.0)
+      resolved = parseCleanVersion(out.stdout)
 
     case .gemini:
       let verPath = "\(home)/.gemini/bin/agy.version.json"
       if let data = try? Data(contentsOf: URL(fileURLWithPath: verPath)),
          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
          let v = (json["version"] ?? json["shortVersion"]) as? String {
-        return v
+        resolved = v
+      } else {
+        resolved = nil
       }
-      return nil
 
     case .copilot:
-      return nil
+      resolved = nil
     }
+
+    if let resolved {
+      cacheLock.lock()
+      resolvedVersionCache[binaryPath] = resolved
+      cacheLock.unlock()
+    }
+
+    return resolved
   }
 
   static func checkClaudeAuth(binaryPath: String) -> (isLoggedIn: Bool, authMethod: String) {
-    let authOut = runCommand(executable: binaryPath, arguments: ["auth", "status"], timeout: 3.0)
+    let authOut = runCommand(executable: binaryPath, arguments: ["auth", "status"], timeout: 2.5)
     guard let data = authOut.stdout.data(using: .utf8),
           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     else {
@@ -304,13 +337,13 @@ enum AIAgentDiscoveryService {
       }
     }
 
-    let copilotCheck = runCommand(executable: cli.binaryPath, arguments: ["copilot", "--version"], timeout: 2.0)
+    let copilotCheck = runCommand(executable: cli.binaryPath, arguments: ["copilot", "--version"], timeout: 1.5)
     let copilotInstalled = copilotCheck.exitCode == 0 && !copilotCheck.stderr.contains("not installed")
 
     let apiCheck = runCommand(
       executable: cli.binaryPath,
       arguments: ["api", "user", "--jq", ".login + \"|\" + (.name // \"\") + \"|\" + (.email // \"\")"],
-      timeout: 2.5
+      timeout: 2.0
     )
     if apiCheck.exitCode == 0 {
       let parts = apiCheck.stdout.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
@@ -363,17 +396,19 @@ enum AIAgentDiscoveryService {
     process.standardOutput = outPipe
     process.standardError = errPipe
 
+    let semaphore = DispatchSemaphore(value: 0)
+    process.terminationHandler = { _ in
+      semaphore.signal()
+    }
+
     do {
       try process.run()
     } catch {
       return (-1, "", error.localizedDescription)
     }
 
-    let deadline = Date().addingTimeInterval(timeout)
-    while process.isRunning && Date() < deadline {
-      Thread.sleep(forTimeInterval: 0.04)
-    }
-    if process.isRunning {
+    let timeoutResult = semaphore.wait(timeout: .now() + timeout)
+    if timeoutResult == .timedOut {
       process.terminate()
       return (-2, "", "Timed out")
     }

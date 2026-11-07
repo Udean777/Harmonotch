@@ -8,7 +8,7 @@ extension AppDelegate {
       return
     }
 
-    if event.type == .rightMouseUp || event.modifierFlags.contains(.control) {
+    if event.type == .rightMouseDown || event.type == .rightMouseUp || event.modifierFlags.contains(.control) {
       showContextMenu(for: sender)
     } else {
       MenuBarPanelController.shared.toggle(relativeTo: sender)

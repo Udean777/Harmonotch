@@ -11,7 +11,7 @@ extension AppDelegate {
       button.imagePosition = .imageLeading
       button.target = self
       button.action = #selector(statusBarButtonClicked(_:))
-      button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+      button.sendAction(on: [.leftMouseDown, .rightMouseDown])
     }
 
     updateStatusBarButton()

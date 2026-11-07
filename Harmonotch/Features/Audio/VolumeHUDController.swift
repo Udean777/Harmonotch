@@ -112,7 +112,7 @@ final class VolumeHUDController: ObservableObject {
     UserDefaults.standard[UserDefaultsKeys.volumeHUDEnabled] = enabled
     syncWithPreferences()
     if enabled && !AXIsProcessTrusted() && promptIfUntrusted {
-      requestAccessibilityPermission()
+      requestAccessibilityPermission(resetStaleEntry: true)
     }
   }
 
@@ -143,7 +143,7 @@ final class VolumeHUDController: ObservableObject {
       SystemAudioService.shared.stopObserving()
       if enabled && !trusted && isSessionActive && !didPromptAccessibilityThisSession {
         didPromptAccessibilityThisSession = true
-        requestAccessibilityPermission()
+        requestAccessibilityPermission(resetStaleEntry: true)
       }
     }
   }
