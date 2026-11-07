@@ -1,1134 +1,760 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook</title>
-    <meta
-      name="description"
-      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
-    />
-    <meta name="author" content="Harmonotch" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#000000" />
-    <link rel="canonical" href="https://harmonotch-web.vercel.app/" />
-    <link rel="alternate" hreflang="id" href="https://harmonotch-web.vercel.app/" />
-    <link
-      rel="alternate"
-      hreflang="en"
-      href="https://harmonotch-web.vercel.app/?lang=en"
-    />
-    <link rel="alternate" hreflang="x-default" href="https://harmonotch-web.vercel.app/" />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonotch: Jadwal sholat, baterai, media & kuota AI di notch MacBook</title>
+  <meta name="description" content="Jadwal sholat astronomis, status baterai & limiter SMC hardware, media playback dengan lirik, kuota AI Agents, dan satellite sliders untuk macOS.">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <meta property="og:title" content="Harmonotch for macOS">
+  <meta property="og:description" content="Jadwal sholat, baterai, kontrol media & kuota AI di notch MacBook Anda.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#000000">
+</head>
+<body>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  <a href="#mainContent" class="skip-link" data-i18n="nav.skip">Lewati ke konten</a>
 
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Harmonotch" />
-    <meta property="og:url" content="https://harmonotch-web.vercel.app/" />
-    <meta
-      property="og:title"
-      content="Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook"
-    />
-    <meta
-      property="og:description"
-      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
-    />
-    <meta
-      property="og:image"
-      content="https://harmonotch-web.vercel.app/assets/icon_512.png"
-    />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
-    <meta property="og:locale" content="id_ID" />
-    <meta property="og:locale:alternate" content="en_US" />
+  <!-- Navigation -->
+  <header class="nav" role="banner">
+    <div class="container nav-inner">
+      <a href="#" class="brand" aria-label="Harmonotch Beranda">
+        <img src="assets/logo.png" alt="" class="brand-icon" width="26" height="26">
+        <span class="brand-name">Harmonotch</span>
+      </a>
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Harmonotch: jadwal sholat, baterai, dan musik di notch MacBook"
-    />
-    <meta
-      name="twitter:description"
-      content="Jadwal sholat, status baterai, dan kontrol musik dengan lirik tersinkron di notch MacBook. Gratis dan open source untuk macOS 14 ke atas."
-    />
-    <meta
-      name="twitter:image"
-      content="https://harmonotch-web.vercel.app/assets/icon_512.png"
-    />
+      <nav class="nav-menu" id="navLinks" aria-label="Navigasi utama" data-i18n-aria="aria.primary">
+        <ul class="nav-links">
+          <li><a href="#overview" data-i18n="nav.overview">Apa yang Digunakan</a></li>
+          <li><a href="#features" data-i18n="nav.features">Fitur</a></li>
+          <li><a href="#tech-stack" data-i18n="nav.tech">Tech Stack</a></li>
+          <li><a href="#install" data-i18n="nav.install">Instalasi</a></li>
+          <li><a href="#credits" data-i18n="nav.credits">Credits</a></li>
+          <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
+        </ul>
+      </nav>
 
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-    <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
-    <link rel="icon" href="/assets/favicon.png" type="image/png" sizes="512x512" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-
-    <link rel="stylesheet" href="/css/style.css" />
-
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Harmonotch",
-        "description": "MacBook notch companion for prayer times, battery status, and media controls with synced lyrics.",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "macOS 14.0 or later",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "url": "https://harmonotch-web.vercel.app",
-        "image": "https://harmonotch-web.vercel.app/assets/icon_512.png",
-        "inLanguage": ["id", "en"]
-      }
-    </script>
-
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Apakah Harmonotch butuh internet untuk menghitung waktu sholat?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Tidak. Waktu sholat dihitung di perangkat dari koordinat kota Anda. Internet hanya dipakai untuk lirik dan pemeriksaan pembaruan."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apakah Harmonotch bisa dipakai di Mac tanpa notch?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ya. Di Mac tanpa notch, Harmonotch memakai floating pill di bagian atas layar dan ikon menu bar."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Kenapa macOS menampilkan peringatan 'Apple cannot verify'?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Harmonotch adalah proyek open source yang tidak memakai sertifikat Apple Developer berbayar. Di macOS 15 atau lebih baru, buka System Settings → Privacy & Security, lalu klik 'Open Anyway'. Di macOS 14 atau lebih lama, klik kanan aplikasi dan pilih 'Open'. Alternatifnya jalankan perintah xattr -cr /Applications/Harmonotch.app di Terminal."
-            }
-          }
-        ]
-      }
-    </script>
-  </head>
-  <body>
-    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
-
-    <a href="#main-content" class="skip-link" data-i18n="nav.skip"
-      >Lewati ke konten</a
-    >
-
-    <header class="nav" role="banner">
-      <div class="container nav-inner">
-        <a href="/" class="brand" aria-label="Harmonotch">
-          <img
-            src="/assets/logo.png"
-            alt="Logo Harmonotch"
-            class="brand-icon"
-          />
-          <span class="brand-name">Harmonotch</span>
-        </a>
-
-        <div class="nav-menu" id="navLinks">
-          <nav role="navigation" aria-label="Navigasi utama">
-            <ul class="nav-links">
-              <li>
-                <a href="#showcase" data-i18n="nav.showcase">Notch</a>
-              </li>
-              <li><a href="#features" data-i18n="nav.features">Fitur</a></li>
-              <li><a href="#install" data-i18n="nav.install">Instalasi</a></li>
-              <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
-            </ul>
-          </nav>
-
-          <div class="nav-actions">
-            <div class="lang-switch" role="group" aria-label="Pilihan bahasa">
-              <button
-                type="button"
-                data-lang="id"
-                class="active"
-                aria-pressed="true"
-              >
-                ID
-              </button>
-              <button type="button" data-lang="en" aria-pressed="false">
-                EN
-              </button>
-            </div>
-
-            <a
-              href="/api/download"
-              class="btn btn-primary btn-sm js-download"
-              data-i18n="nav.download"
-            >
-              Unduh DMG
-            </a>
-          </div>
+      <div class="nav-actions">
+        <div class="lang-switch" role="group" aria-label="Pilihan bahasa" data-i18n-aria="aria.language">
+          <button type="button" data-lang="id" class="active" aria-pressed="true">ID</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
         </div>
-
-        <button
-          class="hamburger"
-          id="hamburger"
-          aria-expanded="false"
-          aria-label="Buka Menu"
-          data-i18n-aria="aria.menu"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+        <a href="/api/download" class="btn btn-sm btn-primary js-download" download="Harmonotch.dmg" data-i18n="nav.download">Unduh DMG</a>
+        <button type="button" class="hamburger" id="hamburger" aria-label="Menu navigasi" aria-expanded="false" data-i18n-aria="aria.menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main id="main-content">
-      <section class="hero">
-        <div class="container">
-          <div class="hero-notch" aria-hidden="true">
-            <span class="hn-lens"></span>
-            <div class="hn-faces">
-              <div class="hn-face is-on">
-                <div class="hn-face-main">
-                  <span class="hn-label" data-i18n="hero.notch.prayerLabel"
-                    >Sholat Berikutnya</span
-                  >
-                  <span class="hn-value">Dzuhur · 12:08</span>
-                </div>
-                <span class="hn-pill">-01:14:20</span>
-              </div>
-            </div>
-          </div>
-
-          <h1 class="hero-title" data-i18n="hero.title">
-            Jadwal sholat, baterai, dan kontrol musik di notch MacBook Anda
-          </h1>
-
-          <p class="hero-desc" data-i18n="hero.desc">
-            Harmonotch menaruh jadwal sholat, sisa baterai, dan kontrol musik
-            beserta liriknya di notch. Tersedia dua tema, <em>Liquid Glass</em>
-            dan <em>Zen Serenity</em>.
-          </p>
-
-          <div class="hero-actions">
-            <a href="/api/download" class="btn btn-primary js-download">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span class="js-download-label" data-i18n="hero.downloadBtn"
-                >Unduh DMG</span
-              >
-            </a>
-
-            <a
-              href="#features"
-              class="btn btn-secondary"
-              data-i18n="hero.viewFeatures"
-            >
-              Lihat Fitur
-            </a>
-          </div>
-
-          <div class="hero-meta">
-            <span
-              id="versionBadge"
-              hidden
-              style="
-                margin-right: 8px;
-                color: var(--accent-amber);
-                font-weight: 700;
-              "
-            ></span>
-            <span data-i18n="hero.metaReq"
-              >macOS 14–27 · Apple Silicon & Intel</span
-            >
-          </div>
-
-          <div class="hero-tags">
-            <div class="hero-tag">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span data-i18n="hero.tag1">Native Swift & SwiftUI</span>
-            </div>
-            <div class="hero-tag">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span data-i18n="hero.tag2">Data tetap di perangkat</span>
-            </div>
-            <div class="hero-tag">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span data-i18n="hero.tag3">Tanpa akun</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="showcase">
-        <div class="container">
-          <div class="section-header">
-            <h2 class="section-title" data-i18n="showcase.title">
-              Lihat notch saat dipakai
-            </h2>
-            <p class="section-desc" data-i18n="showcase.desc">
-              Pilih tab di bawah untuk melihat animasi notch dan tampilan menu
-              bar.
-            </p>
-          </div>
-
-          <div class="showcase-tabs" role="tablist">
-            <button
-              class="showcase-tab active"
-              data-tab="video"
-              role="tab"
-              aria-selected="true"
-              data-i18n="tab.video"
-            >
-              Animasi Notch
-            </button>
-            <button
-              class="showcase-tab"
-              data-tab="menubar"
-              role="tab"
-              aria-selected="false"
-              data-i18n="tab.menubar"
-            >
-              Menu Bar
-            </button>
-          </div>
-
-          <div class="mockup-wrapper">
-            <div class="macbook-screen">
-              <div class="screen-wallpaper"></div>
-
-              <div class="mockup-menubar">
-                <div class="mockup-menubar-left">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 170 170"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.67-7.81-11.96-14.34-5.78-8.8-10.23-18.9-13.32-30.32-3.09-11.41-4.64-22.39-4.64-32.93 0-14.37 3.58-26.68 10.74-36.93 7.16-10.25 16.32-15.49 27.5-15.72 4.14 0 9.07 1.21 14.78 3.63 5.71 2.42 9.68 3.69 11.9 3.82 2.85-.36 7.05-1.74 12.61-4.14 5.56-2.4 10.37-3.48 14.42-3.23 11.23.63 20.35 4.67 27.38 12.13-9.84 5.92-14.6 14.15-14.28 24.7.32 8.24 3.4 15.11 9.25 20.61 5.85 5.5 12.92 8.64 21.2 9.42-2.11 6.35-4.74 12.55-7.9 18.59zM119.22 31.84c0-7.39 2.65-14.26 7.94-20.62 5.3-6.36 11.75-10.29 19.37-11.78.33 1.1.49 2.19.49 3.28 0 7.39-2.73 14.28-8.2 20.66-5.46 6.38-11.99 10.25-19.6 11.62-.11-1.09-.16-2.18-.16-3.28z"
-                    />
-                  </svg>
-                  <strong style="color: #fff">Harmonotch</strong>
-                  <span>File</span>
-                  <span>Edit</span>
-                  <span>View</span>
-                  <span>Window</span>
-                  <span>Help</span>
-                </div>
-                <div class="mockup-menubar-right">
-                  <span>Dzuhur 12:08</span>
-                  <img
-                    src="/assets/logo.png"
-                    alt="Harmonotch Icon"
-                    style="width: 14px; height: 14px; border-radius: 3px"
-                  />
-                  <span>88%</span>
-                  <span>Sen 12:00</span>
-                </div>
-              </div>
-
-              <div class="physical-notch">
-                <div class="camera-lens"></div>
-                <div class="camera-led"></div>
-              </div>
-
-              <div class="mockup-drawers-container">
-                <div class="mockup-drawer active" data-drawer="video">
-                  <div class="showcase-video-wrapper" id="showcaseVideoWrapper">
-                    <video
-                      id="showcaseVideo"
-                      autoplay
-                      loop
-                      muted
-                      playsinline
-                      preload="auto"
-                      class="showcase-video-player"
-                    >
-                      <source src="/assets/showcase-demo.webm" type="video/webm" />
-                      <source src="/assets/showcase-demo.mp4" type="video/mp4" />
-                    </video>
-
-                    <button
-                      type="button"
-                      class="video-center-play-btn"
-                      id="videoCenterPlayBtn"
-                      aria-label="Putar atau jeda video"
-                    >
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                      </svg>
-                    </button>
-
-                    <div class="video-controls-bar" id="videoControlsBar">
-                      <button
-                        type="button"
-                        class="video-ctrl-btn"
-                        id="videoPlayToggleBtn"
-                        aria-label="Putar atau jeda video"
-                      >
-                        <span class="video-ctrl-icon" id="videoPlayIcon">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="6" y="4" width="4" height="16"></rect>
-                            <rect x="14" y="4" width="4" height="16"></rect>
-                          </svg>
-                        </span>
-                        <span class="video-ctrl-label" id="videoPlayLabel">Jeda</span>
-                      </button>
-
-                      <div class="video-progress-track" id="videoProgressTrack" role="slider" aria-label="Posisi video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-                        <div class="video-progress-fill" id="videoProgressFill"></div>
-                      </div>
-
-                      <div class="video-ctrl-actions">
-                        <button
-                          type="button"
-                          class="video-ctrl-btn video-ctrl-icon-only"
-                          id="videoRestartBtn"
-                          aria-label="Ulangi dari awal"
-                          title="Ulangi Video"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                            <path d="M3 3v5h5"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mockup-drawer" data-drawer="menubar">
-                  <div class="menubar-showcase-container">
-                    <div class="menubar-shot-frame">
-                      <img
-                        src="/assets/showcase-menubar.png"
-                        alt="Harmonotch di menu bar"
-                        class="menubar-shot-img"
-                        loading="lazy"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="showcase-info-container">
-              <div class="showcase-info-pane active" data-info="video">
-                <h3 data-i18n="showcase.video.title">
-                  Animasi notch mengikuti kursor
-                </h3>
-                <p data-i18n="showcase.video.desc">
-                  Drawer mengembang dari bezel kamera saat kursor mendekat,
-                  lalu menutup 0,14 detik setelah kursor menjauh.
-                </p>
-                <div class="showcase-features-list">
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.video.f1"
-                      >Dibuat dengan SwiftUI bawaan Apple</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.video.f2"
-                      >Menutup 0,14 detik setelah kursor menjauh</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.video.f3"
-                      >Pindah antara sholat, baterai, dan musik dengan satu
-                      klik</span
-                    >
-                  </div>
-                </div>
-              </div>
-
-              <div class="showcase-info-pane" data-info="menubar">
-                <h3 data-i18n="showcase.menubar.title">
-                  Akses dari menu bar
-                </h3>
-                <p data-i18n="showcase.menubar.desc">
-                  Di Mac tanpa notch, ikon menu bar membuka kontrol yang sama.
-                </p>
-                <div class="showcase-features-list">
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.menubar.f1"
-                      >Sholat berikutnya dan sisa baterai</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.menubar.f2"
-                      >Pemeriksaan pembaruan dari GitHub</span
-                    >
-                  </div>
-                  <div class="showcase-feat">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span data-i18n="showcase.menubar.f3"
-                      >Pintasan papan tombol dan pengaturan</span
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="features">
-        <div class="container">
-          <div class="section-header">
-            <h2 class="section-title" data-i18n="features.title">
-              Dibuat untuk macOS
-            </h2>
-            <p class="section-desc" data-i18n="features.desc">
-              Harmonotch ditulis dengan Swift, SwiftUI, dan AppKit, tanpa
-              framework web.
-            </p>
-          </div>
-
-          <div class="features-grid">
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 14 14"></polyline>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c1t">
-                Perhitungan Waktu Sholat
-              </h3>
-              <p class="feature-desc" data-i18n="features.c1d">
-                Mendukung Kemenag, Muslim World League, ISNA, Umm Al-Qura,
-                Egyptian General Authority, dan penyesuaian menit manual.
-              </p>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
-                  ></path>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c2t">
-                Animasi Notch
-              </h3>
-              <p class="feature-desc" data-i18n="features.c2d">
-                Drawer keluar dari bezel notch dengan animasi spring bawaan
-                Apple.
-              </p>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect>
-                  <line x1="23" y1="13" x2="23" y2="11"></line>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c3t">
-                Status Baterai
-              </h3>
-              <p class="feature-desc" data-i18n="features.c3d">
-                Persentase, sisa waktu pemakaian, dan status pengisian dalam
-                satu tampilan.
-              </p>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect
-                    x="3"
-                    y="11"
-                    width="18"
-                    height="11"
-                    rx="2"
-                    ry="2"
-                  ></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c4t">
-                Data Tetap di Perangkat
-              </h3>
-              <p class="feature-desc" data-i18n="features.c4d">
-                Perhitungan waktu sholat dan pembacaan baterai berjalan di
-                perangkat. Tidak ada analitik dan tidak ada data yang dikirim ke
-                server.
-              </p>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c5t">
-                Dukungan Mac Tanpa Notch
-              </h3>
-              <p class="feature-desc" data-i18n="features.c5d">
-                MacBook Air M1, Mac mini, iMac, dan Mac Studio memakai floating
-                pill di bagian atas layar atau ikon menu bar.
-              </p>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-wrapper">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"
-                  ></path>
-                </svg>
-              </div>
-              <h3 class="feature-title" data-i18n="features.c6t">
-                Pemeriksaan Pembaruan
-              </h3>
-              <p class="feature-desc" data-i18n="features.c6d">
-                Harmonotch memeriksa rilis terbaru di GitHub dan menampilkan
-                tautan unduhan saat ada versi baru.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="install">
-        <div class="container">
-          <div class="install-container">
-            <div class="section-header" style="margin-bottom: 40px">
-              <h2 class="section-title" data-i18n="install.title">
-                Cara Pasang di Mac Anda
-              </h2>
-              <p class="section-desc" data-i18n="install.desc">
-                Sekitar satu menit.
-              </p>
-            </div>
-
-            <div class="install-steps">
-              <div class="step-card">
-                <h3 class="step-title" data-i18n="install.step1Title">
-                  1. Unduh DMG
-                </h3>
-                <p class="step-desc" data-i18n="install.step1Desc">
-                  Klik Unduh DMG untuk mengambil rilis terbaru dari GitHub
-                  Releases.
-                </p>
-              </div>
-
-              <div class="step-card">
-                <h3 class="step-title" data-i18n="install.step2Title">
-                  2. Seret ke Applications
-                </h3>
-                <p class="step-desc" data-i18n="install.step2Desc">
-                  Buka file DMG, lalu seret ikon Harmonotch ke folder
-                  Applications.
-                </p>
-              </div>
-
-              <div class="step-card">
-                <h3 class="step-title" data-i18n="install.step3Title">
-                  3. Jika macOS Menolak Membuka Aplikasi
-                </h3>
-                <p class="step-desc" data-i18n="install.step3Desc">
-                  Rilis ini ditandatangani secara ad-hoc, jadi macOS bisa
-                  menampilkan 'Harmonotch cannot be opened'. Buka System Settings
-                  → Privacy & Security, lalu klik 'Open Anyway'. Di macOS 14
-                  atau lebih lama, klik kanan aplikasi dan pilih 'Open'. Jika
-                  masih gagal, jalankan perintah di bawah di Terminal.
-                </p>
-              </div>
-            </div>
-
-            <div class="terminal-box">
-              <div class="terminal-code">
-                <span>$ </span>xattr -cr /Applications/Harmonotch.app
-              </div>
-              <button
-                class="copy-btn"
-                id="copyCommandBtn"
-                data-i18n="install.copyBtn"
-              >
-                Salin Perintah
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="faq">
-        <div class="container">
-          <div class="section-header">
-            <h2 class="section-title" data-i18n="faq.title">
-              Pertanyaan umum
-            </h2>
-          </div>
-
-          <div class="faq-list">
-            <div class="faq-item open">
-              <button class="faq-question" aria-expanded="true">
-                <span data-i18n="faq.q1"
-                  >Apakah Harmonotch butuh internet untuk menghitung waktu
-                  sholat?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a1">
-                  Tidak. Waktu sholat dihitung di perangkat dari koordinat kota
-                  Anda. Internet hanya dipakai untuk lirik dan pemeriksaan
-                  pembaruan.
-                </p>
-              </div>
-            </div>
-
-            <div class="faq-item">
-              <button class="faq-question" aria-expanded="false">
-                <span data-i18n="faq.q2"
-                  >Apakah Harmonotch bisa dipakai di Mac tanpa notch?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a2">
-                  Ya. Di Mac tanpa notch, Harmonotch memakai floating pill di
-                  bagian atas layar dan ikon menu bar.
-                </p>
-              </div>
-            </div>
-
-            <div class="faq-item">
-              <button class="faq-question" aria-expanded="false">
-                <span data-i18n="faq.q3"
-                  >Kenapa macOS menampilkan peringatan 'Apple cannot
-                  verify'?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a3">
-                  Harmonotch adalah proyek open source yang tidak memakai
-                  sertifikat Apple Developer berbayar. Di macOS 15 atau lebih
-                  baru, buka System Settings → Privacy & Security, lalu klik
-                  'Open Anyway'. Di macOS 14 atau lebih lama, klik kanan
-                  aplikasi dan pilih 'Open'. Alternatifnya jalankan
-                  <code>xattr -cr /Applications/Harmonotch.app</code> di
-                  Terminal.
-                </p>
-              </div>
-            </div>
-
-            <div class="faq-item">
-              <button class="faq-question" aria-expanded="false">
-                <span data-i18n="faq.q4"
-                  >Apakah Harmonotch menguras baterai MacBook?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a4">
-                  Harmonotch tidak menggambar ulang layar terus-menerus. Waktu
-                  sholat dihitung saat dibutuhkan, dan data baterai dibaca
-                  berkala di latar belakang.
-                </p>
-              </div>
-            </div>
-
-            <div class="faq-item">
-              <button class="faq-question" aria-expanded="false">
-                <span data-i18n="faq.q5"
-                  >Metode perhitungan waktu sholat apa saja yang didukung?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a5">
-                  Harmonotch mendukung Kemenag (Kementerian Agama RI), Muslim
-                  World League (MWL), ISNA (North America), Umm Al-Qura
-                  (Makkah), Egyptian General Authority, University of Islamic
-                  Sciences Karachi, Dubai, Qatar, Kuwait, Singapore, dan Turki.
-                </p>
-              </div>
-            </div>
-
-            <div class="faq-item">
-              <button class="faq-question" aria-expanded="false">
-                <span data-i18n="faq.q6"
-                  >Versi macOS apa yang didukung?</span
-                >
-                <svg
-                  class="faq-chevron"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="faq-answer">
-                <p data-i18n="faq.a6">
-                  Harmonotch berjalan di macOS 14 (Sonoma) ke atas dan telah
-                  diuji hingga macOS 27. Apple Silicon dan Intel sama-sama
-                  didukung.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" style="padding-top: 20px">
-        <div class="container">
-          <div class="cta-banner">
-            <h2 class="cta-title" data-i18n="cta.title">
-              Pasang Harmonotch di Mac Anda
-            </h2>
-            <p class="cta-desc" data-i18n="cta.desc">
-              Gratis dan open source dengan lisensi MIT.
-            </p>
-            <div class="cta-actions">
-              <a href="/api/download" class="btn btn-primary js-download">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span class="js-download-label" data-i18n="cta.downloadBtn"
-                  >Unduh DMG</span
-                >
-              </a>
-
-              <a
-                href="https://github.com/Udean777/Harmonotch"
-                target="_blank"
-                rel="noopener"
-                class="btn btn-secondary"
-                data-i18n="cta.githubBtn"
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                  />
-                </svg>
-                Lihat di GitHub
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer" role="contentinfo">
+  <main id="mainContent">
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
       <div class="container">
-        <div class="footer-grid">
-          <div>
-            <div class="brand">
-              <img
-                src="/assets/logo.png"
-                alt="Logo Harmonotch"
-                class="brand-icon"
-              />
-              <span class="brand-name">Harmonotch</span>
+        <!-- Interactive Notch Header Graphic -->
+        <div class="hero-notch" aria-hidden="true">
+          <span class="hn-lens"></span>
+          <div class="hn-faces">
+            <div class="hn-face is-on">
+              <div class="hn-face-main">
+                <span class="hn-label" data-i18n="hero.notch.prayerLabel">Sholat Berikutnya</span>
+                <span class="hn-value">Ashar · 15:18</span>
+              </div>
+              <span class="hn-pill">-42m</span>
             </div>
-            <p class="footer-desc" data-i18n="footer.desc">
-              Jadwal sholat, status baterai, dan kontrol musik untuk notch
-              MacBook.
-            </p>
-          </div>
-
-          <div>
-            <h4 class="footer-col-title" data-i18n="footer.linksTitle">
-              Tautan
-            </h4>
-            <ul class="footer-links">
-              <li>
-                <a href="#showcase" data-i18n="footer.showcase">Notch</a>
-              </li>
-              <li><a href="#features" data-i18n="footer.features">Fitur</a></li>
-              <li>
-                <a href="#install" data-i18n="footer.install">Instalasi</a>
-              </li>
-              <li><a href="#faq" data-i18n="footer.faq">FAQ</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 class="footer-col-title">GitHub</h4>
-            <ul class="footer-links">
-              <li>
-                <a
-                  href="https://github.com/Udean777/Harmonotch"
-                  target="_blank"
-                  rel="noopener"
-                  data-i18n="footer.repo"
-                  >Repositori GitHub</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Udean777/Harmonotch/releases"
-                  target="_blank"
-                  rel="noopener"
-                  data-i18n="footer.releases"
-                  >Daftar Rilis</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Udean777/Harmonotch/issues"
-                  target="_blank"
-                  rel="noopener"
-                  data-i18n="footer.issues"
-                  >Laporkan Bug</a
-                >
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Udean777/Harmonotch/blob/main/LICENSE"
-                  target="_blank"
-                  rel="noopener"
-                  data-i18n="footer.license"
-                  >Lisensi MIT</a
-                >
-              </li>
-            </ul>
           </div>
         </div>
 
-        <div class="footer-bottom">
-          <p>
-            © <span id="year">2026</span>
-            <span data-i18n="footer.copyright"
-              >Harmonotch. Proyek Open Source.</span
-            >
-          </p>
-          <p>Made for macOS</p>
+        <h1 class="hero-title" data-i18n="hero.title">
+          Jadwal sholat, baterai, kontrol media &amp; kuota AI di notch MacBook Anda
+        </h1>
+
+        <p class="hero-desc" data-i18n="hero.desc">
+          Harmonotch mengubah notch MacBook menjadi pusat kontrol serbaguna: memantau waktu sholat, kesehatan baterai &amp; pembatas charging SMC, media player dengan lirik karaoke tersinkron, pemantau kuota AI Agents, serta kontrol satelit kecerahan dan volume.
+        </p>
+
+        <div class="hero-actions">
+          <a href="/api/download" class="btn btn-primary js-download" download="Harmonotch.dmg" data-i18n="hero.downloadBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Unduh DMG
+          </a>
+          <a href="#install" class="btn btn-secondary" data-i18n="hero.viewInstall">Panduan Pasang</a>
+        </div>
+
+        <div class="hero-meta">
+          <span id="versionBadge" class="hero-badge" hidden>v1.0.0</span>
+          <span class="hero-req" data-i18n="hero.metaReq">macOS 14–27 · Apple Silicon &amp; Intel</span>
+        </div>
+
+        <div class="hero-tags">
+          <span class="hero-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span data-i18n="hero.tag1">Native Swift 6 &amp; SwiftUI</span>
+          </span>
+          <span class="hero-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span data-i18n="hero.tag2">Privasi Penuh di Perangkat</span>
+          </span>
+          <span class="hero-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span data-i18n="hero.tag3">Tanpa Akun &amp; Open Source</span>
+          </span>
         </div>
       </div>
-    </footer>
+    </section>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <!-- Section 1: Overview (Apa Saja yang Digunakan) -->
+    <section class="section" id="overview">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="overview.tag">Konsep &amp; Cara Kerja</span>
+          <h2 class="section-title" data-i18n="overview.title">Apa Saja yang Digunakan &amp; Cara Kerjanya</h2>
+          <p class="section-desc" data-i18n="overview.desc">
+            Harmonotch memanfaatkan area kamera notch MacBook yang biasanya kosong menjadi antarmuka interaktif yang elegan, responsif, dan hemat daya.
+          </p>
+        </div>
 
-    <script src="/js/i18n.js"></script>
-    <script src="/js/main.js"></script>
-  </body>
+        <div class="overview-grid">
+          <div class="overview-card">
+            <span class="badge-pill" data-i18n="overview.card1.badge">Antarmuka Notch</span>
+            <h3 class="feature-title" data-i18n="overview.card1.title">Notch Drawer Interaktif &amp; Satellite Sliders</h3>
+            <p class="feature-desc" data-i18n="overview.card1.desc">
+              Cukup dekatkan kursor mouse ke area kamera notch untuk membuka drawer 4-tab (Baterai, Media, Sholat, dan AI Agents). Di sisi kiri dan kanan notch, terdapat satellite sliders ramping untuk mengatur kecerahan layar monitor dan volume sistem secara presisi melalui drag atau scroll wheel trackpad.
+            </p>
+          </div>
+
+          <div class="overview-card">
+            <span class="badge-pill" data-i18n="overview.card2.badge">Dukungan Semua Mac</span>
+            <h3 class="feature-title" data-i18n="overview.card2.title">Menu Bar Dashboard &amp; Floating Dynamic Island</h3>
+            <p class="feature-desc" data-i18n="overview.card2.desc">
+              Untuk MacBook Air M1 atau Mac desktop tanpa notch fisik, Harmonotch otomatis beradaptasi menjadi floating pill (Dynamic Island) di puncak layar. Seluruh kontrol dan telemetri juga tersedia penuh di Menu Bar Dashboard yang dapat diakses dengan satu klik kapan saja.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Features (Fiturnya Apa Saja) -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="features.tag">Fitur Utama</span>
+          <h2 class="section-title" data-i18n="features.title">Fitur-Fitur Unggulan Harmonotch</h2>
+          <p class="section-desc" data-i18n="features.desc">
+            Dirancang native untuk macOS Sonoma hingga macOS 27 dengan integrasi hardware Apple yang mendalam.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 (Hero Card): AI Agents Quotas -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8l3 3-3 3"></path></svg>
+            </div>
+            <div class="feature-header-wrap">
+              <span class="badge-pill" data-i18n="features.f1.badge">Pengembang &amp; AI</span>
+              <h3 class="feature-title" data-i18n="features.f1.title">AI Agents Quota &amp; Model Monitor</h3>
+            </div>
+            <p class="feature-desc" data-i18n="features.f1.desc">
+              Deteksi otomatis berbagai CLI developer AI yang terpasang di Mac Anda: Claude Code, OpenAI Codex, OpenCode CLI, Antigravity / Gemini CLI (agy), dan GitHub Copilot. Menampilkan sisa kuota jendela 5 jam &amp; kuota mingguan, hitungan mundur reset otomatis, model aktif yang digunakan, jumlah provider API, serta petunjuk login interaktif.
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f1.b1">Pemantauan kuota 5-hour window &amp; weekly limit dengan persentase real-time</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f1.b2">Hitungan mundur waktu reset otomatis (Resets in ...)</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f1.b3">Deteksi active model, reasoning effort, tier, dan provider aktif</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f1.b4">Akses cepat di tab Notch Drawer dan Menu Bar Dashboard dengan inline expand</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Feature 2: Satellite Sliders -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            </div>
+            <span class="badge-pill" data-i18n="features.f2.badge">Kontrol Cepat</span>
+            <h3 class="feature-title" data-i18n="features.f2.title">Satellite Sliders &amp; Volume HUD Single-Owner</h3>
+            <p class="feature-desc" data-i18n="features.f2.desc">
+              Dua slider satelit vertikal yang ramping mengapit notch untuk pengaturan langsung kecerahan monitor dan volume audio. Mendukung drag klik dan scroll wheel trackpad. Dilengkapi Volume HUD eksklusif yang mengintersepsi tombol media keyboard tanpa memunculkan OSD ganda bawaan macOS.
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f2.b1">Slider satelit kecerahan layar terintegrasi dengan DisplayServices</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f2.b2">Slider satelit volume dengan penyesuaian CoreAudio dan tombol mute</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f2.b3">Mendukung gestur continuous drag dan scroll wheel trackpad/mouse</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f2.b4">Single-owner Volume HUD dengan sampel audio native macOS</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Feature 3: Battery & Limiter -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line><polyline points="11 8 8 13 13 13 10 18"></polyline></svg>
+            </div>
+            <span class="badge-pill" data-i18n="features.f3.badge">Manajemen Daya</span>
+            <h3 class="feature-title" data-i18n="features.f3.title">Baterai, SMC Charge Limiter &amp; Clamshell Mode</h3>
+            <p class="feature-desc" data-i18n="features.f3.desc">
+              Telemetri IOKit mendalam (health nominal vs design capacity, cycle count, temperatur, wattage adaptor, estimasi waktu). Pembatas pengisian daya hardware 80% (AC bypass mode pada register SMC CH0B di Apple Silicon &amp; BCLM di Intel) untuk menjaga kesehatan baterai. Ditambah Clamshell Mode aman yang auto-pause di ≤50% baterai.
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f3.b1">Telemetri IOKit lengkap: health, cycle count, temperatur &amp; wattage</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f3.b2">Hardware SMC 80% Charge Limiter (AC pass-through bypass)</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f3.b3">Clamshell Mode dengan monitor eksternal &amp; auto-pause saat baterai 50%</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f3.b4">Aturan sudoers UID-scoped yang aman dengan panduan cleanup mandiri</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Feature 4: Media & Lyrics -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+            </div>
+            <span class="badge-pill" data-i18n="features.f4.badge">Audio &amp; Musik</span>
+            <h3 class="feature-title" data-i18n="features.f4.title">Media Player &amp; Lirik Karaoke Tersinkron</h3>
+            <p class="feature-desc" data-i18n="features.f4.desc">
+              Mendukung Apple Music, Spotify, QuickTime, Podcasts, dan browser web melalui runtime Perl MediaRemote bridge berkinerja tinggi. Notch drawer menampilkan artwork album dengan ekstraksi warna dinamis, waveform equalizer, progress scrubber, dan lirik karaoke realtime dari LRCLIB (klik lirik untuk seek instan).
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f4.b1">MediaRemote Bridge via Perl untuk pemantauan playback instan tanpa lag</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f4.b2">Cover album beresolusi tinggi dengan ekstraksi palet warna otomatis</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f4.b3">Lirik karaoke tersinkronisasi kata per kata dari LRCLIB</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f4.b4">Interaktif: klik pada baris lirik untuk lompat langsung ke detik tersebut</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Feature 5: Astronomical Prayer & Adhan -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+            </div>
+            <span class="badge-pill" data-i18n="features.f5.badge">Ibadah &amp; Waktu</span>
+            <h3 class="feature-title" data-i18n="features.f5.title">Jadwal Sholat Astronomis &amp; Adzan Otomatis</h3>
+            <p class="feature-desc" data-i18n="features.f5.desc">
+              Perhitungan waktu sholat 100% offline di perangkat menggunakan engine Adhan-Swift tanpa ketergantungan server luar. Mendukung 11 metode hisab (Kemenag RI, MWL, ISNA, Umm Al-Qura, dll.), preset kota di Indonesia &amp; GPS CoreLocation, waktu Imsak, tanggal Hijriah, dan pemutaran audio adzan berkualitas tinggi otomatis.
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f5.b1">100% komputasi astronomis lokal tanpa memerlukan koneksi internet</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f5.b2">11 metode hisab resmi dan penyesuaian koreksi menit manual</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f5.b3">Preset kota-kota di Indonesia &amp; integrasi GPS CoreLocation / MapKit</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f5.b4">Pemutaran adzan audio otomatis (adzan standar &amp; adzan subuh)</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Feature 6: Design & Menubar -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path></svg>
+            </div>
+            <span class="badge-pill" data-i18n="features.f6.badge">Desain &amp; Akses</span>
+            <h3 class="feature-title" data-i18n="features.f6.title">Desain Pure Monochrome &amp; Menu Bar Dashboard</h3>
+            <p class="feature-desc" data-i18n="features.f6.desc">
+              Palet Pure Black (#000000) dan Catppuccin menyatu sempurna dengan kamera fisik MacBook. Animasi spring Apple yang halus, hit-testing cerdas agar menu bar tetap nyaman digunakan, dashboard menu bar dengan kartu ringkasan cepat, serta pilihan Bahasa Indonesia dan Inggris tanpa perlu restart.
+            </p>
+            <ul class="feature-sublist">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f6.b1">Tema Pure Black (#000000) &amp; Catppuccin menyatu dengan bezel</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f6.b2">Animasi spring NotchMotion yang halus dan responsif</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f6.b3">Menu Bar Dashboard modular dengan kartu ringkasan &amp; inline expand</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span data-i18n="features.f6.b4">Dukungan dwibahasa (Bahasa Indonesia &amp; Bahasa Inggris)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Tech Stack (Tech Stack-nya Apa) -->
+    <section class="section" id="tech-stack">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="tech.tag">Arsitektur &amp; Komponen</span>
+          <h2 class="section-title" data-i18n="tech.title">Tech Stack yang Digunakan</h2>
+          <p class="section-desc" data-i18n="tech.desc">
+            Harmonotch dibangun 100% native dengan teknologi sistem Apple modern, tanpa Node.js, Electron, atau webview yang boros RAM.
+          </p>
+        </div>
+
+        <div class="tech-grid">
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t1.title">Swift 6.1 &amp; SwiftUI</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t1.desc">
+              Bahasa native Apple dengan model concurrency modern (@MainActor, Task, structured async/await) dan antarmuka deklaratif yang hemat memori serta responsif.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">Swift 6.1</span>
+              <span class="tech-tag">SwiftUI</span>
+              <span class="tech-tag">@MainActor</span>
+              <span class="tech-tag">Observation</span>
+            </div>
+          </div>
+
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t2.title">AppKit &amp; Darwin Subsystem</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t2.desc">
+              Panel floating NSPanel tanpa border dengan hit-testing radius notch presisi, CGEventTap session routing untuk tombol media, dan status bar integration.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">NSPanel</span>
+              <span class="tech-tag">CGEventTap</span>
+              <span class="tech-tag">NSStatusBar</span>
+              <span class="tech-tag">Hit-Testing</span>
+            </div>
+          </div>
+
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t3.title">IOKit &amp; Apple SMC Registers</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t3.desc">
+              Membaca data baterai langsung dari AppleSmartBattery dan menulis register SMC hardware (CH0B di Apple Silicon &amp; BCLM di Intel) untuk kontrol bypass daya.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">IOKit</span>
+              <span class="tech-tag">CH0B (M1–M4)</span>
+              <span class="tech-tag">BCLM (Intel)</span>
+              <span class="tech-tag">SMC Key</span>
+            </div>
+          </div>
+
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t4.title">CoreAudio &amp; DisplayServices</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t4.desc">
+              Manipulasi volume audio hardware langsung via CoreAudio (AudioObjectSetPropertyData) dan DisplayServices brightness tanpa bantuan daemon luar.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">CoreAudio</span>
+              <span class="tech-tag">DisplayServices</span>
+              <span class="tech-tag">Hardware Backlight</span>
+              <span class="tech-tag">Single-Owner</span>
+            </div>
+          </div>
+
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t5.title">Perl MediaRemote Bridge</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t5.desc">
+              Runtime bridge Objective-C berkinerja tinggi yang diinjeksi via /usr/bin/perl sistem macOS untuk membaca stream status MediaRemote secara efisien.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">/usr/bin/perl</span>
+              <span class="tech-tag">MediaRemote</span>
+              <span class="tech-tag">Obj-C Runtime</span>
+              <span class="tech-tag">Subprocess</span>
+            </div>
+          </div>
+
+          <div class="tech-card">
+            <div class="tech-icon-title">
+              <div class="tech-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+              </div>
+              <h3 class="tech-title" data-i18n="tech.t6.title">Adhan-Swift &amp; LRCLIB</h3>
+            </div>
+            <p class="tech-desc" data-i18n="tech.t6.desc">
+              Engine hisab astronomis offline untuk menghitung koordinat matahari dan REST API publik ringan untuk fetching lirik lagu tersinkronisasi.
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag">Adhan-Swift</span>
+              <span class="tech-tag">Solar Coordinates</span>
+              <span class="tech-tag">LRCLIB API</span>
+              <span class="tech-tag">LRC Parser</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Installation (Bagaimana Cara Install) -->
+    <section class="section" id="install">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="install.tag">Panduan Pemasangan</span>
+          <h2 class="section-title" data-i18n="install.title">Bagaimana Cara Memasang di Mac Anda</h2>
+          <p class="section-desc" data-i18n="install.desc">
+            Proses instalasi mudah dan hanya butuh 1 menit. Kompatibel dengan macOS 14 (Sonoma) hingga macOS 27.
+          </p>
+        </div>
+
+        <div class="install-container">
+          <div class="install-steps">
+            <div class="step-card">
+              <h3 class="step-title" data-i18n="install.s1.title">1. Unduh File DMG</h3>
+              <p class="step-desc" data-i18n="install.s1.desc">
+                Klik tombol Unduh DMG untuk mengunduh installer rilis terbaru langsung dari GitHub Releases.
+              </p>
+            </div>
+
+            <div class="step-card">
+              <h3 class="step-title" data-i18n="install.s2.title">2. Seret ke Applications</h3>
+              <p class="step-desc" data-i18n="install.s2.desc">
+                Buka file DMG yang diunduh, lalu seret ikon Harmonotch ke dalam folder Applications.
+              </p>
+            </div>
+
+            <div class="step-card">
+              <h3 class="step-title" data-i18n="install.s3.title">3. Atasi Peringatan Gatekeeper</h3>
+              <p class="step-desc" data-i18n="install.s3.desc">
+                Karena Harmonotch adalah proyek open-source tanpa sertifikat berbayar Apple Developer, macOS mungkin menampilkan 'Harmonotch cannot be opened'. Buka System Settings → Privacy &amp; Security → klik 'Open Anyway', atau salin perintah di bawah dan jalankan di Terminal:
+              </p>
+              <div class="terminal-box">
+                <code class="terminal-code"><span>$ </span>xattr -cr /Applications/Harmonotch.app</code>
+                <button type="button" class="copy-btn" data-copy="xattr -cr /Applications/Harmonotch.app" data-i18n="install.copyBtn">Salin Perintah</button>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <h3 class="step-title" data-i18n="install.s4.title">4. Berikan Izin Aksesibilitas</h3>
+              <p class="step-desc" data-i18n="install.s4.desc">
+                Buka System Settings → Privacy &amp; Security → Accessibility dan centang Harmonotch agar penangkapan tombol volume keyboard dan event tap notch kursor dapat berfungsi penuh.
+              </p>
+            </div>
+
+            <div class="step-card">
+              <h3 class="step-title" data-i18n="install.s5.title">5. (Opsional) Hak Akses Baterai &amp; Clamshell</h3>
+              <p class="step-desc" data-i18n="install.s5.desc">
+                Untuk Hardware Charge Limiter 80% dan Clamshell Mode tanpa meminta password berkali-kali, klik 'Setup Sudoers' di dalam tab Baterai aplikasi, atau pasang aturan sudoers UID-scoped secara aman.
+              </p>
+              <div class="terminal-box">
+                <code class="terminal-code"><span>$ </span>sudo rm -f /etc/sudoers.d/harmonotch*</code>
+                <button type="button" class="copy-btn" data-copy="sudo rm -f /etc/sudoers.d/harmonotch /etc/sudoers.d/harmonotch-clamshell &amp;&amp; sudo pmset -a disablesleep 0" data-i18n="install.copyBtn">Salin Perintah</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Credits (Credits-nya) -->
+    <section class="section" id="credits">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="credits.tag">Apresiasi &amp; Lisensi</span>
+          <h2 class="section-title" data-i18n="credits.title">Credits &amp; Penghargaan Open Source</h2>
+          <p class="section-desc" data-i18n="credits.desc">
+            Harmonotch dapat terwujud berkat riset dan karya luar biasa dari komunitas open source berikut:
+          </p>
+        </div>
+
+        <div class="credits-grid">
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c1.title">Adhan-Swift</h3>
+              <span class="credit-badge" data-i18n="credits.c1.badge">MIT License</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c1.author">Batoul Apps</span>
+            <p class="credit-desc" data-i18n="credits.c1.desc">
+              Library komputasi astronomis untuk perhitungan jadwal sholat, posisi matahari, dan hisab waktu presisi tanpa panggilan API.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c2.title">LRCLIB</h3>
+              <span class="credit-badge" data-i18n="credits.c2.badge">MIT License</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c2.author">tranxuanthang</span>
+            <p class="credit-desc" data-i18n="credits.c2.desc">
+              Penyedia REST API publik terbuka untuk lirik lagu karaoke tersinkronisasi secara real-time.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c3.title">Rekaman Audio Adzan</h3>
+              <span class="credit-badge" data-i18n="credits.c3.badge">Audio Asset</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c3.author">IslamDownload.net</span>
+            <p class="credit-desc" data-i18n="credits.c3.desc">
+              Aset rekaman suara adzan standar dan adzan subuh berkualitas tinggi dalam format AAC 48 kHz.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c4.title">Vorssaint</h3>
+              <span class="credit-badge" data-i18n="credits.c4.badge">GPL-3.0-or-later</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c4.author">vorssaint-utils</span>
+            <p class="credit-desc" data-i18n="credits.c4.desc">
+              Inspirasi teknik MediaRemote melalui Perl bridge, arsitektur single-owner volume HUD, serta riset pencegahan sleep clamshell mode.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c5.title">Riset Apple SMC &amp; Battery</h3>
+              <span class="credit-badge" data-i18n="credits.c5.badge">Research</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c5.author">actuallymentor/battery &amp; smcFanControl</span>
+            <p class="credit-desc" data-i18n="credits.c5.desc">
+              Riset dan dokumentasi register SMC hardware Apple (CH0B pada Apple Silicon dan BCLM pada Intel) untuk kontrol daya bypass.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c6.title">CLI Developer Ecosystems</h3>
+              <span class="credit-badge" data-i18n="credits.c6.badge">Developer Tools</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c6.author">Anthropic, OpenAI, Google, GitHub</span>
+            <p class="credit-desc" data-i18n="credits.c6.desc">
+              Tool developer CLI: Claude Code, OpenAI Codex, OpenCode, Antigravity / Gemini CLI, dan GitHub Copilot CLI.
+            </p>
+          </div>
+
+          <div class="credit-card">
+            <div class="credit-header">
+              <h3 class="credit-title" data-i18n="credits.c7.title">Apple Inc. Technologies</h3>
+              <span class="credit-badge" data-i18n="credits.c7.badge">Platform &amp; APIs</span>
+            </div>
+            <span class="credit-author" data-i18n="credits.c7.author">Apple Inc.</span>
+            <p class="credit-desc" data-i18n="credits.c7.desc">
+              macOS, Swift, SwiftUI, AppKit, SF Symbols, IOKit, CoreAudio, DisplayServices, dan private framework MediaRemote.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: FAQ -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title" data-i18n="faq.title">Pertanyaan Umum</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q1">Apakah Harmonotch butuh internet untuk menghitung waktu sholat?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a1">
+                Tidak sama sekali. Waktu sholat dihitung 100% secara astronomis di perangkat dari koordinat lokasi Anda. Internet hanya dipakai saat memuat lirik lagu (LRCLIB) dan mengecek rilis pembaruan di GitHub.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q2">Apakah Harmonotch bisa dipakai di Mac tanpa notch?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a2">
+                Ya! Di Mac tanpa notch (seperti MacBook Air M1, MacBook Pro 13", Mac mini, iMac, atau Mac Studio), Harmonotch otomatis menampilkan floating Dynamic Island pill di bagian atas layar serta kontrol lengkap di Menu Bar Dashboard.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q3">Bagaimana fitur AI Agents Quota bekerja dan apakah aman?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a3">
+                Fitur AI Agents bekerja dengan mendeteksi file konfigurasi lokal resmi yang sudah dibuat oleh CLI di Mac Anda (seperti ~/.claude.json, ~/.codex/, ~/.config/opencode/) dan mengueri usage endpoint resmi untuk membaca sisa jendela kuota. Harmonotch tidak pernah mengunggah, mencatat, atau membagikan kredensial Anda ke server luar.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q4">Apakah Hardware Charge Limiter 80% aman untuk baterai MacBook?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a4">
+                Ya. Harmonotch menggunakan register hardware Apple SMC resmi (CH0B di Apple Silicon M1–M4 untuk mode AC bypass; BCLM di Intel). Mode bypass ini mengalirkan daya langsung ke komponen Mac tanpa terus mengisi sel baterai saat berada di 80%, mencegah degradasi kimia akibat tegangan tinggi terus-menerus.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q5">Apakah Harmonotch menguras baterai MacBook?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a5">
+                Sangat hemat. Harmonotch ditulis murni dalam Swift 6 dan SwiftUI tanpa Electron, Node.js, atau web runtime. Animasi hanya aktif saat drawer dibuka atau audio dimainkan, dan telemetri latar belakang menggunakan jeda polling adaptif yang sangat rendah konsumsi daya.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq.q6">Versi macOS apa yang didukung?</span>
+              <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <p data-i18n="faq.a6">
+                Harmonotch mendukung macOS 14 (Sonoma), macOS 15 (Sequoia), hingga macOS 27 (Tahoe/Golden Gate), baik pada perangkat Apple Silicon (M1, M2, M3, M4) maupun Mac berbasis Intel.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: Call to Action -->
+    <section class="section" id="cta">
+      <div class="container">
+        <div class="cta-banner">
+          <h2 class="cta-title" data-i18n="cta.title">Pasang Harmonotch di Mac Anda</h2>
+          <p class="cta-desc" data-i18n="cta.desc">
+            Aplikasi pendamping notch dan menu bar yang serbaguna, elegan, dan open source dengan lisensi MIT.
+          </p>
+          <div class="cta-actions">
+            <a href="/api/download" class="btn btn-primary js-download" download="Harmonotch.dmg" data-i18n="cta.downloadBtn">Unduh DMG</a>
+            <a href="https://github.com/Udean777/Harmonotch" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" data-i18n="cta.githubBtn">Lihat di GitHub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <a href="#" class="brand">
+            <img src="assets/logo.png" alt="" class="brand-icon" width="22" height="22">
+            <span class="brand-name">Harmonotch</span>
+          </a>
+          <p class="footer-desc" data-i18n="footer.desc">
+            Jadwal sholat, status baterai &amp; limiter SMC, kontrol media dengan lirik, pemantau kuota AI Agents, dan satellite sliders untuk MacBook.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title" data-i18n="footer.linksTitle">Tautan</h4>
+          <ul class="footer-links">
+            <li><a href="#overview" data-i18n="nav.overview">Apa yang Digunakan</a></li>
+            <li><a href="#features" data-i18n="footer.features">Fitur</a></li>
+            <li><a href="#tech-stack" data-i18n="footer.tech">Tech Stack</a></li>
+            <li><a href="#install" data-i18n="footer.install">Instalasi</a></li>
+            <li><a href="#credits" data-i18n="footer.credits">Credits</a></li>
+            <li><a href="#faq" data-i18n="footer.faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">GitHub</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/Udean777/Harmonotch" target="_blank" rel="noopener noreferrer" data-i18n="footer.repo">Repositori GitHub</a></li>
+            <li><a href="https://github.com/Udean777/Harmonotch/releases" target="_blank" rel="noopener noreferrer" data-i18n="footer.releases">Daftar Rilis</a></li>
+            <li><a href="https://github.com/Udean777/Harmonotch/issues" target="_blank" rel="noopener noreferrer" data-i18n="footer.issues">Laporkan Bug</a></li>
+            <li><a href="https://github.com/Udean777/Harmonotch/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" data-i18n="footer.license">Lisensi MIT</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; <span id="year">2025</span> <span data-i18n="footer.copyright">Harmonotch. Proyek open source.</span></p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/main.js"></script>
+</body>
 </html>
