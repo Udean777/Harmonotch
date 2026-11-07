@@ -4,15 +4,8 @@ import Foundation
 /// among all candidates based on arbitration priority rules.
 public struct MediaSelector {
 
-  /// Selects the winning media candidate from the given registry of candidates.
-  ///
-  /// - Parameters:
-  ///   - candidates: All currently detected media candidates
-  ///   - previous: Identity of the candidate that was active in the previous tick
-  ///   - system: Identity of the system-designated player (if any)
-  ///   - userSelection: Explicit user-selected candidate identity (if any)
-  ///   - frontmostBundleID: Bundle identifier of the current active GUI application
-  /// - Returns: The chosen MediaCandidate, or nil if candidates is empty
+  /// Picks the winner: a playing candidate always beats a paused one. Among paused candidates
+  /// the previous winner and system player act as sticky tie-breaks. Nil when empty.
   public static func select(
     candidates: [MediaCandidate],
     previous: MediaIdentity? = nil,

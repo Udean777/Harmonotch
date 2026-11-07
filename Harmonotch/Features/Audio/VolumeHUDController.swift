@@ -114,9 +114,7 @@ final class VolumeHUDController: ObservableObject {
     }
   }
 
-  /// Requests Accessibility permission. For ad-hoc signed local builds, resetting
-  /// the bundle's stale TCC entry via `tccutil` ensures macOS clears stale permissions
-  /// so that toggling it ON in System Settings grants valid event tap rights.
+  /// Resets the stale TCC entry of ad-hoc builds so the System Settings switch is valid again.
   func requestAccessibilityPermission(resetStaleEntry: Bool = true, openSettings: Bool = true) {
     let bundleID = Bundle.main.bundleIdentifier ?? "com.ssajudn.Harmonotch"
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in

@@ -77,10 +77,7 @@ final class BatteryChargeLimiter: ObservableObject {
         self.nativeLimitValue = nativeLimit
         self.hasNativeLimit = (nativeLimit != nil && nativeLimit! < 100)
 
-        // Initialize target threshold:
-        // Priority 1: User's explicitly saved Harmonotch threshold
-        // Priority 2: Detected native macOS charge limit (e.g. 80%)
-        // Priority 3: Default 80%
+        // Saved threshold, else the native macOS limit, else 80%.
         let initialThreshold: Int
         if UserDefaults.standard.contains(UserDefaultsKeys.chargeLimitThreshold) {
             initialThreshold = ChargeLimitPolicy.clampThreshold(UserDefaults.standard[UserDefaultsKeys.chargeLimitThreshold])
@@ -171,7 +168,6 @@ final class BatteryChargeLimiter: ObservableObject {
             currentlyInhibited: isChargingInhibited
         )
 
-        // Check if macOS native power daemon is holding this limit (e.g. at 80%)
         let isNativeHandled = hasNativeLimit && targetThreshold == (nativeLimitValue ?? 80)
 
         if shouldInhibit != isChargingInhibited {

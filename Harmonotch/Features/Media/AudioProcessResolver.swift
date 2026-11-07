@@ -46,14 +46,7 @@ public struct AudioProcessResolver {
            lower.contains("plugin")
   }
 
-  /// Resolves the responsible user-facing application for a given audio process PID.
-  ///
-  /// - Parameters:
-  ///   - pid: Process identifier
-  ///   - reportedBundleID: Optional bundle ID reported directly by the audio system
-  ///   - currentPID: Harmonotch PID to ignore (defaults to getpid())
-  ///   - parentLookup: Optional closure to mock parent PID hierarchy in unit tests
-  ///   - appLookup: Optional closure to mock process app bundle info in unit tests
+  /// Resolves the user-facing app behind an audio process. `parentLookup` and `appLookup` exist for tests.
   public static func resolveResponsibleApp(
     pid: pid_t,
     reportedBundleID: String? = nil,

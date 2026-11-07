@@ -157,7 +157,6 @@ final class UpdateManager: ObservableObject {
             return
         }
 
-        // Check if running from read-only image or AppTranslocation
         if UpdateInstallerSupport.runsFromImmutableLocation(
             appPath: Bundle.main.bundlePath,
             volumeIsReadOnly: { path in

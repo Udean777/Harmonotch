@@ -322,7 +322,6 @@ final class MediaManager: ObservableObject {
       ingest(candidate: candidate)
     }
 
-    // Remove presence candidates whose app is no longer emitting audio
     for (identity, candidate) in candidateRegistry where candidate.awareness == .presence {
       if !currentAppBundleIDs.contains(identity.bundleID) {
         candidateRegistry.removeValue(forKey: identity)
@@ -662,9 +661,7 @@ final class MediaManager: ObservableObject {
         awareness: .mediaRemote,
         capabilities: .standardPlayer
       )
-      // An app can publish multiple client/content identities over time (or across tabs).
-      // When a new mediaRemote update arrives for this bundleID, remove other mediaRemote
-      // candidates for the same bundleID so stale 'isPlaying: true' entries never linger.
+      // One mediaRemote candidate per app: drop siblings so a stale playing entry cannot linger.
       for (existingID, existingCand) in self.candidateRegistry
       where existingCand.awareness == .mediaRemote
         && existingCand.app.bundleID == bundleID
@@ -815,9 +812,7 @@ final class MediaManager: ObservableObject {
   }
 
   func pollCurrentMediaState() {
-    // If a music app is currently actively playing via NowPlaying bridge, we can lower polling
-    // workload to avoid unnecessary AppleScript execution, but if it is paused or inactive,
-    // web media polling MUST run to detect playing tabs.
+    // Skip AppleScript polling while a music app plays through the bridge; web polling still runs otherwise.
     let isMusicAppPlaying = isPlaying && (mediaSource == .spotify || mediaSource == .appleMusic)
 
     appleScriptQueue.async { [weak self] in
@@ -1116,7 +1111,6 @@ final class MediaManager: ObservableObject {
       guard let self = self else { return }
       self.activeWebTarget = nil
       self.lastDetectedRawWebTitle = ""
-      // Remove web candidates from registry
       for (identity, candidate) in self.candidateRegistry where candidate.awareness == .script && (identity.bundleID.contains("Safari") || identity.bundleID.contains("Chrome") || identity.bundleID.contains("Browser") || identity.bundleID.contains("edgemac") || identity.bundleID.contains("opera")) {
         self.candidateRegistry.removeValue(forKey: identity)
       }

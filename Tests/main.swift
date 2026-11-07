@@ -370,7 +370,7 @@ checkEqual(
     "shouldInhibit is true when capacity hits threshold"
 )
 
-// MARK: - SystemAudioService (Phase 1)
+// MARK: - SystemAudioService
 
 checkEqual(
     SystemAudioService.targetVolume(current: 0.25, muted: false, direction: 1, fine: false),
@@ -438,7 +438,7 @@ checkEqual(
     "invalid device ID writeMute returns false"
 )
 
-// MARK: - VolumeKeyRouter (Phase 2)
+// MARK: - VolumeKeyRouter
 
 let volUp = VolumeMediaKey.volumeUp.rawValue
 let volDown = VolumeMediaKey.volumeDown.rawValue
@@ -447,7 +447,7 @@ let downState = VolumeKeyRouter.keyDownState
 let upState = VolumeKeyRouter.keyUpState
 
 do {
-    // 1. disabled -> pass-through
+    // disabled -> pass-through
     var router = VolumeKeyRouter()
     checkEqual(
         router.handle(
@@ -461,7 +461,7 @@ do {
 }
 
 do {
-    // 2. up without app-owned down -> pass-through
+    // up without app-owned down -> pass-through
     var router = VolumeKeyRouter()
     checkEqual(
         router.handle(
@@ -475,7 +475,7 @@ do {
 }
 
 do {
-    // 3. app-owned down then repeat then up -> step, step, consume
+    // app-owned down then repeat then up -> step, step, consume
     var router = VolumeKeyRouter()
     checkEqual(
         router.handle(
@@ -516,7 +516,7 @@ do {
 }
 
 do {
-    // 4. repeat before app-owned down -> pass-through
+    // repeat before app-owned down -> pass-through
     var router = VolumeKeyRouter()
     checkEqual(
         router.handle(
@@ -531,7 +531,7 @@ do {
 }
 
 do {
-    // 5. Command, Control, Option alone -> pass-through; Option+Shift -> fine step
+    // Command, Control, Option alone -> pass-through; Option+Shift -> fine step
     var cmdRouter = VolumeKeyRouter()
     checkEqual(
         cmdRouter.handle(
@@ -569,7 +569,7 @@ do {
 }
 
 do {
-    // 6. Output without software volume -> pass-through and window active;
+    // Output without software volume -> pass-through and window active;
     //    new press during window -> pass-through (extends window);
     //    press after window expires -> taken by app again.
     var router = VolumeKeyRouter()
@@ -621,7 +621,7 @@ do {
 }
 
 do {
-    // 7. Mute key: down -> .toggleMute, repeat -> .consume, up -> .consume
+    // Mute key: down -> .toggleMute, repeat -> .consume, up -> .consume
     var router = VolumeKeyRouter()
     checkEqual(
         router.handle(
@@ -653,7 +653,7 @@ do {
 }
 
 do {
-    // 8. Fallback markSystemOwnership clears held keys and sets window
+    // Fallback markSystemOwnership clears held keys and sets window
     var router = VolumeKeyRouter()
     _ = router.handle(
         keyCode: volUp, state: downState, isRepeat: false,
@@ -666,7 +666,7 @@ do {
     checkEqual(router.blocksCustomHUD(61.0), true, "fallback activates native window")
 }
 
-// MARK: - Volume HUD Localization, Symbols & Defaults (Phase 4 & 5)
+// MARK: - Volume HUD localization, symbols and defaults
 
 checkEqual(
     UserDefaultsKeys.volumeHUDEnabled.defaultValue,
@@ -908,23 +908,23 @@ let zoomCandidate = MediaCandidate(
     lastUpdated: 112.0
 )
 
-// Scenario 1: App A playing, App B paused -> A wins
+// App A playing, App B paused -> A wins
 var spotifyPaused = spotifyCandidate
 spotifyPaused.isPlaying = false
 let sel1 = MediaSelector.select(candidates: [spotifyPaused, youtubeCandidate])
 checkEqual(sel1?.identity.bundleID, "com.apple.Safari", "Playing YouTube beats paused Spotify")
 
-// Scenario 2: Paused never beats playing from ANY app
+// Paused never beats playing from ANY app
 var youtubePaused = youtubeCandidate
 youtubePaused.isPlaying = false
 let sel2 = MediaSelector.select(candidates: [spotifyCandidate, youtubePaused])
 checkEqual(sel2?.identity.bundleID, "com.spotify.client", "Playing Spotify beats paused YouTube")
 
-// Scenario 3: Two apps playing: Music app beats non-music app
+// Two apps playing: Music app beats non-music app
 let sel3 = MediaSelector.select(candidates: [youtubeCandidate, spotifyCandidate])
 checkEqual(sel3?.identity.bundleID, "com.spotify.client", "Music app beats video app when both playing")
 
-// Scenario 4: Two non-music apps playing: Earlier started playing wins
+// Two non-music apps playing: Earlier started playing wins
 var vlcCandidate = MediaCandidate(
     identity: MediaIdentity(bundleID: "org.videolan.vlc", contentID: "movie.mkv"),
     app: MediaAppInfo.resolve(bundleID: "org.videolan.vlc"),
@@ -938,7 +938,7 @@ var vlcCandidate = MediaCandidate(
 let sel4 = MediaSelector.select(candidates: [youtubeCandidate, vlcCandidate])
 checkEqual(sel4?.identity.bundleID, "org.videolan.vlc", "Earlier started video app wins")
 
-// Scenario 5: Two non-music apps tied on start time: frontmost app wins
+// Two non-music apps tied on start time: frontmost app wins
 var vlcTied = vlcCandidate
 vlcTied.startedPlayingAt = youtubeCandidate.startedPlayingAt
 let sel5 = MediaSelector.select(
@@ -947,14 +947,14 @@ let sel5 = MediaSelector.select(
 )
 checkEqual(sel5?.identity.bundleID, "com.apple.Safari", "Frontmost app breaks tie between playing candidates")
 
-// Scenario 6: All paused -> previous candidate stays (sticky paused)
+// All paused -> previous candidate stays (sticky paused)
 let sel6 = MediaSelector.select(
     candidates: [spotifyPaused, youtubePaused],
     previous: youtubePaused.identity
 )
 checkEqual(sel6?.identity.bundleID, "com.apple.Safari", "Previous candidate sticky when all paused")
 
-// Scenario 7: All paused and no previous -> system player as tie-break
+// All paused and no previous -> system player as tie-break
 let sel7 = MediaSelector.select(
     candidates: [spotifyPaused, youtubePaused],
     previous: nil,
@@ -962,15 +962,15 @@ let sel7 = MediaSelector.select(
 )
 checkEqual(sel7?.identity.bundleID, "com.spotify.client", "System player wins tie-break when all paused")
 
-// Scenario 8: Audio-only presence playing vs metadata paused -> audio-only playing wins!
+// Audio-only presence playing vs metadata paused -> audio-only playing wins!
 let sel8 = MediaSelector.select(candidates: [spotifyPaused, zoomCandidate])
 checkEqual(sel8?.identity.bundleID, "us.zoom.xos", "Playing audio-only presence beats paused metadata")
 
-// Scenario 9: Playing metadata beats playing audio-only
+// Playing metadata beats playing audio-only
 let sel9 = MediaSelector.select(candidates: [zoomCandidate, youtubeCandidate])
 checkEqual(sel9?.identity.bundleID, "com.apple.Safari", "Playing metadata beats playing audio-only")
 
-// Scenario 10: A playing MediaRemote client that stopped refreshing is dropped
+// A playing MediaRemote client that stopped refreshing is dropped
 // before selection, so the next player can take over.
 let deadSpotify = spotifyCandidate
 let liveYoutube = youtubeCandidate
@@ -980,7 +980,7 @@ checkEqual(prunedLive.contains(where: { $0.identity == liveYoutube.identity }), 
 let selPrunedWinner = MediaSelector.select(candidates: prunedLive, previous: deadSpotify.identity)
 checkEqual(selPrunedWinner?.identity.bundleID, "com.apple.Safari", "Live player wins after stale player is pruned")
 
-// Scenario 11: Two audio-only playing: earlier started wins
+// Two audio-only playing: earlier started wins
 var teamsCandidate = MediaCandidate(
     identity: MediaIdentity(bundleID: "com.microsoft.teams", pid: 999),
     app: MediaAppInfo.resolve(bundleID: "com.microsoft.teams"),
@@ -992,21 +992,21 @@ var teamsCandidate = MediaCandidate(
 let sel10 = MediaSelector.select(candidates: [zoomCandidate, teamsCandidate])
 checkEqual(sel10?.identity.bundleID, "com.microsoft.teams", "Earlier audio-only presence wins")
 
-// Scenario 11: Explicit user selection respected when playing
+// Explicit user selection respected when playing
 let sel11 = MediaSelector.select(
     candidates: [spotifyCandidate, youtubeCandidate],
     userSelection: youtubeCandidate.identity
 )
 checkEqual(sel11?.identity.bundleID, "com.apple.Safari", "User selection respected when playing")
 
-// Scenario 12: Explicit user selection is paused but another is playing -> playing wins (paused never beats playing)
+// Explicit user selection is paused but another is playing -> playing wins (paused never beats playing)
 let sel12 = MediaSelector.select(
     candidates: [youtubePaused, spotifyCandidate],
     userSelection: youtubePaused.identity
 )
 checkEqual(sel12?.identity.bundleID, "com.spotify.client", "Playing candidate wins even if user selection is paused")
 
-// Scenario 13: MediaPresentation conversion
+// MediaPresentation conversion
 let trackPresentation = MediaPresentation(candidate: spotifyCandidate)
 checkEqual(trackPresentation.hasMetadata, true, "Track presentation has metadata")
 checkEqual(trackPresentation.title, "Song A", "Track presentation title")
@@ -1019,21 +1019,20 @@ checkEqual(audioOnlyPresentation.title, "", "AudioOnly presentation has empty ti
 checkEqual(audioOnlyPresentation.artist, "Zoom", "AudioOnly presentation displays app name as artist")
 checkEqual(audioOnlyPresentation.capabilities, .audioOnlyDefault, "AudioOnly presentation has openApp capability")
 
-// MARK: - Phase 3 & 4 Acceptance Tests: Paused Spotify does not overwrite playing YouTube
+// MARK: - Paused Spotify does not overwrite playing YouTube
 var registry: [MediaIdentity: MediaCandidate] = [:]
 let ytPlaying = youtubeCandidate
 registry[ytPlaying.identity] = ytPlaying
 
-// Step 1: YouTube is playing
 let initialWinner = MediaSelector.select(candidates: Array(registry.values), previous: nil)
 checkEqual(initialWinner?.identity.bundleID, "com.apple.Safari", "Initial winner is playing YouTube")
 
-// Step 2: Spotify pause event arrives
+// Spotify pause event arrives
 var spotPaused = spotifyCandidate
 spotPaused.isPlaying = false
 registry[spotPaused.identity] = spotPaused
 
-// Step 3: Reconcile must keep YouTube as the active candidate
+// Reconcile must keep YouTube as the active candidate
 let reconciledWinner = MediaSelector.select(
     candidates: Array(registry.values),
     previous: initialWinner?.identity
@@ -1042,7 +1041,7 @@ checkEqual(reconciledWinner?.identity.bundleID, "com.apple.Safari", "Spotify pau
 checkEqual(reconciledWinner?.isPlaying, true, "Winner remains playing")
 checkEqual(reconciledWinner?.title, "Tech Talk Video", "Winner title remains YouTube video title")
 
-// MARK: - Phase 5 & 6: Artwork Scoping & Localization Tests
+// MARK: - Artwork scoping and localization
 let spotifyArtKey = MediaArtworkCacheKey.make(
     bundleID: "com.spotify.client",
     title: "Shape of You",
@@ -1074,7 +1073,7 @@ let onlyMetadataPool = mixedPool.filter { false || $0.hasMetadata }
 checkEqual(onlyMetadataPool.count, 1, "Disabling other audio apps filters out audio-only presence")
 checkEqual(onlyMetadataPool.first?.identity.bundleID, "com.spotify.client", "Only metadata candidate retained")
 
-// MARK: - Phase 7 & 8: Command Routing & Target Message Tests
+// MARK: - Command routing and target messages
 let targetCommand = NowPlayingCommandMessage(id: "cmd-1", command: .toggle, target: "com.spotify.client")
 if let data = try? JSONEncoder().encode(targetCommand),
    let json = String(data: data, encoding: .utf8) {
@@ -1147,9 +1146,7 @@ let ffWinner1 = MediaSelector.select(candidates: Array(firefoxRegistry.values), 
 checkEqual(ffWinner1?.identity, ffPlayingIdentity, "Firefox video is winner when playing")
 checkEqual(ffWinner1?.isPlaying, true, "Firefox is playing")
 
-// When Firefox updates state with a paused payload (even if contentID or title shifted),
-// MediaManager removes old entries for the same bundleID so stale 'isPlaying: true' candidates
-// never prevent it from transitioning to paused immediately.
+// A paused update under a new contentID must replace the playing entry for the same bundle.
 let ffPausedIdentity = MediaIdentity(bundleID: "org.mozilla.firefox", contentID: "video-tab-1-updated")
 let ffPausedCandidate = MediaCandidate(
     identity: ffPausedIdentity,
