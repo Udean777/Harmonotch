@@ -101,6 +101,7 @@ enum WebMediaScripts {
     """
     let condition = isSafari ? "(\(urlCondition))" : "(\(urlCondition) or isAudible)"
     return """
+      if application \(AppleScriptRunner.quotedLiteral(browser)) is not running then return ""
       set out to ""
       set errText to ""
       try
@@ -165,6 +166,7 @@ enum WebMediaScripts {
     """
 
     return """
+      if application \(AppleScriptRunner.quotedLiteral(browser)) is not running then return ""
       try
           tell application \(AppleScriptRunner.quotedLiteral(browser))
               set targetURL to \(AppleScriptRunner.quotedLiteral(url))
