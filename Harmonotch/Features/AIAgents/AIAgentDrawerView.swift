@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Expanded Notch Drawer view for AI Agents.
-/// Synced with the Menu Bar and supports direct 1-click switching between installed agents.
+/// Shows the agent pinned from the Menu Bar; switching providers stays in the Menu Bar.
 struct AIAgentDrawerView: View {
   @ObservedObject private var quotaService = AIAgentQuotaService.shared
   @AppStorage("Harmonotch_SelectedNotchAIAgent") private var selectedNotchAgent: String =
@@ -18,7 +18,7 @@ struct AIAgentDrawerView: View {
   }
 
   var body: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 7) {
       headerBar
 
       if quotaService.isScanning && quotaService.agents.isEmpty {
@@ -40,62 +40,24 @@ struct AIAgentDrawerView: View {
     }
   }
 
-  // MARK: - Header (with Direct Agent Switcher)
+  // MARK: - Header
 
   private var headerBar: some View {
     HStack(alignment: .center, spacing: 6) {
-      if quotaService.agents.count > 1 {
-        HStack(spacing: 3) {
-          ForEach(quotaService.agents) { item in
-            let isSelected = item.kind == activeKind
-            Button {
-              withAnimation(NotchMotion.content) {
-                selectedNotchAgent = item.kind.rawValue
-                UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = item.kind.rawValue
-                NotificationCenter.default.post(name: .notchAIAgentChanged, object: item.kind.rawValue)
-              }
-            } label: {
-              HStack(spacing: 4) {
-                Image(systemName: item.kind.icon)
-                  .font(.system(size: 9.5, weight: .semibold))
-                Text(isSelected ? item.kind.displayName : item.kind.shortName)
-                  .font(.system(size: 10, weight: isSelected ? .bold : .medium))
-                  .lineLimit(1)
-              }
-              .foregroundColor(isSelected ? AppTheme.textPrimary : AppTheme.textSecondary)
-              .padding(.horizontal, 7)
-              .padding(.vertical, 3.5)
-              .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                  .fill(isSelected ? AppTheme.accentCyan.opacity(0.18) : AppTheme.badgeBackground)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                      .stroke(
-                        isSelected ? AppTheme.accentCyan.opacity(0.45) : AppTheme.cardBorder,
-                        lineWidth: 0.6
-                      )
-                  )
-              )
-            }
-            .buttonStyle(.plain)
-          }
-        }
-      } else {
-        HStack(spacing: 6) {
-          Image(systemName: activeKind.icon)
-            .font(.system(size: 12.5, weight: .bold))
-            .foregroundColor(AppTheme.accentCyan)
+      Image(systemName: activeKind.icon)
+        .font(.system(size: 12, weight: .bold))
+        .foregroundColor(AppTheme.accentCyan)
 
-          Text(activeKind.displayName)
-            .font(.system(size: 12.5, weight: .bold))
-            .foregroundColor(AppTheme.textPrimary)
+      Text(activeKind.displayName)
+        .font(.system(size: 12, weight: .bold))
+        .foregroundColor(AppTheme.textPrimary)
+        .lineLimit(1)
 
-          if let version = activeAgent?.version, !version.isEmpty {
-            Text("v\(version)")
-              .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-              .foregroundColor(AppTheme.textTertiary)
-          }
-        }
+      if let version = activeAgent?.version, !version.isEmpty {
+        Text("v\(version)")
+          .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+          .foregroundColor(AppTheme.textTertiary)
+          .lineLimit(1)
       }
 
       Spacer(minLength: 4)
@@ -118,7 +80,7 @@ struct AIAgentDrawerView: View {
             .controlSize(.mini)
         } else {
           Image(systemName: "arrow.clockwise")
-            .font(.system(size: 10.5, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundColor(AppTheme.textSecondary)
         }
       }
@@ -144,11 +106,11 @@ struct AIAgentDrawerView: View {
     let progressMetrics = agent.quotaProgressMetrics
     let infoMetrics = agent.metadataMetrics
 
-    return VStack(alignment: .leading, spacing: 7) {
+    return VStack(alignment: .leading, spacing: 6) {
       switch agent.authStatus {
       case .authenticated:
         if !progressMetrics.isEmpty {
-          VStack(spacing: 5.5) {
+          VStack(spacing: 5) {
             ForEach(progressMetrics) { metric in
               metricRow(metric)
             }
@@ -245,7 +207,7 @@ struct AIAgentDrawerView: View {
         }
       }
     }
-    .padding(10)
+    .padding(9)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(
       RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -261,63 +223,25 @@ struct AIAgentDrawerView: View {
   // MARK: - Provider Not Installed State
 
   private var providerNotInstalledCard: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 5) {
       HStack(spacing: 6) {
         Image(systemName: "exclamationmark.triangle.fill")
-          .font(.system(size: 12, weight: .semibold))
+          .font(.system(size: 11.5, weight: .semibold))
           .foregroundColor(AppTheme.accentAmber)
 
         Text(L10n.AIAgents.agentNotInstalled(activeKind.displayName))
-          .font(.system(size: 11.5, weight: .bold))
+          .font(.system(size: 11, weight: .semibold))
           .foregroundColor(AppTheme.textPrimary)
+          .lineLimit(1)
       }
 
       Text(L10n.AIAgents.selectDifferentProviderHint)
-        .font(.system(size: 10, weight: .regular))
+        .font(.system(size: 9.5, weight: .regular))
         .foregroundColor(AppTheme.textSecondary)
         .multilineTextAlignment(.center)
-        .padding(.horizontal, 10)
-
-      let installedOthers = quotaService.agents.filter { $0.kind != activeKind }
-      if !installedOthers.isEmpty {
-        HStack(spacing: 4) {
-          Text(L10n.AIAgents.availableAgentsPrefix)
-            .font(.system(size: 9.5, weight: .medium))
-            .foregroundColor(AppTheme.textTertiary)
-
-          ForEach(installedOthers) { other in
-            Button {
-              withAnimation(NotchMotion.content) {
-                selectedNotchAgent = other.kind.rawValue
-                UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent] = other.kind.rawValue
-                NotificationCenter.default.post(name: .notchAIAgentChanged, object: other.kind.rawValue)
-              }
-            } label: {
-              HStack(spacing: 3) {
-                Image(systemName: other.kind.icon)
-                  .font(.system(size: 8))
-                Text(other.kind.displayName)
-                  .font(.system(size: 9, weight: .semibold))
-              }
-              .foregroundColor(AppTheme.accentCyan)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 3)
-              .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                  .fill(AppTheme.accentCyan.opacity(0.12))
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                      .stroke(AppTheme.accentCyan.opacity(0.4), lineWidth: 0.5)
-                  )
-              )
-            }
-            .buttonStyle(.plain)
-          }
-        }
-        .padding(.top, 2)
-      }
+        .fixedSize(horizontal: false, vertical: true)
     }
-    .padding(12)
+    .padding(11)
     .frame(maxWidth: .infinity)
     .background(
       RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -332,7 +256,7 @@ struct AIAgentDrawerView: View {
   // MARK: - Scanning / Initial States
 
   private var initialScanPrompt: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 7) {
       Text(L10n.AIAgents.setupTitle)
         .font(.system(size: 12, weight: .bold))
         .foregroundColor(AppTheme.textPrimary)
@@ -341,12 +265,13 @@ struct AIAgentDrawerView: View {
         .font(.system(size: 10, weight: .regular))
         .foregroundColor(AppTheme.textSecondary)
         .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.horizontal, 16)
 
       Button {
         quotaService.checkInstalledAgents(force: true)
       } label: {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
           Image(systemName: "magnifyingglass")
             .font(.system(size: 10, weight: .bold))
           Text(L10n.AIAgents.checkButton)
@@ -366,7 +291,7 @@ struct AIAgentDrawerView: View {
       }
       .buttonStyle(.plain)
     }
-    .padding(.vertical, 12)
+    .padding(.vertical, 10)
     .frame(maxWidth: .infinity)
   }
 
@@ -380,7 +305,7 @@ struct AIAgentDrawerView: View {
         .foregroundColor(AppTheme.textSecondary)
     }
     .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
+    .padding(.vertical, 18)
   }
 
   // MARK: - Badges & Metrics
@@ -484,6 +409,7 @@ struct AIAgentDrawerView: View {
       Text(L10n.AIAgents.selectedInMenuBar)
         .font(.system(size: 8.5, weight: .regular))
         .foregroundColor(AppTheme.textTertiary)
+        .lineLimit(1)
 
       Spacer(minLength: 4)
 
@@ -492,25 +418,6 @@ struct AIAgentDrawerView: View {
           .font(.system(size: 8.5, weight: .regular))
           .foregroundColor(AppTheme.textTertiary)
       }
-
-      Button {
-        quotaService.checkInstalledAgents(force: true)
-      } label: {
-        Group {
-          if quotaService.isScanning {
-            ProgressView()
-              .controlSize(.mini)
-          } else {
-            Image(systemName: "arrow.clockwise")
-              .font(.system(size: 8.5, weight: .semibold))
-              .foregroundColor(AppTheme.textSecondary)
-          }
-        }
-        .frame(width: 14, height: 14)
-      }
-      .buttonStyle(.plain)
-      .disabled(quotaService.isScanning)
-      .help(L10n.AIAgents.refreshAgents)
     }
     .padding(.horizontal, 2)
   }

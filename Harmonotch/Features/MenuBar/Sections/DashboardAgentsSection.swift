@@ -101,45 +101,7 @@ struct DashboardAgentsSection: View {
         .foregroundColor(failedCount > 0 ? AppTheme.accentAmber : AppTheme.textSecondary)
         .lineLimit(1)
 
-      if let checkedAt = quotaService.lastCheckedAt {
-        Text("• \(TimeFormatting.relativeText(for: checkedAt))")
-          .font(AppTypography.micro(.medium))
-          .foregroundColor(AppTheme.textTertiary)
-          .lineLimit(1)
-      }
-
       Spacer(minLength: 4)
-
-      Button {
-        quotaService.checkInstalledAgents(force: true)
-      } label: {
-        HStack(spacing: 4) {
-          if quotaService.isScanning {
-            ProgressView()
-              .controlSize(.mini)
-          } else {
-            Image(systemName: "arrow.clockwise")
-              .font(.system(size: 9, weight: .bold))
-          }
-          Text(L10n.AIAgents.refreshAgents)
-            .font(AppTypography.micro(.semibold))
-        }
-        .foregroundColor(AppTheme.textSecondary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(
-          RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(AppTheme.badgeBackground)
-            .overlay(
-              RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(AppTheme.cardBorder, lineWidth: 0.6)
-            )
-        )
-      }
-      .buttonStyle(.plain)
-      .disabled(quotaService.isScanning)
-      .help(L10n.AIAgents.refreshAgents)
-      .accessibilityLabel(L10n.AIAgents.refreshAgents)
     }
     .padding(.horizontal, 2)
   }

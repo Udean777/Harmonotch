@@ -577,13 +577,10 @@ enum L10n {
             isEnglish ? "\(name) is not installed on this Mac" : "\(name) belum terinstal di Mac ini"
         }
         static var selectDifferentProviderHint: String {
-            isEnglish ? "Choose an installed provider below or from the Menu Bar" : "Pilih provider yang terinstal di bawah atau dari Menu Bar"
+            isEnglish ? "Pin a different agent from the Menu Bar" : "Pin agent lain dari Menu Bar"
         }
         static var selectedInMenuBar: String {
-            isEnglish ? "Synced with Menu Bar" : "Tersinkron dengan Menu Bar"
-        }
-        static var availableAgentsPrefix: String {
-            isEnglish ? "Installed:" : "Terinstal:"
+            isEnglish ? "Pinned from Menu Bar" : "Di-pin dari Menu Bar"
         }
     }
 
