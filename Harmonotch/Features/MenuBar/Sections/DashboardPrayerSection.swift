@@ -54,7 +54,7 @@ struct DashboardPrayerSection: View {
             .accessibilityHidden(true)
 
           Text(prayerManager.currentLocationName)
-            .font(AppTypography.subheadline(.bold))
+            .font(AppTypography.caption(.bold))
             .foregroundColor(AppTheme.textPrimary)
             .lineLimit(1)
 
@@ -71,7 +71,7 @@ struct DashboardPrayerSection: View {
 
       if !prayerManager.hijriDateString.isEmpty {
         Text(prayerManager.hijriDateString)
-          .font(.system(size: 9.5, weight: .medium))
+          .font(.system(size: 10.5, weight: .medium))
           .foregroundColor(AppTheme.textSecondary)
           .lineLimit(1)
       }
@@ -107,11 +107,11 @@ struct DashboardPrayerSection: View {
       if !prayerManager.qiblaString.isEmpty {
         HStack(spacing: 4) {
           Image(systemName: "location.north.line.fill")
-            .font(.system(size: 8.5, weight: .bold))
+            .font(.system(size: 9.5, weight: .bold))
             .foregroundColor(AppTheme.accentAmber)
             .accessibilityHidden(true)
           Text("\(L10n.Prayer.qibla): \(prayerManager.qiblaString)")
-            .font(.system(size: 9, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundColor(AppTheme.textSecondary)
         }
       }
@@ -119,7 +119,7 @@ struct DashboardPrayerSection: View {
       Spacer(minLength: 4)
 
       Text(L10n.Dashboard.calculationMethod(prayerManager.calculationMethodName))
-        .font(.system(size: 9, weight: .medium))
+        .font(.system(size: 10, weight: .medium))
         .foregroundColor(AppTheme.textTertiary)
         .lineLimit(1)
     }
@@ -143,12 +143,12 @@ struct DashboardPrayerSection: View {
         .accessibilityHidden(true)
 
       Text(name)
-        .font(.system(size: 11, weight: emphasized ? .bold : .medium))
+        .font(.system(size: 11.5, weight: emphasized ? .bold : .medium))
         .foregroundColor(emphasized ? AppTheme.textPrimary : AppTheme.textSecondary)
 
       if isNext || isCurrent {
         Text(isNext ? L10n.Prayer.nextBadge : L10n.Prayer.currentBadge)
-          .font(.system(size: 8, weight: .bold))
+          .font(.system(size: 9.5, weight: .bold))
           .foregroundColor(isNext ? AppTheme.accentAmber : AppTheme.accentGreen)
           .padding(.horizontal, 6)
           .padding(.vertical, 1.5)

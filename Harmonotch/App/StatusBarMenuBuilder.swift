@@ -101,12 +101,14 @@ extension AppDelegate {
     mediaTabItem.state = (currentTab == .media) ? .on : .off
     tabsSubmenu.addItem(mediaTabItem)
 
-    let agentsTabItem = NSMenuItem(
-      title: L10n.Drawer.agentsTab, action: #selector(selectTabAgents), keyEquivalent: "4")
-    agentsTabItem.target = self
-    agentsTabItem.image = NSImage(systemSymbolName: "cpu.fill", accessibilityDescription: nil)
-    agentsTabItem.state = (currentTab == .agents) ? .on : .off
-    tabsSubmenu.addItem(agentsTabItem)
+    if !AIAgentQuotaService.shared.agents.isEmpty {
+      let agentsTabItem = NSMenuItem(
+        title: L10n.Drawer.agentsTab, action: #selector(selectTabAgents), keyEquivalent: "4")
+      agentsTabItem.target = self
+      agentsTabItem.image = NSImage(systemSymbolName: "cpu.fill", accessibilityDescription: nil)
+      agentsTabItem.state = (currentTab == .agents) ? .on : .off
+      tabsSubmenu.addItem(agentsTabItem)
+    }
 
     return tabsSubmenu
   }
@@ -137,15 +139,17 @@ extension AppDelegate {
     langItem.submenu = buildLanguageSubmenu()
     menu.addItem(langItem)
 
-    let currentAgentKind = AIAgentKind(rawValue: UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]) ?? .gemini
-    let notchAgentItem = NSMenuItem(
-      title: "\(L10n.Menu.notchAgentMenu): \(currentAgentKind.displayName)",
-      action: nil,
-      keyEquivalent: ""
-    )
-    notchAgentItem.image = NSImage(systemSymbolName: currentAgentKind.icon, accessibilityDescription: nil)
-    notchAgentItem.submenu = buildNotchAgentSubmenu()
-    menu.addItem(notchAgentItem)
+    if !AIAgentQuotaService.shared.agents.isEmpty {
+      let currentAgentKind = AIAgentKind(rawValue: UserDefaults.standard[UserDefaultsKeys.selectedNotchAIAgent]) ?? .gemini
+      let notchAgentItem = NSMenuItem(
+        title: "\(L10n.Menu.notchAgentMenu): \(currentAgentKind.displayName)",
+        action: nil,
+        keyEquivalent: ""
+      )
+      notchAgentItem.image = NSImage(systemSymbolName: currentAgentKind.icon, accessibilityDescription: nil)
+      notchAgentItem.submenu = buildNotchAgentSubmenu()
+      menu.addItem(notchAgentItem)
+    }
 
     let isLaunchAtLogin = SMAppService.mainApp.status == .enabled
     let launchItem = NSMenuItem(
@@ -362,11 +366,11 @@ private struct MenuBarHeaderView: View {
 
           if updateManager.hasUpdate {
             Text("v\(updateManager.latestVersion)")
-              .font(.system(size: 9, weight: .semibold))
-              .foregroundColor(.white)
-              .padding(.horizontal, 4)
-              .padding(.vertical, 1)
-              .background(Color.white.opacity(0.15))
+              .font(.system(size: 10, weight: .semibold))
+              .foregroundColor(AppTheme.textPrimary)
+              .padding(.horizontal, 5)
+              .padding(.vertical, 1.5)
+              .background(AppTheme.badgeBackground)
               .clipShape(Capsule())
           }
         }
@@ -374,27 +378,27 @@ private struct MenuBarHeaderView: View {
         if adzanPlayer.isPlaying {
           HStack(spacing: 4) {
             Image(systemName: "speaker.wave.3.fill")
-              .font(.system(size: 8))
+              .font(.system(size: 9))
             Text(L10n.Prayer.adzanActive)
-              .font(.system(size: 10, weight: .medium))
+              .font(.system(size: 10.5, weight: .medium))
           }
-          .foregroundColor(.white)
+          .foregroundColor(AppTheme.accentAmber)
         } else if mediaManager.isPlaying && !mediaManager.trackTitle.isEmpty {
           HStack(spacing: 4) {
             Image(systemName: "waveform")
-              .font(.system(size: 8))
+              .font(.system(size: 9))
             Text(mediaManager.trackTitle)
-              .font(.system(size: 10, weight: .medium))
+              .font(.system(size: 10.5, weight: .medium))
               .lineLimit(1)
           }
-          .foregroundColor(.white)
+          .foregroundColor(AppTheme.textSecondary)
         } else if updateManager.hasUpdate {
           Text(L10n.Update.available)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundColor(.white)
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundColor(AppTheme.accentAmber)
         } else {
           Text(L10n.Menu.headerSubtitle)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 10.5, weight: .medium))
             .foregroundColor(AppTheme.textTertiary)
         }
       }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardBatterySection: View {
   @ObservedObject private var batteryMonitor = BatteryMonitor.shared
+  @State private var showTechnicalDetails = false
 
   var body: some View {
     switch batteryMonitor.state {
@@ -54,25 +55,60 @@ struct DashboardBatterySection: View {
       }
 
       DashboardCard {
-        VStack(alignment: .leading, spacing: 5) {
-          if reading.isPluggedIn {
-            row(L10n.Dashboard.adapter, reading.adapterWatts.map { "\($0) W" })
-          }
-          row(L10n.Battery.capacityTitle, reading.nominalCapacity.map { "\($0) mAh" })
-          row(L10n.Dashboard.designCapacity, reading.designCapacity.map { "\($0) mAh" })
-          row(L10n.Dashboard.designCycles, reading.designCycleCount.map(String.init))
+        VStack(alignment: .leading, spacing: 6) {
+          row(L10n.Battery.healthTitle, L10n.Battery.healthCondition(reading.healthPercent))
 
-          if let volts = reading.voltageVolts {
-            row(L10n.Dashboard.voltage, String(format: "%.2f V", volts))
+          if reading.isPluggedIn {
+            row(L10n.Dashboard.adapter, reading.adapterWatts.map { "\($0) W" } ?? L10n.Battery.connected)
           }
-          if let amps = reading.amperageAmps {
-            row(L10n.Dashboard.current, String(format: "%.2f A", amps))
-          }
-          if let watts = reading.powerWatts {
-            row(L10n.Dashboard.power, String(format: "%.1f W", watts))
-          }
+
           if let celsius = reading.temperatureCelsius {
-            row(L10n.Dashboard.temperature, String(format: "%.1f °C", celsius))
+            row(L10n.Dashboard.temperature, L10n.Battery.temperatureWithStatus(celsius))
+          }
+
+          Divider()
+            .background(AppTheme.divider)
+            .padding(.vertical, 2)
+
+          Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+              showTechnicalDetails.toggle()
+            }
+          } label: {
+            HStack(spacing: 5) {
+              Text(L10n.Battery.technicalDetailsToggle(expanded: showTechnicalDetails))
+                .font(AppTypography.caption2(.semibold))
+                .foregroundColor(AppTheme.accentCyan)
+
+              Spacer()
+
+              Image(systemName: showTechnicalDetails ? "chevron.up" : "chevron.down")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(AppTheme.accentCyan)
+            }
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(L10n.Battery.technicalDetailsToggle(expanded: showTechnicalDetails))
+
+          if showTechnicalDetails {
+            VStack(alignment: .leading, spacing: 5) {
+              row(L10n.Battery.capacityTitle, reading.nominalCapacity.map { "\($0) mAh" })
+              row(L10n.Dashboard.designCapacity, reading.designCapacity.map { "\($0) mAh" })
+              row(L10n.Dashboard.designCycles, reading.designCycleCount.map(String.init))
+
+              if let volts = reading.voltageVolts {
+                row(L10n.Dashboard.voltage, String(format: "%.2f V", volts))
+              }
+              if let amps = reading.amperageAmps {
+                row(L10n.Dashboard.current, String(format: "%.2f A", amps))
+              }
+              if let watts = reading.powerWatts {
+                row(L10n.Dashboard.power, String(format: "%.1f W", watts))
+              }
+            }
+            .padding(.top, 2)
+            .transition(.opacity)
           }
         }
       }
@@ -86,17 +122,17 @@ struct DashboardBatterySection: View {
       VStack(spacing: 8) {
         HStack(alignment: .center, spacing: 8) {
           Image(systemName: icon(for: reading))
-            .font(.system(size: 18, weight: .bold))
+            .font(.system(size: 13, weight: .bold))
             .foregroundColor(reading.isCharging ? AppTheme.accentGreen : AppTheme.textPrimary)
             .accessibilityHidden(true)
 
           Text("\(reading.capacity)%")
-            .font(.system(size: 20, weight: .bold, design: .rounded))
+            .font(.system(size: 14, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundColor(AppTheme.textPrimary)
 
           Text(BatteryMonitor.localizedTimeEstimate(reading.timeEstimate))
-            .font(.system(size: 10.5, weight: .medium))
+            .font(AppTypography.caption2(.medium))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(1)
 
@@ -109,7 +145,7 @@ struct DashboardBatterySection: View {
               .accessibilityHidden(true)
 
             Text(statusText(for: reading))
-              .font(.system(size: 9.5, weight: .semibold))
+              .font(AppTypography.micro(.semibold))
               .foregroundColor(AppTheme.textPrimary)
               .lineLimit(1)
           }
@@ -149,7 +185,7 @@ struct DashboardBatterySection: View {
     VStack(alignment: .leading, spacing: 3) {
       HStack(spacing: 4) {
         Image(systemName: icon)
-          .font(AppTypography.caption2(.semibold))
+          .font(AppTypography.micro(.semibold))
           .foregroundColor(color)
           .accessibilityHidden(true)
 
@@ -160,13 +196,13 @@ struct DashboardBatterySection: View {
       }
 
       Text(value)
-        .font(AppTypography.body(.bold, design: .rounded))
+        .font(AppTypography.footnote(.bold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(AppTheme.textPrimary)
         .lineLimit(1)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardChrome(cornerRadius: 9, horizontalPadding: 9, verticalPadding: 7, lineWidth: 0.5)
+    .cardChrome(cornerRadius: 8, horizontalPadding: 8, verticalPadding: 6, lineWidth: 0.5)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(title): \(value)")
   }
@@ -179,18 +215,18 @@ struct DashboardBatterySection: View {
           "\(L10n.Dashboard.batteryShowingLastReading) \(error)",
           systemImage: "exclamationmark.triangle.fill"
         )
-        .font(.system(size: 9, weight: .medium))
+        .font(.system(size: 10.5, weight: .medium))
         .foregroundColor(AppTheme.accentAmber)
         .fixedSize(horizontal: false, vertical: true)
       } else if stale {
         Label(L10n.Dashboard.batteryStale, systemImage: "clock.badge.exclamationmark")
-          .font(.system(size: 9, weight: .medium))
+          .font(.system(size: 10.5, weight: .medium))
           .foregroundColor(AppTheme.accentAmber)
       }
 
       HStack {
         Text(L10n.Dashboard.batteryUpdated(TimeFormatting.relativeText(for: reading.refreshedAt)))
-          .font(.system(size: 9, weight: .medium))
+          .font(.system(size: 10, weight: .medium))
           .foregroundColor(AppTheme.textTertiary)
 
         Spacer()
@@ -200,13 +236,13 @@ struct DashboardBatterySection: View {
         } label: {
           HStack(spacing: 4) {
             Image(systemName: "arrow.clockwise")
-              .font(.system(size: 9, weight: .bold))
+              .font(.system(size: 10, weight: .bold))
             Text(L10n.Dashboard.batteryRefresh)
-              .font(.system(size: 9, weight: .semibold))
+              .font(.system(size: 10, weight: .semibold))
           }
           .foregroundColor(AppTheme.textSecondary)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 3.5)
+          .padding(.horizontal, 9)
+          .padding(.vertical, 4)
           .background(
             Capsule()
               .fill(AppTheme.badgeBackground)
@@ -223,14 +259,14 @@ struct DashboardBatterySection: View {
   private func row(_ title: String, _ value: String?) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
       Text(title)
-        .font(AppTypography.caption(.medium))
+        .font(AppTypography.caption2(.medium))
         .foregroundColor(AppTheme.textSecondary)
         .lineLimit(1)
 
       Spacer(minLength: 4)
 
       Text(value ?? L10n.Dashboard.notAvailable)
-        .font(AppTypography.footnote(.semibold, design: .rounded))
+        .font(AppTypography.caption2(.semibold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(value == nil ? AppTheme.textTertiary : AppTheme.textPrimary)
         .lineLimit(1)

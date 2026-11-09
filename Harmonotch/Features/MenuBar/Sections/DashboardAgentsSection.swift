@@ -144,7 +144,7 @@ struct DashboardAgentsSection: View {
             VStack(alignment: .leading, spacing: 1.5) {
               HStack(spacing: 5) {
                 Text(agent.kind.displayName)
-                  .font(AppTypography.subheadline(.bold))
+                  .font(AppTypography.caption(.bold))
                   .foregroundColor(AppTheme.textPrimary)
                   .lineLimit(1)
 

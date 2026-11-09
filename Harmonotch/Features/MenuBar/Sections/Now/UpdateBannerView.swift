@@ -15,9 +15,11 @@ struct UpdateBannerView: View {
           Text(L10n.Update.available)
             .font(.system(size: 11, weight: .bold))
             .foregroundColor(AppTheme.textPrimary)
+            .lineLimit(1)
           Text("v\(version)")
             .font(.system(size: 9.5, weight: .medium, design: .rounded))
             .foregroundColor(AppTheme.textSecondary)
+            .lineLimit(1)
         }
 
         Spacer()

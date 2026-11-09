@@ -39,6 +39,7 @@ struct NotchTabBar: View {
     @Binding var selectedTab: DrawerTab
     @ObservedObject var mediaManager = MediaManager.shared
     @ObservedObject var adzanPlayer = AdzanPlayer.shared
+    @ObservedObject var quotaService = AIAgentQuotaService.shared
     @Namespace private var tabAnimation
 
     private var isAudioActive: Bool {
@@ -46,11 +47,11 @@ struct NotchTabBar: View {
     }
 
     private var visibleTabs: [DrawerTab] {
-        if isAudioActive {
-            return [.media, .battery, .prayer, .agents]
-        } else {
-            return [.battery, .prayer, .agents]
+        var tabs: [DrawerTab] = isAudioActive ? [.media, .battery, .prayer] : [.battery, .prayer]
+        if !quotaService.agents.isEmpty {
+            tabs.append(.agents)
         }
+        return tabs
     }
 
     var body: some View {
@@ -64,10 +65,10 @@ struct NotchTabBar: View {
                 }) {
                     HStack(spacing: 5) {
                         Image(systemName: tab.icon)
-                            .font(AppTypography.subheadline(isSelected ? .semibold : .regular))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
 
                         Text(tab.title)
-                            .font(AppTypography.subheadline(isSelected ? .semibold : .medium))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                             .lineLimit(1)
                     }
                     .foregroundColor(isSelected ? AppTheme.tabActiveText : AppTheme.tabInactiveText)
@@ -92,6 +93,19 @@ struct NotchTabBar: View {
         }
         .padding(2.5)
         .animation(NotchMotion.content, value: visibleTabs)
+        .onAppear {
+            if !quotaService.hasCompletedInitialScan && !quotaService.isScanning {
+                quotaService.checkInstalledAgents()
+            }
+            if quotaService.agents.isEmpty && selectedTab == .agents {
+                selectedTab = .battery
+            }
+        }
+        .onChange(of: quotaService.agents.isEmpty) { _, isEmpty in
+            if isEmpty && selectedTab == .agents {
+                selectedTab = .battery
+            }
+        }
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(AppTheme.tabBarBackground)

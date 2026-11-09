@@ -60,12 +60,12 @@ struct ExpandedLyricsView: View {
   private var headerBar: some View {
     HStack(spacing: 4) {
       Image(systemName: "quote.bubble.fill")
-        .font(.system(size: 9, weight: .bold))
+        .font(.system(size: 9.5, weight: .bold))
         .foregroundColor(mediaAccentColor)
 
       Text(L10n.Media.syncedLyricsTitle.uppercased())
-        .font(.system(size: 8.5, weight: .bold, design: .rounded))
-        .tracking(0.4)
+        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+        .tracking(0.3)
         .foregroundColor(AppTheme.textSecondary)
 
       statusBadge
@@ -83,10 +83,10 @@ struct ExpandedLyricsView: View {
           .fill(mediaAccentColor)
           .frame(width: 4.5, height: 4.5)
         Text(L10n.Media.syncedLyricsBadge.uppercased())
-          .font(.system(size: 7.5, weight: .bold, design: .rounded))
+          .font(.system(size: 9.5, weight: .bold, design: .rounded))
       }
       .foregroundColor(mediaAccentColor)
-      .padding(.horizontal, 5)
+      .padding(.horizontal, 6)
       .padding(.vertical, 1.5)
       .background(mediaAccentColor.opacity(0.12))
       .clipShape(Capsule())
@@ -94,12 +94,12 @@ struct ExpandedLyricsView: View {
     case .unsynced:
       HStack(spacing: 3) {
         Image(systemName: "text.alignleft")
-          .font(.system(size: 7, weight: .bold))
+          .font(.system(size: 8.5, weight: .bold))
         Text(L10n.Media.unsyncedLyricsBadge.uppercased())
-          .font(.system(size: 7.5, weight: .bold, design: .rounded))
+          .font(.system(size: 9.5, weight: .bold, design: .rounded))
       }
       .foregroundColor(AppTheme.accentAmber)
-      .padding(.horizontal, 5)
+      .padding(.horizontal, 6)
       .padding(.vertical, 1.5)
       .background(AppTheme.accentAmber.opacity(0.14))
       .clipShape(Capsule())
@@ -107,12 +107,12 @@ struct ExpandedLyricsView: View {
     case .instrumental:
       HStack(spacing: 3) {
         Image(systemName: "music.quarternote.3")
-          .font(.system(size: 7, weight: .bold))
+          .font(.system(size: 8.5, weight: .bold))
         Text(L10n.Media.instrumental.uppercased())
-          .font(.system(size: 7.5, weight: .bold, design: .rounded))
+          .font(.system(size: 9.5, weight: .bold, design: .rounded))
       }
       .foregroundColor(AppTheme.accentCyan)
-      .padding(.horizontal, 5)
+      .padding(.horizontal, 6)
       .padding(.vertical, 1.5)
       .background(AppTheme.accentCyan.opacity(0.12))
       .clipShape(Capsule())
@@ -120,12 +120,12 @@ struct ExpandedLyricsView: View {
     case .unavailable:
       HStack(spacing: 3) {
         Image(systemName: "nosign")
-          .font(.system(size: 7, weight: .bold))
+          .font(.system(size: 8.5, weight: .bold))
         Text(L10n.Media.noLyricsFound.uppercased())
-          .font(.system(size: 7.5, weight: .bold, design: .rounded))
+          .font(.system(size: 9.5, weight: .bold, design: .rounded))
       }
       .foregroundColor(AppTheme.textTertiary)
-      .padding(.horizontal, 5)
+      .padding(.horizontal, 6)
       .padding(.vertical, 1.5)
       .background(AppTheme.badgeBackground)
       .clipShape(Capsule())
@@ -386,14 +386,15 @@ struct ExpandedLyricsView: View {
         mediaManager.refetchLyrics()
       }) {
         Image(systemName: "arrow.clockwise")
-          .font(.system(size: 9, weight: .bold))
+          .font(.system(size: 10, weight: .bold))
           .foregroundColor(mediaAccentColor)
           .frame(width: 24, height: 24)
           .background(mediaAccentColor.opacity(0.12))
           .clipShape(Circle())
       }
       .buttonStyle(.plain)
-      .help("Retry lyrics fetch")
+      .help(L10n.Media.syncLyrics)
+      .accessibilityLabel(L10n.Media.syncLyrics)
     }
     .padding(.vertical, 6)
   }

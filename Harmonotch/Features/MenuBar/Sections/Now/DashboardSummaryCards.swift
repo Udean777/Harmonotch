@@ -23,12 +23,12 @@ struct PrayerSummaryCard: View {
         case .loaded(let prayer, _):
           HStack(alignment: .firstTextBaseline, spacing: 5) {
             Text(prayer.name)
-              .font(.system(size: 18, weight: .bold))
+              .font(AppTypography.subheadline(.bold))
               .foregroundColor(AppTheme.textPrimary)
               .lineLimit(1)
 
             Text(prayer.timeString)
-              .font(.system(size: 13, weight: .bold, design: .rounded))
+              .font(AppTypography.subheadline(.bold, design: .rounded))
               .monospacedDigit()
               .foregroundColor(AppTheme.accentAmber)
               .lineLimit(1)
@@ -37,25 +37,25 @@ struct PrayerSummaryCard: View {
           HStack(spacing: 4) {
             TimelineView(.periodic(from: .now, by: 30)) { context in
               Text(TimeFormatting.countdownText(to: prayer.time, now: context.date))
-                .font(.system(size: 10, weight: .medium))
+                .font(AppTypography.caption2(.medium))
                 .foregroundColor(AppTheme.textSecondary)
                 .lineLimit(1)
             }
 
             if !prayerManager.currentLocationName.isEmpty {
               Text("• \(prayerManager.currentLocationName)")
-                .font(.system(size: 9.5, weight: .regular))
+                .font(AppTypography.micro(.regular))
                 .foregroundColor(AppTheme.textTertiary)
                 .lineLimit(1)
             }
           }
         case .loading, .idle:
           Text(L10n.Dashboard.loading)
-            .font(.system(size: 12, weight: .semibold))
+            .font(AppTypography.caption(.semibold))
             .foregroundColor(AppTheme.textSecondary)
         default:
           Text(L10n.Dashboard.prayerUnavailable)
-            .font(.system(size: 11, weight: .semibold))
+            .font(AppTypography.caption(.semibold))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(2)
         }
@@ -85,17 +85,17 @@ struct BatterySummaryCard: View {
                 isCharging: snapshot.isCharging
               )
             )
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 13, weight: .bold))
             .foregroundColor(snapshot.isCharging ? AppTheme.accentGreen : AppTheme.textPrimary)
 
             Text("\(snapshot.capacity)%")
-              .font(.system(size: 18, weight: .bold, design: .rounded))
+              .font(AppTypography.subheadline(.bold, design: .rounded))
               .monospacedDigit()
               .foregroundColor(AppTheme.textPrimary)
           }
 
           Text(BatteryMonitor.localizedTimeEstimate(snapshot.timeEstimate))
-            .font(.system(size: 9.5, weight: .medium))
+            .font(AppTypography.caption2(.medium))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(1)
         case .loading, .idle:
@@ -104,23 +104,23 @@ struct BatterySummaryCard: View {
               .scaleEffect(0.55)
               .frame(width: 12, height: 12)
             Text(L10n.Dashboard.readingBattery)
-              .font(.system(size: 10, weight: .medium))
+              .font(AppTypography.caption2(.medium))
               .foregroundColor(AppTheme.textSecondary)
               .lineLimit(1)
           }
         case .unavailable(let message), .failed(let message):
           HStack(spacing: 4) {
             Image(systemName: "powerplug.fill")
-              .font(.system(size: 11, weight: .semibold))
+              .font(.system(size: 10, weight: .semibold))
               .foregroundColor(AppTheme.textTertiary)
             Text(message)
-              .font(.system(size: 10, weight: .medium))
+              .font(AppTypography.caption2(.medium))
               .foregroundColor(AppTheme.textSecondary)
               .lineLimit(2)
           }
         default:
           Text(L10n.Dashboard.batteryUnavailable)
-            .font(.system(size: 10, weight: .medium))
+            .font(AppTypography.caption2(.medium))
             .foregroundColor(AppTheme.textSecondary)
         }
       }
@@ -141,8 +141,8 @@ private struct SummaryCardHeader: View {
         .accessibilityHidden(true)
 
       Text(title)
-        .font(.system(size: 9, weight: .bold))
-        .tracking(0.4)
+        .font(.system(size: 10, weight: .bold))
+        .tracking(0.3)
         .foregroundColor(AppTheme.textTertiary)
         .textCase(.uppercase)
         .lineLimit(1)

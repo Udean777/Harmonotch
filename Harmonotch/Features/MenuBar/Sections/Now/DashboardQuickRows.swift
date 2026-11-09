@@ -214,11 +214,18 @@ struct VolumeHUDQuickRow: View {
             VolumeHUDController.openAccessibilitySettings()
           } label: {
             Text(L10n.Volume.grantPermissionAction)
-              .font(.system(size: 9.5, weight: .bold))
-              .foregroundColor(Color.black)
+              .font(.system(size: 10, weight: .bold))
+              .foregroundColor(AppTheme.textPrimary)
               .padding(.horizontal, 8)
               .padding(.vertical, 4)
-              .background(Capsule().fill(AppTheme.accentAmber))
+              .background(
+                Capsule()
+                  .fill(AppTheme.accentAmber.opacity(0.20))
+                  .overlay(
+                    Capsule()
+                      .stroke(AppTheme.accentAmber.opacity(0.60), lineWidth: 0.7)
+                  )
+              )
           }
           .buttonStyle(.plain)
         }

@@ -55,25 +55,25 @@ enum L10n {
             isEnglish ? "Stop" : "Hentikan"
         }
         static var adzanActive: String {
-            isEnglish ? "Adzan Active" : "Adzan Aktif"
+            isEnglish ? "Adzan Sound: On" : "Suara Adzan: Aktif"
         }
         static var adzanMuted: String {
-            isEnglish ? "Adzan Muted" : "Adzan Dimatikan"
+            isEnglish ? "Adzan Sound: Off" : "Suara Adzan: Mati"
         }
         static var audioAdzanTitle: String {
-            isEnglish ? "Adzan Audio" : "Audio Adzan"
+            isEnglish ? "Adzan Sound" : "Suara Adzan"
         }
         static var testAudio: String {
-            isEnglish ? "Test Audio" : "Uji Audio"
+            isEnglish ? "Test Sound" : "Coba Suara"
         }
         static var stopAudio: String {
-            isEnglish ? "Stop Audio" : "Stop Audio"
+            isEnglish ? "Stop Sound" : "Hentikan Suara"
         }
         static var qibla: String {
-            isEnglish ? "Qibla" : "Kiblat"
+            isEnglish ? "Qibla Direction" : "Arah Kiblat"
         }
         static var myLocation: String {
-            isEnglish ? "My Location" : "Lokasi Saya"
+            isEnglish ? "Current Location" : "Lokasi Saat Ini"
         }
         static var testPrayer: String {
             isEnglish ? "Test" : "Uji Coba"
@@ -81,13 +81,22 @@ enum L10n {
         static var imsak: String {
             "Imsak"
         }
+        static var jumatOffsetMenuTitle: String {
+            isEnglish ? "Friday Prayer Time" : "Waktu Sholat Jumat"
+        }
         static func jumatOffsetLabel(_ minutes: Int) -> String {
             let name = localizedPrayerName("jumat")
             if minutes == 0 {
-                return isEnglish ? "\(name): Dhuhr" : "\(name): Dzuhur"
+                return isEnglish ? "\(name): Same as Dhuhr" : "\(name): Sesuai Waktu Dzuhur"
             }
-            let sign = minutes > 0 ? "+" : "−"
-            return isEnglish ? "\(name): \(sign)\(abs(minutes)) min" : "\(name): \(sign)\(abs(minutes)) mnt"
+            if minutes > 0 {
+                return isEnglish
+                    ? "\(name): \(minutes) min after Dhuhr"
+                    : "\(name): \(minutes) mnt setelah Dzuhur"
+            }
+            return isEnglish
+                ? "\(name): \(abs(minutes)) min before Dhuhr"
+                : "\(name): \(abs(minutes)) mnt sebelum Dzuhur"
         }
         static func notificationTitle(name: String) -> String {
             let prayer = localizedPrayerName(name)
@@ -106,90 +115,119 @@ enum L10n {
             isEnglish ? "Charging" : "Mengisi Daya"
         }
         static var connected: String {
-            isEnglish ? "Connected" : "Tersambung"
+            isEnglish ? "Plugged In" : "Casan Terpasang"
         }
         static var onBattery: String {
-            isEnglish ? "Using Battery" : "Menggunakan Baterai"
+            isEnglish ? "On Battery" : "Pakai Baterai"
         }
         static func acAdapterWatts(_ watts: Int) -> String {
-            isEnglish ? "\(watts)W AC Adapter" : "\(watts)W Adaptor AC"
+            isEnglish ? "\(watts)W Charger" : "Casan \(watts)W"
         }
         static var acAdapter: String {
-            isEnglish ? "AC Adapter" : "Adaptor AC"
+            isEnglish ? "Power Adapter" : "Casan Terpasang"
         }
         static var internalBattery: String {
-            isEnglish ? "Internal Battery" : "Baterai Internal"
+            isEnglish ? "Mac Battery" : "Baterai Laptop"
         }
         static var healthTitle: String {
-            isEnglish ? "Health" : "Kesehatan"
+            isEnglish ? "Battery Health" : "Kondisi Baterai"
         }
         static var cycleTitle: String {
-            isEnglish ? "Battery Cycles" : "Siklus Baterai"
+            isEnglish ? "Charge Cycles" : "Siklus Pakai"
         }
         static var capacityTitle: String {
-            isEnglish ? "Full Capacity" : "Kapasitas Penuh"
+            isEnglish ? "Current Capacity" : "Kapasitas Saat Ini"
         }
         static var fullChargeAc: String {
-            isEnglish ? "Full Charge (AC Adapter)" : "Daya Penuh (Adaptor AC)"
+            isEnglish ? "Fully Charged (Plugged In)" : "Penuh (Casan Terpasang)"
         }
         static var connectedCharger: String {
-            isEnglish ? "Connected to Charger" : "Tersambung ke Pengisi Daya"
+            isEnglish ? "Connected to Charger" : "Tersambung ke Casan"
         }
         static func timeRemaining(hours: Int, mins: Int) -> String {
-            isEnglish ? "\(hours)h \(mins)m remaining" : "\(hours)j \(mins)m tersisa"
+            isEnglish ? "\(hours)h \(mins)m remaining" : "Sisa sekitar \(hours) jam \(mins) mnt"
         }
         static func timeToFull(hours: Int, mins: Int) -> String {
-            isEnglish ? "\(hours)h \(mins)m until full" : "\(hours)j \(mins)m hingga penuh"
+            isEnglish ? "\(hours)h \(mins)m until full" : "\(hours) jam \(mins) mnt lagi penuh"
         }
         static var chargeLimitStatusBypass: String {
-            isEnglish ? "AC Bypass Active" : "Bypass AC Aktif"
+            isEnglish ? "Protected (Running on Charger)" : "Baterai Dijaga (Listrik Casan)"
+        }
+        static func healthCondition(_ percent: Int?) -> String {
+            guard let percent else { return Dashboard.notAvailable }
+            if percent >= 80 {
+                return isEnglish ? "\(percent)% (Normal)" : "\(percent)% (Normal)"
+            }
+            return isEnglish ? "\(percent)% (Check Battery)" : "\(percent)% (Perlu Servis)"
+        }
+        static func temperatureWithStatus(_ celsius: Double) -> String {
+            let formatted = String(format: "%.1f °C", celsius)
+            if celsius < 36 {
+                return isEnglish ? "\(formatted) (Cool)" : "\(formatted) (Dingin)"
+            } else if celsius < 42 {
+                return isEnglish ? "\(formatted) (Normal)" : "\(formatted) (Normal)"
+            } else {
+                return isEnglish ? "\(formatted) (Warm)" : "\(formatted) (Hangat)"
+            }
+        }
+        static func technicalDetailsToggle(expanded: Bool) -> String {
+            if expanded {
+                return isEnglish ? "Hide Technical Details" : "Sembunyikan Detail Teknis"
+            }
+            return isEnglish ? "Show Technical Details" : "Lihat Detail Teknis"
         }
     }
 
     enum Clamshell {
         static var title: String {
-            isEnglish ? "Clamshell Mode" : "Mode Clamshell"
+            isEnglish ? "Keep Awake When Closed" : "Tetap Menyala Saat Ditutup"
         }
         static var active: String {
             isEnglish ? "Active" : "Aktif"
         }
         static var standby: String {
-            isEnglish ? "Standby (No Display)" : "Siaga (Menunggu Monitor)"
+            isEnglish ? "Ready (Connect Monitor)" : "Siap (Pasang Monitor)"
         }
         static var pausedLowBattery: String {
             isEnglish ? "Paused (Battery ≤ 50%)" : "Dijeda (Baterai ≤ 50%)"
         }
         static var off: String {
-            isEnglish ? "Off" : "Nonaktif"
+            isEnglish ? "Off" : "Mati"
         }
         static var noExternalDisplay: String {
-            isEnglish ? "No external display detected" : "Tidak ada monitor eksternal terhubung"
+            isEnglish
+                ? "Connect an external monitor to keep Mac awake when closed"
+                : "Sambungkan monitor luar agar Mac tetap hidup saat layar ditutup"
         }
         static var setupPermission: String {
-            isEnglish ? "Setup Access" : "Atur Izin"
+            isEnglish ? "Enable Access" : "Aktifkan Izin"
         }
         static var authorizing: String {
-            isEnglish ? "Authorizing..." : "Meminta izin..."
+            isEnglish ? "Requesting access..." : "Meminta izin..."
         }
         static var setupFailedMessage: String {
-            isEnglish ? "Setup failed or cancelled. Admin permission is required." : "Pengaturan izin gagal atau dibatalkan. Izin admin diperlukan."
+            isEnglish
+                ? "Access cancelled. Mac password is required to enable this feature."
+                : "Izin dibatalkan. Kata sandi Mac diperlukan untuk mengaktifkan fitur ini."
         }
         static var powerAdapterWarning: String {
-            isEnglish ? "Connect power adapter recommended (auto-pauses at ≤ 50%)" : "Disarankan pasang adaptor daya (jeda otomatis saat ≤ 50%)"
+            isEnglish
+                ? "Charger recommended (auto-pauses at ≤ 50% battery)"
+                : "Sebaiknya pasang casan (jeda otomatis saat baterai ≤ 50%)"
         }
         static var batteryProtectionNote: String {
-            isEnglish ? "Auto-pauses at ≤ 50% on battery" : "Otomatis dijeda jika baterai ≤ 50%"
+            isEnglish ? "Auto-pauses if battery drops to 50%" : "Otomatis dijeda jika baterai ≤ 50%"
         }
         static var menuSetupAction: String {
-            isEnglish ? "Setup Clamshell Permission..." : "Atur Izin Mode Clamshell..."
+            isEnglish ? "Enable Closed-Display Access..." : "Aktifkan Izin Layar Tertutup..."
         }
         static var warningNotificationTitle: String {
-            isEnglish ? "Harmonotch stay-awake warning" : "Peringatan mode tetap hidup"
+            isEnglish ? "Harmonotch Stay-Awake Warning" : "Peringatan Baterai Harmonotch"
         }
         static func warningNotificationBody(capacity: Int) -> String {
             isEnglish
-                ? "Battery is at \(capacity)%. Connect the charger to keep the Mac awake. Stay Awake pauses at 50%."
-                : "Baterai tersisa \(capacity)%. Sambungkan pengisi daya agar Mac tetap hidup. Mode tetap hidup dijeda otomatis di 50%."
+                ? "Battery is at \(capacity)%. Connect the charger to keep your Mac awake. Stay Awake pauses at 50%."
+                : "Baterai tersisa \(capacity)%. Pasang casan agar Mac tetap menyala. Fitur ini otomatis dijeda di 50%."
         }
     }
 
@@ -197,50 +235,54 @@ enum L10n {
         static func javascriptDisabledHint(browser: String) -> String {
             if browser == "Safari" {
                 return isEnglish
-                    ? "Safari: Develop > Developer Settings > Allow JavaScript from Apple Events"
-                    : "Safari: Develop > Developer Settings > Allow JavaScript from Apple Events"
+                    ? "To control playback in Safari, enable Develop > Allow JavaScript from Apple Events"
+                    : "Agar kontrol lagu di Safari aktif, nyalakan Develop > Allow JavaScript from Apple Events"
             }
             return isEnglish
-                ? "\(browser): View > Developer > Allow JavaScript from Apple Events"
-                : "\(browser): View > Developer > Allow JavaScript from Apple Events"
+                ? "To control playback in \(browser), enable View > Developer > Allow JavaScript from Apple Events"
+                : "Agar kontrol lagu di \(browser) aktif, nyalakan View > Developer > Allow JavaScript from Apple Events"
         }
         static func automationDeniedHint(browser: String) -> String {
             isEnglish
                 ? "Allow Harmonotch to control \(browser) in System Settings > Privacy & Security > Automation"
-                : "Izinkan Harmonotch mengontrol \(browser) di Pengaturan Sistem > Privasi & Keamanan > Otomasi"
+                : "Izinkan Harmonotch mengatur lagu di \(browser) lewat Pengaturan Sistem > Privasi & Keamanan > Otomasi"
         }
         static var nowPlaying: String {
             isEnglish ? "Now Playing" : "Sedang Diputar"
         }
         static var noTrackPlaying: String {
-            isEnglish ? "No Media Playing" : "Tidak Ada Media"
+            isEnglish ? "No Music Playing" : "Belum Ada Musik Diputar"
         }
         static var openMusicPrompt: String {
-            isEnglish ? "Play a song on Apple Music or Spotify" : "Putar lagu di Apple Music atau Spotify"
+            isEnglish ? "Play a song on Apple Music, Spotify, or your browser" : "Putar lagu di Apple Music, Spotify, atau browser Anda"
         }
         static var syncedLyricsTitle: String {
             isEnglish ? "Lyrics" : "Lirik Lagu"
         }
         static var syncedLyricsBadge: String {
-            isEnglish ? "Synced" : "Tersinkron"
+            isEnglish ? "Auto-Scroll" : "Otomatis"
         }
         static var unsyncedLyricsBadge: String {
-            isEnglish ? "Unsynced" : "Tidak Sinkron"
+            isEnglish ? "Plain Text" : "Teks Penuh"
         }
         static var unsyncedLyricsNotice: String {
-            isEnglish ? "This track only has plain lyrics without timing sync." : "Lagu ini hanya memiliki teks lirik tanpa sinkronisasi waktu."
+            isEnglish
+                ? "Showing full lyrics (timing sync not available for this song)."
+                : "Menampilkan lirik penuh (sinkronisasi waktu belum tersedia untuk lagu ini)."
         }
         static var lyricsUnavailable: String {
-            isEnglish ? "Lyrics Unavailable" : "Lirik Tidak Tersedia"
+            isEnglish ? "Lyrics Not Available" : "Lirik Belum Tersedia"
         }
         static var lyricsUnavailableDesc: String {
-            isEnglish ? "Lyrics could not be found or synced for this track." : "Lirik tidak dapat dimuat atau belum tersedia untuk lagu ini."
+            isEnglish
+                ? "We couldn't find lyrics for this song yet."
+                : "Lirik untuk lagu ini belum ditemukan."
         }
         static var loadingLyrics: String {
-            isEnglish ? "Fetching lyrics..." : "Memuat lirik..."
+            isEnglish ? "Loading lyrics..." : "Mencari lirik lagu..."
         }
         static var noLyricsFound: String {
-            isEnglish ? "No lyrics available" : "Lirik tidak tersedia"
+            isEnglish ? "No lyrics found" : "Lirik belum ada"
         }
         static var showLyrics: String {
             isEnglish ? "Show Lyrics" : "Tampilkan Lirik"
@@ -249,34 +291,34 @@ enum L10n {
             isEnglish ? "Hide Lyrics" : "Sembunyikan Lirik"
         }
         static var syncLyrics: String {
-            isEnglish ? "Sync Lyrics" : "Sinkronkan Lirik"
+            isEnglish ? "Reload Lyrics" : "Cari Ulang Lirik"
         }
         static var lyricsNotFound: String {
-            isEnglish ? "Lyrics not found for this track." : "Lirik tidak ditemukan untuk lagu ini."
+            isEnglish ? "Lyrics not found for this song." : "Lirik untuk lagu ini belum ditemukan."
         }
         static var showQueue: String {
-            isEnglish ? "Show Queue" : "Tampilkan Antrean"
+            isEnglish ? "Show Next Songs" : "Lihat Lagu Berikutnya"
         }
         static var hideQueue: String {
-            isEnglish ? "Hide Queue" : "Sembunyikan Antrean"
+            isEnglish ? "Hide Next Songs" : "Sembunyikan Antrean"
         }
         static var queueEmpty: String {
-            isEnglish ? "Queue is empty." : "Antrean kosong."
+            isEnglish ? "No upcoming songs in queue." : "Belum ada lagu berikutnya di antrean."
         }
         static var queueTitle: String {
-            isEnglish ? "Queue" : "Antrean"
+            isEnglish ? "Up Next" : "Lagu Berikutnya"
         }
         static var instrumental: String {
-            isEnglish ? "Instrumental Track" : "Lagu Instrumental"
+            isEnglish ? "Instrumental Music" : "Musik Instrumental"
         }
         static var instrumentalDesc: String {
-            isEnglish ? "Instrumental audio with no vocal lyrics." : "Audio instrumental tanpa vokal atau lirik."
+            isEnglish ? "This track plays music without vocals." : "Lagu ini hanya berisi musik tanpa lirik vokal."
         }
         static var previousTrack: String {
-            isEnglish ? "Previous Track" : "Lagu Sebelumnya"
+            isEnglish ? "Previous Song" : "Lagu Sebelumnya"
         }
         static var nextTrack: String {
-            isEnglish ? "Next Track" : "Lagu Berikutnya"
+            isEnglish ? "Next Song" : "Lagu Berikutnya"
         }
         static var play: String {
             isEnglish ? "Play" : "Putar"
@@ -285,25 +327,25 @@ enum L10n {
             isEnglish ? "Pause" : "Jeda"
         }
         static var audioPlaying: String {
-            isEnglish ? "Audio playing" : "Sedang memutar audio"
+            isEnglish ? "Playing audio" : "Sedang memutar suara"
         }
         static func openApp(_ name: String) -> String {
             isEnglish ? "Open \(name)" : "Buka \(name)"
         }
         static func appPlayingAudio(_ name: String) -> String {
-            isEnglish ? "\(name) is playing audio" : "\(name) sedang memutar audio"
+            isEnglish ? "\(name) is playing audio" : "\(name) sedang memutar suara"
         }
         static var includeOtherAudioApps: String {
-            isEnglish ? "Include Other Audio Apps" : "Sertakan App Audio Lain"
+            isEnglish ? "Show Audio from Other Apps" : "Tampilkan Suara dari Aplikasi Lain"
         }
     }
 
     enum Menu {
         static var openDrawer: String {
-            isEnglish ? "Open Notch Drawer" : "Buka Drawer Notch"
+            isEnglish ? "Open Notch Panel" : "Buka Panel Notch"
         }
         static var closeDrawer: String {
-            isEnglish ? "Close Notch Drawer" : "Tutup Drawer Notch"
+            isEnglish ? "Close Notch Panel" : "Tutup Panel Notch"
         }
         static var hideNotch: String {
             isEnglish ? "Hide Notch on Screen" : "Sembunyikan Notch di Layar"
@@ -315,22 +357,22 @@ enum L10n {
             isEnglish ? "Language" : "Bahasa"
         }
         static var tabsMenu: String {
-            isEnglish ? "Quick Tab Switcher" : "Pindah Tampilan Tab"
+            isEnglish ? "Switch Notch View" : "Pilih Tampilan Notch"
         }
         static var notchAgentMenu: String {
-            isEnglish ? "Notch AI Provider" : "Provider AI di Notch"
+            isEnglish ? "AI Shown in Notch" : "AI yang Tampil di Notch"
         }
         static var testAdzan: String {
-            isEnglish ? "Test Adzan Audio" : "Uji Coba Audio Adzan"
+            isEnglish ? "Test Adzan Sound" : "Coba Suara Adzan"
         }
         static var stopAdzan: String {
-            isEnglish ? "Stop Adzan Audio" : "Hentikan Adzan"
+            isEnglish ? "Stop Adzan Sound" : "Hentikan Suara Adzan"
         }
         static var muteAdzan: String {
-            isEnglish ? "Mute Adzan Audio" : "Bisukan Audio Adzan"
+            isEnglish ? "Mute Adzan Sound" : "Matikan Suara Adzan"
         }
         static var unmuteAdzan: String {
-            isEnglish ? "Unmute Adzan Audio" : "Bunyikan Audio Adzan"
+            isEnglish ? "Turn On Adzan Sound" : "Nyalakan Suara Adzan"
         }
         static var aboutHarmonotch: String {
             isEnglish ? "About Harmonotch" : "Tentang Harmonotch"
@@ -342,25 +384,25 @@ enum L10n {
             isEnglish ? "New Version Available (v\(version))" : "Versi Baru Tersedia (v\(version))"
         }
         static var viewReleaseNotesAction: String {
-            isEnglish ? "View Release Notes on GitHub" : "Lihat Catatan Rilis di GitHub"
+            isEnglish ? "See What's New" : "Lihat Apa yang Baru"
         }
         static var launchAtLogin: String {
-            isEnglish ? "Launch at Login" : "Buka Otomatis saat Login"
+            isEnglish ? "Start Automatically When Mac Turns On" : "Buka Otomatis Saat Mac Menyala"
         }
         static var clamshellToggle: String {
-            isEnglish ? "Stay Awake with Lid Closed" : "Tetap Hidup saat Layar Ditutup"
+            isEnglish ? "Keep Awake with Lid Closed" : "Tetap Menyala Saat Laptop Ditutup"
         }
         static var volumeHUDToggle: String {
-            isEnglish ? "Volume HUD in Notch" : "Volume HUD di Notch"
+            isEnglish ? "Volume Indicator in Notch" : "Tampilan Volume di Notch"
         }
         static var quit: String {
-            isEnglish ? "Quit Harmonotch" : "Keluar Harmonotch"
+            isEnglish ? "Quit Harmonotch" : "Keluar dari Harmonotch"
         }
         static var nextPrayer: String {
             isEnglish ? "Next Prayer" : "Sholat Berikutnya"
         }
         static var headerSubtitle: String {
-            isEnglish ? "Battery & Audio Notch" : "Notch Baterai & Audio"
+            isEnglish ? "Prayer, Battery & Music" : "Jadwal Sholat, Baterai & Musik"
         }
     }
 
@@ -378,7 +420,16 @@ enum L10n {
             isEnglish ? "AI Agent" : "AI Agent"
         }
         static var closeDashboard: String {
-            isEnglish ? "Close Dashboard" : "Tutup Dashboard"
+            isEnglish ? "Close Panel" : "Tutup Panel"
+        }
+        static var updateShort: String {
+            isEnglish ? "Check Update" : "Cek Update"
+        }
+        static var aboutShort: String {
+            isEnglish ? "About" : "Tentang"
+        }
+        static var quitShort: String {
+            isEnglish ? "Quit" : "Keluar"
         }
 
         static var battery: String {
@@ -388,149 +439,154 @@ enum L10n {
             isEnglish ? "Loading..." : "Memuat..."
         }
         static var batteryReadFailed: String {
-            isEnglish ? "Could not read the battery" : "Tidak dapat membaca baterai"
+            isEnglish ? "Could not read battery status" : "Status baterai belum dapat dibaca"
         }
         static var notAvailable: String {
             isEnglish ? "Not available" : "Tidak tersedia"
         }
         static var batteryRefresh: String {
-            isEnglish ? "Refresh battery" : "Segarkan baterai"
+            isEnglish ? "Refresh" : "Perbarui Data"
         }
         static var batteryStale: String {
-            isEnglish ? "Reading may be out of date" : "Pembacaan mungkin sudah usang"
+            isEnglish ? "Battery info is being updated" : "Data baterai sedang diperbarui"
         }
         static var batteryShowingLastReading: String {
-            isEnglish ? "Refresh failed. Showing the last reading." : "Gagal menyegarkan. Menampilkan pembacaan terakhir."
+            isEnglish ? "Showing the latest saved battery info." : "Menampilkan info baterai terakhir."
         }
         static func batteryUpdated(_ time: String) -> String {
             isEnglish ? "Updated \(time)" : "Diperbarui \(time)"
         }
         static var designCapacity: String {
-            isEnglish ? "Design Capacity" : "Kapasitas Desain"
+            isEnglish ? "Factory Capacity" : "Kapasitas Bawaan Pabrik"
         }
         static var designCycles: String {
-            isEnglish ? "Design Cycles" : "Siklus Desain"
+            isEnglish ? "Normal Cycle Limit" : "Batas Siklus Normal"
         }
         static var adapter: String {
-            isEnglish ? "Adapter" : "Adaptor"
+            isEnglish ? "Charger Power" : "Daya Casan"
         }
         static var voltage: String {
-            isEnglish ? "Voltage" : "Tegangan"
+            isEnglish ? "Voltage" : "Tegangan Listrik"
         }
         static var current: String {
-            isEnglish ? "Current" : "Arus"
+            isEnglish ? "Electric Current" : "Arus Listrik"
         }
         static var temperature: String {
-            isEnglish ? "Temperature" : "Suhu"
+            isEnglish ? "Battery Temperature" : "Suhu Baterai"
         }
         static var power: String {
-            isEnglish ? "Power" : "Daya"
+            isEnglish ? "Power Usage" : "Daya Listrik"
         }
         static var powerSource: String {
             isEnglish ? "Power Source" : "Sumber Daya"
         }
         static var readingBattery: String {
-            isEnglish ? "Reading battery..." : "Membaca baterai..."
+            isEnglish ? "Checking battery..." : "Memeriksa baterai..."
         }
         static var batteryUnavailable: String {
-            isEnglish ? "Battery unavailable" : "Baterai tidak tersedia"
+            isEnglish ? "Battery info unavailable" : "Info baterai belum tersedia"
         }
         static var noInternalBattery: String {
-            isEnglish ? "No internal battery" : "Tidak ada baterai internal"
+            isEnglish ? "No built-in battery on this Mac" : "Mac ini tidak menggunakan baterai"
         }
         static func calculationMethod(_ name: String) -> String {
-            isEnglish ? "Method: \(name)" : "Metode: \(name)"
+            if name.contains("Singapore") || name.contains("MUIS") {
+                return isEnglish ? "Standard: MABIMS (Southeast Asia)" : "Standar: Kemenag / MABIMS"
+            }
+            return isEnglish ? "Standard: \(name)" : "Standar: \(name)"
         }
         static var prayerUnavailableDetail: String {
             isEnglish
-                ? "Times could not be calculated for this location. Check the location in Prayer settings."
-                : "Waktu tidak dapat dihitung untuk lokasi ini. Periksa lokasi di pengaturan Sholat."
+                ? "Prayer times could not be calculated. Please choose a city in the Prayer tab."
+                : "Jadwal sholat belum dapat dihitung. Silakan pilih kota di menu lokasi."
         }
         static var prayerUnavailable: String {
-            isEnglish ? "Prayer schedule unavailable" : "Jadwal sholat tidak tersedia"
+            isEnglish ? "Prayer schedule unavailable" : "Jadwal sholat belum tersedia"
         }
         static func countdown(hours: Int, minutes: Int) -> String {
             if hours <= 0 && minutes <= 0 {
-                return isEnglish ? "in <1m" : "dalam <1m"
+                return isEnglish ? "less than 1 min" : "kurang dari 1 mnt"
             }
-            let value = hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
-            return isEnglish ? "in \(value)" : "dalam \(value)"
+            let value = hours > 0
+                ? (isEnglish ? "\(hours)h \(minutes)m" : "\(hours) jam \(minutes) mnt")
+                : (isEnglish ? "\(minutes)m" : "\(minutes) mnt")
+            return isEnglish ? "in \(value)" : "\(value) lagi"
         }
     }
 
     enum AIAgents {
         static var setupTitle: String {
-            isEnglish ? "AI Agent Quota Monitor" : "Monitor Kuota AI Agent"
+            isEnglish ? "AI Quota Monitor" : "Pantau Kuota AI"
         }
         static var setupSubtitle: String {
             isEnglish
-                ? "Scan installed AI Agent CLIs on this Mac to verify authentication and view realtime quota usage."
-                : "Pindai CLI AI Agent yang terinstal di Mac ini untuk mengecek status login dan kuota secara realtime."
+                ? "Check installed AI tools on this Mac to view login status and remaining quota."
+                : "Periksa aplikasi AI yang terinstal di Mac ini untuk melihat status akun dan sisa kuota."
         }
         static var checkButton: String {
-            isEnglish ? "Check AI Agents" : "Check AI Agents"
+            isEnglish ? "Scan AI Tools" : "Periksa Aplikasi AI"
         }
         static var scanningText: String {
-            isEnglish ? "Checking installed AI Agent CLIs..." : "Mengecek CLI AI Agent yang terinstal..."
+            isEnglish ? "Checking installed AI tools..." : "Memeriksa aplikasi AI yang terinstal..."
         }
         static var refreshAgents: String {
-            isEnglish ? "Refresh AI Agents" : "Segarkan AI Agent"
+            isEnglish ? "Refresh AI Quota" : "Perbarui Kuota AI"
         }
         static var statusActive: String {
-            isEnglish ? "Logged In" : "Terautentikasi"
+            isEnglish ? "Signed In" : "Sudah Masuk"
         }
         static var statusFailed: String {
-            isEnglish ? "Failed" : "Gagal"
+            isEnglish ? "Sign In Needed" : "Perlu Masuk Akun"
         }
         static var notLoggedInReason: String {
-            isEnglish ? "Not logged in / Unauthenticated" : "Belum login / Tidak terautentikasi"
+            isEnglish ? "Account not signed in yet" : "Akun belum masuk (login)"
         }
         static var noAgentsInstalledTitle: String {
-            isEnglish ? "No AI Agent CLIs Found" : "CLI AI Agent Tidak Ditemukan"
+            isEnglish ? "No AI Tools Detected" : "Aplikasi AI Belum Terinstal"
         }
         static var noAgentsInstalledDetail: String {
             isEnglish
-                ? "Install Claude Code, Codex, OpenCode, or Gemini CLI to track their quota here."
-                : "Instal Claude Code, Codex, OpenCode, atau Gemini CLI untuk memantau kuotanya di sini."
+                ? "If you use Claude Code, Codex, OpenCode, or Gemini, install it to view remaining quota here."
+                : "Jika Anda menggunakan Claude Code, Codex, OpenCode, atau Gemini, instal aplikasinya untuk memantau sisa kuota di sini."
         }
         static var cliSessions: String {
-            isEnglish ? "Local CLI Sessions" : "Sesi CLI Lokal"
+            isEnglish ? "Usage History" : "Riwayat Pemakaian"
         }
         static var claudeSubscribedNote: String {
-            isEnglish ? "OAuth session active via Claude CLI" : "Sesi OAuth aktif via Claude CLI"
+            isEnglish ? "Signed in with Claude account" : "Terhubung dengan akun Claude"
         }
         static var authenticatedReady: String {
-            isEnglish ? "Authenticated & ready" : "Terautentikasi & siap digunakan"
+            isEnglish ? "Signed in & ready" : "Sudah masuk & siap dipakai"
         }
         static var resetCredits: String {
-            isEnglish ? "Reset Credits" : "Kredit Reset"
+            isEnglish ? "Quota Reset" : "Reset Kuota"
         }
         static var connectedProviders: String {
-            isEnglish ? "Connected Providers" : "Provider Terhubung"
+            isEnglish ? "Connected Services" : "Layanan Terhubung"
         }
         static var accountLabel: String {
             isEnglish ? "Account" : "Akun"
         }
         static var quotaWindow: String {
-            isEnglish ? "Quota Window" : "Jendela Kuota"
+            isEnglish ? "Usage Quota" : "Batas Kuota"
         }
         static var activeModelLabel: String {
-            isEnglish ? "Active Model" : "Model Aktif"
+            isEnglish ? "Active AI Model" : "Model AI Aktif"
         }
         static var providerLabel: String {
-            isEnglish ? "Provider" : "Penyedia"
+            isEnglish ? "Service" : "Layanan"
         }
         static var configuredModels: String {
-            isEnglish ? "Configured Models" : "Model Terkonfigurasi"
+            isEnglish ? "Available Models" : "Model Tersedia"
         }
         static var reasoningEffortLabel: String {
-            isEnglish ? "Reasoning Effort" : "Tingkat Penalaran"
+            isEnglish ? "Thinking Mode" : "Mode Berpikir"
         }
         static var detailQuotaTitle: String {
-            isEnglish ? "Quota Details" : "Detail Quota"
+            isEnglish ? "Quota Details" : "Rincian Kuota"
         }
         static var viewDetailQuota: String {
-            isEnglish ? "View Quota Details" : "Lihat Detail Quota"
+            isEnglish ? "View Quota Details" : "Lihat Rincian Kuota"
         }
         static var backButton: String {
             isEnglish ? "Back" : "Kembali"
@@ -539,30 +595,30 @@ enum L10n {
             isEnglish ? "All" : "Semua"
         }
         static var showDetails: String {
-            isEnglish ? "Show Quota Details" : "Lihat Sisa Kuota"
+            isEnglish ? "Show Quota Details" : "Lihat Rincian Kuota"
         }
         static var hideDetails: String {
-            isEnglish ? "Hide Quota Details" : "Sembunyikan Kuota"
+            isEnglish ? "Hide Quota Details" : "Tutup Rincian Kuota"
         }
         static var quotaOverview: String {
             isEnglish ? "Remaining Quota" : "Sisa Kuota"
         }
         static func loginHint(_ cmd: String) -> String {
-            isEnglish ? "Run `\(cmd)` in Terminal to authenticate." : "Jalankan `\(cmd)` di Terminal untuk login."
+            isEnglish ? "Copy command `\(cmd)` to sign in via Terminal." : "Salin perintah `\(cmd)` untuk masuk akun lewat Terminal."
         }
         static func summaryCount(active: Int, failed: Int) -> String {
             if failed > 0 {
                 return isEnglish
-                    ? "\(active) Active • \(failed) Failed"
-                    : "\(active) Aktif • \(failed) Gagal"
+                    ? "\(active) Signed In • \(failed) Need Sign-In"
+                    : "\(active) Aktif • \(failed) Perlu Login"
             }
-            return isEnglish ? "\(active) Active Agents" : "\(active) Agent Aktif"
+            return isEnglish ? "\(active) Active AI" : "\(active) AI Aktif"
         }
         static var showInNotchTitle: String {
-            isEnglish ? "Pin to Notch" : "Pin ke Notch"
+            isEnglish ? "Show in Notch" : "Tampilkan di Notch"
         }
         static var activeInNotchBadge: String {
-            isEnglish ? "In Notch" : "Di Notch"
+            isEnglish ? "Shown in Notch" : "Tampil di Notch"
         }
         static var copyCommand: String {
             isEnglish ? "Copy" : "Salin"
@@ -571,66 +627,81 @@ enum L10n {
             isEnglish ? "Copied" : "Tersalin"
         }
         static var switchAgentHint: String {
-            isEnglish ? "Switch active AI Agent" : "Ganti AI Agent aktif"
+            isEnglish ? "Switch displayed AI" : "Ganti AI yang ditampilkan"
         }
         static func agentNotInstalled(_ name: String) -> String {
             isEnglish ? "\(name) is not installed on this Mac" : "\(name) belum terinstal di Mac ini"
         }
         static var selectDifferentProviderHint: String {
-            isEnglish ? "Pin a different agent from the Menu Bar" : "Pin agent lain dari Menu Bar"
+            isEnglish ? "Choose another AI from the Menu Bar" : "Pilih AI lain melalui ikon di Menu Bar atas"
         }
         static var selectedInMenuBar: String {
-            isEnglish ? "Pinned from Menu Bar" : "Di-pin dari Menu Bar"
+            isEnglish ? "Selected from Menu Bar" : "Dipilih dari Menu Bar"
+        }
+        static func percentRemaining(_ pct: Int) -> String {
+            isEnglish ? "\(pct)% left" : "Sisa \(pct)%"
+        }
+        static var fiveHourQuota: String {
+            isEnglish ? "5-Hour Quota" : "Kuota 5 Jam"
+        }
+        static var dailyQuota: String {
+            isEnglish ? "Daily Quota" : "Kuota Harian"
+        }
+        static var weeklyQuota: String {
+            isEnglish ? "Weekly Quota" : "Kuota Mingguan"
+        }
+        static var monthlyQuota: String {
+            isEnglish ? "Monthly Quota" : "Kuota Bulanan"
         }
     }
 
     enum About {
         static var subtitle: String {
-            isEnglish ? "Prayer times, battery, and music for the MacBook notch" : "Jadwal sholat, baterai, dan musik untuk notch MacBook"
+            isEnglish ? "Prayer times, battery, and music in your MacBook notch" : "Jadwal sholat, kondisi baterai, dan kontrol musik di bagian atas layar MacBook"
         }
         static var version: String {
             let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-            return "Version \(ver)"
+            return isEnglish ? "Version \(ver)" : "Versi \(ver)"
         }
         static var developedBy: String {
             isEnglish ? "Made by Sajudin" : "Dibuat oleh Sajudin"
         }
         static var openSourceCredits: String {
-            isEnglish ? "Open Source Acknowledgements" : "Kredit & Lisensi Open Source"
+            isEnglish ? "Credits & Open Source" : "Kredit & Sumber Terbuka"
         }
         static var adhanTitle: String {
             "Adhan-Swift"
         }
         static var adhanDesc: String {
-            isEnglish ? "Astronomical calculation engine by Batoul Apps (MIT License)" : "Mesin kalkulasi astronomi waktu sholat oleh Batoul Apps (Lisensi MIT)"
+            isEnglish ? "Accurate prayer time calculation library by Batoul Apps (MIT License)" : "Perhitungan waktu sholat dan arah kiblat akurat oleh Batoul Apps (Lisensi MIT)"
         }
         static var vorssaintTitle: String {
             "Vorssaint"
         }
         static var vorssaintDesc: String {
             isEnglish
-                ? "Reference for the MediaRemote technique, playback state reconciliation, clamshell behavior, volume-key HUD, and accessibility permission flow"
-                : "Referensi teknik MediaRemote, rekonsiliasi state playback, perilaku clamshell, HUD tombol volume, dan alur izin aksesibilitas"
+                ? "Inspiration for music controls, closed-lid mode, and volume indicator in the notch"
+                : "Inspirasi untuk kontrol musik, fitur layar tertutup, dan tampilan volume di notch"
         }
         static var lrclibTitle: String {
             "LRCLIB"
         }
         static var lrclibDesc: String {
             isEnglish
-                ? "Real-time synchronized karaoke lyrics engine by Tran Xuan Thang (MIT License)"
-                : "Mesin sinkronisasi lirik karaoke real-time oleh Tran Xuan Thang (Lisensi MIT)"
+                ? "Synchronized song lyrics service by Tran Xuan Thang (MIT License)"
+                : "Layanan lirik lagu otomatis oleh Tran Xuan Thang (Lisensi MIT)"
         }
         static var audioTitle: String {
-            isEnglish ? "Adzan Audio Recordings" : "Rekaman Audio Adzan"
+            isEnglish ? "Adzan Audio Recordings" : "Rekaman Suara Adzan"
         }
         static var audioDesc: String {
-            isEnglish ? "High-fidelity adzan audio recordings sourced from IslamDownload.net" : "Rekaman audio adzan bersumber dari koleksi audio IslamDownload.net"
+            isEnglish ? "Clear adzan recordings sourced from IslamDownload.net" : "Rekaman suara adzan jernih dari koleksi IslamDownload.net"
         }
         static var appleTechTitle: String {
-            "Apple SF Symbols & IOKit"
+            "Apple macOS System"
         }
         static var appleTechDesc: String {
-            isEnglish ? "Native macOS iconography & Darwin hardware battery framework" : "Ikonografi native macOS & framework baterai hardware Darwin"
+            isEnglish ? "Built with native macOS icons and battery health sensors" : "Menggunakan ikon bawaan macOS dan sensor informasi baterai Apple"
         }
         static var viewLicense: String {
             isEnglish ? "View License" : "Lihat Lisensi"
@@ -642,31 +713,33 @@ enum L10n {
 
     enum Update {
         static var available: String {
-            isEnglish ? "New Update Available" : "Pembaruan Tersedia"
+            isEnglish ? "New Update Available" : "Versi Baru Tersedia"
         }
         static var checkForUpdates: String {
             isEnglish ? "Check for Updates" : "Periksa Pembaruan"
         }
         static var checking: String {
-            isEnglish ? "Checking for updates..." : "Memeriksa pembaruan..."
+            isEnglish ? "Checking for updates..." : "Memeriksa versi terbaru..."
         }
         static var upToDateTitle: String {
-            isEnglish ? "You're Up to Date!" : "Aplikasi Sudah Versi Terbaru!"
+            isEnglish ? "You're Using the Latest Version!" : "Aplikasi Sudah Paling Baru!"
         }
         static func upToDateMessage(version: String) -> String {
-            isEnglish ? "Harmonotch \(version) is currently the newest version available." : "Harmonotch \(version) adalah versi terbaru yang tersedia saat ini."
+            isEnglish ? "Harmonotch \(version) is the newest version available." : "Harmonotch \(version) yang Anda gunakan saat ini sudah versi paling baru."
         }
         static var checkFailedTitle: String {
-            isEnglish ? "Update Check Failed" : "Gagal Memeriksa Pembaruan"
+            isEnglish ? "Could Not Check for Updates" : "Belum Bisa Memeriksa Pembaruan"
         }
         static var networkErrorDesc: String {
-            isEnglish ? "Unable to reach GitHub servers. Please check your internet connection." : "Tidak dapat terhubung ke server GitHub. Silakan periksa koneksi internet Anda."
+            isEnglish ? "Could not connect to the update server. Please check your internet connection." : "Tidak dapat terhubung ke internet. Pastikan koneksi internet Anda aktif lalu coba lagi."
         }
         static func updateAvailableTitle(version: String) -> String {
-            isEnglish ? "Harmonotch \(version) is Available!" : "Harmonotch \(version) Telah Tersedia!"
+            isEnglish ? "Harmonotch \(version) is Ready!" : "Harmonotch \(version) Tersedia!"
         }
         static var updateAvailablePrompt: String {
-            isEnglish ? "A newer version of Harmonotch has been released with improvements and fixes. Would you like to download the DMG installer or view the release notes?" : "Versi terbaru Harmonotch telah dirilis dengan berbagai perbaikan dan peningkatan. Apakah Anda ingin mengunduh installer DMG atau membaca catatan rilis?"
+            isEnglish
+                ? "A newer version of Harmonotch is available with improvements and fixes. Would you like to update now?"
+                : "Versi terbaru Harmonotch sudah tersedia dengan perbaikan dan peningkatan fitur. Ingin memperbarui aplikasi sekarang?"
         }
         static var updateNow: String {
             isEnglish ? "Update Now" : "Perbarui Sekarang"
@@ -675,64 +748,64 @@ enum L10n {
             isEnglish ? "Downloading update..." : "Mengunduh pembaruan..."
         }
         static var installing: String {
-            isEnglish ? "Installing update..." : "Menginstal pembaruan..."
+            isEnglish ? "Installing update..." : "Memasang pembaruan..."
         }
         static func readyToQuitTitle(version: String) -> String {
-            isEnglish ? "Harmonotch v\(version) Ready" : "Harmonotch v\(version) Siap"
+            isEnglish ? "Harmonotch v\(version) Ready" : "Harmonotch v\(version) Siap Dipakai"
         }
         static var readyToQuitSubtitle: String {
-            isEnglish ? "Installation complete. Quit or restart app to finish updating." : "Instalasi selesai. Keluar atau buka ulang aplikasi untuk menyelesaikan update."
+            isEnglish ? "Update finished installing. Restart the app to use the new version." : "Pembaruan selesai dipasang. Buka ulang aplikasi untuk memakai versi baru."
         }
         static var quitApp: String {
-            isEnglish ? "Quit App" : "Keluar Aplikasi"
+            isEnglish ? "Quit App" : "Tutup Aplikasi"
         }
         static var restartApp: String {
-            isEnglish ? "Restart App" : "Buka Ulang"
+            isEnglish ? "Restart Now" : "Buka Ulang Sekarang"
         }
         static var retry: String {
-            isEnglish ? "Retry" : "Coba Lagi"
+            isEnglish ? "Try Again" : "Coba Lagi"
         }
         static var needsApplicationsTitle: String {
-            isEnglish ? "Move to Applications" : "Pindahkan ke Aplikasi"
+            isEnglish ? "Move to Applications Folder" : "Pindahkan ke Folder Applications"
         }
         static var needsApplicationsBody: String {
             isEnglish
-                ? "Harmonotch cannot self-update from a read-only location or disk image. Please move Harmonotch.app to your Applications folder first."
-                : "Harmonotch tidak dapat memperbarui otomatis dari lokasi read-only atau disk image. Silakan pindahkan Harmonotch.app ke folder Applications terlebih dahulu."
+                ? "To update automatically, please move Harmonotch into your Mac's Applications folder first."
+                : "Agar bisa diperbarui otomatis, silakan pindahkan aplikasi Harmonotch ke dalam folder Applications di Mac Anda terlebih dahulu."
         }
         static var downloadFailedTitle: String {
-            isEnglish ? "Download Failed" : "Gagal Mengunduh"
+            isEnglish ? "Update Download Failed" : "Gagal Mengunduh Pembaruan"
         }
         static var viewReleaseNotes: String {
-            isEnglish ? "Release Notes" : "Catatan Rilis"
+            isEnglish ? "What's New" : "Lihat Perubahan"
         }
         static var later: String {
-            isEnglish ? "Later" : "Nanti"
+            isEnglish ? "Later" : "Nanti Saja"
         }
     }
 
     enum Volume {
         static func accessibilityLabel(percent: Int, muted: Bool) -> String {
             if muted {
-                return isEnglish ? "Volume muted, 0 percent" : "Volume dibisukan, 0 persen"
+                return isEnglish ? "Volume muted, 0 percent" : "Suara dimatikan, 0 persen"
             }
             return isEnglish ? "Volume \(percent) percent" : "Volume \(percent) persen"
         }
 
         static var statusActive: String {
-            isEnglish ? "Active in Notch" : "Aktif di Notch"
+            isEnglish ? "Shown in Notch" : "Tampil di Notch"
         }
 
         static var statusNeedsPermission: String {
-            isEnglish ? "Needs Accessibility Permission" : "Butuh Izin Aksesibilitas"
+            isEnglish ? "Needs Permission in System Settings" : "Perlu Izin di Pengaturan Sistem"
         }
 
         static var statusDisabled: String {
-            isEnglish ? "Using macOS System HUD" : "Menggunakan HUD Bawaan macOS"
+            isEnglish ? "Using Standard macOS Volume Display" : "Memakai Tampilan Bawaan macOS"
         }
 
         static var grantPermissionAction: String {
-            isEnglish ? "Grant Access" : "Beri Izin"
+            isEnglish ? "Allow Access" : "Beri Izin"
         }
     }
 }

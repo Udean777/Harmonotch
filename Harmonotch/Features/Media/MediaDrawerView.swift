@@ -91,15 +91,16 @@ struct MediaDrawerView: View {
     return HStack(spacing: 6) {
       Image(systemName: "exclamationmark.triangle.fill")
         .font(AppTypography.caption(.bold))
+        .foregroundColor(AppTheme.accentAmber)
       Text(message)
         .font(AppTypography.caption(.medium))
         .lineLimit(2)
+        .foregroundColor(AppTheme.textPrimary)
     }
-    .foregroundColor(.white.opacity(0.85))
     .padding(.horizontal, 10)
     .padding(.vertical, 6)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.white.opacity(0.08))
+    .background(AppTheme.badgeBackground)
     .cornerRadius(8)
   }
 
