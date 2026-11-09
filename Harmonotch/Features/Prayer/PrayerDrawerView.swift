@@ -60,7 +60,7 @@ struct PrayerDrawerView: View {
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(adzanPlayer.isMuted ? AppTheme.textTertiary : AppTheme.accentAmber)
 
-                        Text(L10n.Prayer.audioAdzanTitle)
+                        Text(adzanPlayer.isMuted ? L10n.Prayer.adzanMuted : L10n.Prayer.adzanActive)
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(adzanPlayer.isMuted ? AppTheme.textSecondary : AppTheme.textPrimary)
                             .lineLimit(1)
@@ -79,16 +79,22 @@ struct PrayerDrawerView: View {
                 Button(action: {
                     adzanPlayer.testPlay()
                 }) {
-                    Image(systemName: adzanPlayer.isPlaying ? "stop.fill" : "play.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundColor(AppTheme.textPrimary)
-                        .frame(width: 26, height: 26)
-                        .background(AppTheme.badgeBackground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(AppTheme.cardBorder, lineWidth: 0.5)
-                        )
-                        .cornerRadius(6)
+                    HStack(spacing: 4) {
+                        Image(systemName: adzanPlayer.isPlaying ? "stop.fill" : "play.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(adzanPlayer.isPlaying ? L10n.Prayer.stop : L10n.Prayer.testAudio)
+                            .font(.system(size: 10, weight: .semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(AppTheme.textPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(AppTheme.badgeBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(AppTheme.cardBorder, lineWidth: 0.5)
+                    )
+                    .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
                 .help(adzanPlayer.isPlaying ? L10n.Prayer.stopAudio : L10n.Prayer.testAudio)

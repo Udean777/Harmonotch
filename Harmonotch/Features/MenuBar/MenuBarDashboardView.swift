@@ -6,6 +6,14 @@ struct MenuBarDashboardView: View {
   var onClose: () -> Void
 
   @ObservedObject private var updateManager = UpdateManager.shared
+  @ObservedObject private var quotaService = AIAgentQuotaService.shared
+
+  private var visibleTabs: [DashboardTab] {
+    if quotaService.agents.isEmpty {
+      return DashboardTab.allCases.filter { $0 != .agents }
+    }
+    return DashboardTab.allCases
+  }
 
   var body: some View {
     GeometryReader { proxy in
@@ -15,6 +23,19 @@ struct MenuBarDashboardView: View {
     .localizedThemedRoot()
     .onPreferenceChange(DashboardHeightPreferenceKey.self) { height in
       viewModel.onCardHeightChanged?(height)
+    }
+    .onAppear {
+      if !quotaService.hasCompletedInitialScan && !quotaService.isScanning {
+        quotaService.checkInstalledAgents()
+      }
+      if quotaService.agents.isEmpty && viewModel.selectedTab == .agents {
+        viewModel.selectedTab = .now
+      }
+    }
+    .onChange(of: quotaService.agents.isEmpty) { _, isEmpty in
+      if isEmpty && viewModel.selectedTab == .agents {
+        viewModel.selectedTab = .now
+      }
     }
     .onExitCommand(perform: onClose)
   }
@@ -54,11 +75,13 @@ struct MenuBarDashboardView: View {
   private var headerBar: some View {
     HStack(spacing: 8) {
       brandIdentity
+        .layoutPriority(0)
 
-      Spacer(minLength: 8)
+      Spacer(minLength: 4)
 
       if updateManager.hasUpdate {
         updateBadgeButton
+          .layoutPriority(1)
       }
 
       DashboardCloseButton(action: onClose)
@@ -97,6 +120,7 @@ struct MenuBarDashboardView: View {
           .font(AppTypography.caption2(.medium))
           .foregroundColor(AppTheme.textTertiary)
           .lineLimit(1)
+          .truncationMode(.tail)
       }
     }
   }
@@ -105,27 +129,29 @@ struct MenuBarDashboardView: View {
     Button(action: { updateManager.checkForUpdates(isUserInitiated: true) }) {
       HStack(spacing: 4) {
         Image(systemName: "arrow.down.circle.fill")
-          .font(.system(size: 9.5, weight: .bold))
+          .font(.system(size: 10.5, weight: .bold))
         Text(L10n.Update.available)
-          .font(.system(size: 8.5, weight: .semibold))
+          .font(.system(size: 10, weight: .semibold))
+          .lineLimit(1)
       }
       .foregroundColor(AppTheme.accentAmber)
-      .padding(.horizontal, 7)
-      .padding(.vertical, 3.5)
-      .background(AppTheme.accentAmber.opacity(0.12))
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .background(AppTheme.accentAmber.opacity(0.14))
       .clipShape(Capsule())
       .overlay(
         Capsule()
-          .stroke(AppTheme.accentAmber.opacity(0.35), lineWidth: 0.6)
+          .stroke(AppTheme.accentAmber.opacity(0.40), lineWidth: 0.7)
       )
     }
     .buttonStyle(.plain)
+    .fixedSize()
     .help(L10n.Menu.checkForUpdates)
   }
 
   private var tabSelectorBar: some View {
     HStack(spacing: 3) {
-      ForEach(DashboardTab.allCases) { tab in
+      ForEach(visibleTabs) { tab in
         DashboardTabItemButton(
           tab: tab,
           isSelected: viewModel.selectedTab == tab,
@@ -166,15 +192,16 @@ struct MenuBarDashboardView: View {
   }
 
   private var footerBar: some View {
-    HStack(spacing: 8) {
-      Text("Harmonotch v\(updateManager.currentVersion)")
-        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+    HStack(spacing: 6) {
+      Text("v\(updateManager.currentVersion)")
+        .font(.system(size: 10.5, weight: .medium, design: .rounded))
         .foregroundColor(AppTheme.textTertiary)
 
       Spacer()
 
       DashboardIconButton(
         icon: "arrow.clockwise",
+        label: viewModel.selectedTab == .agents ? L10n.Dashboard.batteryRefresh : L10n.Dashboard.updateShort,
         helpText: viewModel.selectedTab == .agents ? L10n.AIAgents.refreshAgents : L10n.Menu.checkForUpdates,
         action: {
           if viewModel.selectedTab == .agents {
@@ -187,12 +214,14 @@ struct MenuBarDashboardView: View {
 
       DashboardIconButton(
         icon: "info.circle",
+        label: L10n.Dashboard.aboutShort,
         helpText: L10n.Menu.aboutHarmonotch,
         action: { AboutWindowController.shared.show() }
       )
 
       DashboardIconButton(
         icon: "power",
+        label: L10n.Dashboard.quitShort,
         helpText: L10n.Menu.quit,
         isDestructive: true,
         action: { NSApplication.shared.terminate(nil) }
@@ -222,13 +251,12 @@ private struct DashboardTabItemButton: View {
     Button(action: action) {
       VStack(spacing: 2.5) {
         Image(systemName: tab.icon)
-          .font(.system(size: 12.5, weight: isSelected ? .semibold : .regular))
-          .frame(height: 15)
+          .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+          .frame(height: 14)
 
         Text(label)
-          .font(.system(size: 9, weight: isSelected ? .semibold : .medium))
+          .font(.system(size: 10, weight: isSelected ? .semibold : .medium))
           .lineLimit(1)
-          .minimumScaleFactor(0.85)
       }
       .foregroundColor(
         isSelected
@@ -271,6 +299,7 @@ private struct DashboardTabItemButton: View {
 
 private struct DashboardIconButton: View {
   let icon: String
+  var label: String? = nil
   let helpText: String
   var isDestructive: Bool = false
   let action: () -> Void
@@ -279,27 +308,36 @@ private struct DashboardIconButton: View {
 
   var body: some View {
     Button(action: action) {
-      Image(systemName: icon)
-        .font(.system(size: 10.5, weight: isDestructive ? .bold : .semibold))
-        .foregroundColor(foregroundColor)
-        .frame(width: 24, height: 24)
-        .background(
-          RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(
-              isHovered
-                ? (isDestructive ? AppTheme.accentRed.opacity(0.15) : AppTheme.badgeBackground.opacity(1.3))
-                : AppTheme.badgeBackground
-            )
-        )
-        .overlay(
-          RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .stroke(
-              isHovered
-                ? (isDestructive ? AppTheme.accentRed.opacity(0.35) : AppTheme.cardBorder)
-                : Color.clear,
-              lineWidth: 0.6
-            )
-        )
+      HStack(spacing: 4) {
+        Image(systemName: icon)
+          .font(.system(size: 10, weight: isDestructive ? .bold : .semibold))
+
+        if let label {
+          Text(label)
+            .font(.system(size: 10, weight: .semibold))
+            .lineLimit(1)
+        }
+      }
+      .foregroundColor(foregroundColor)
+      .padding(.horizontal, label != nil ? 8 : 0)
+      .frame(minWidth: 26, minHeight: 24)
+      .background(
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(
+            isHovered
+              ? (isDestructive ? AppTheme.accentRed.opacity(0.15) : AppTheme.badgeBackground.opacity(1.3))
+              : AppTheme.badgeBackground
+          )
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .stroke(
+            isHovered
+              ? (isDestructive ? AppTheme.accentRed.opacity(0.45) : AppTheme.cardBorder)
+              : AppTheme.cardBorder.opacity(0.6),
+            lineWidth: 0.6
+          )
+      )
     }
     .buttonStyle(.plain)
     .onHover { hovering in

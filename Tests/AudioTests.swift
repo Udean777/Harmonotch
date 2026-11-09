@@ -339,7 +339,7 @@ func runAudioTests() {
   )
   checkEqual(
     L10n.Menu.volumeHUDToggle,
-    "Volume HUD di Notch",
+    "Tampilan Volume di Notch",
     "Indonesian menu toggle title"
   )
   LanguageManager.shared.setLanguage(.english)

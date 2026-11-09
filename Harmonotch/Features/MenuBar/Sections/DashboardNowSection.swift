@@ -4,6 +4,7 @@ struct DashboardNowSection: View {
   @ObservedObject private var adzanPlayer = AdzanPlayer.shared
   @ObservedObject private var mediaManager = MediaManager.shared
   @ObservedObject private var updateManager = UpdateManager.shared
+  @ObservedObject private var quotaService = AIAgentQuotaService.shared
   @ObservedObject private var themeManager = ThemeManager.shared
   @ObservedObject private var languageManager = LanguageManager.shared
 
@@ -17,11 +18,13 @@ struct DashboardNowSection: View {
 
       heroCard
 
-      AIAgentQuickRow(
-        onSelectAgentsTab: {
-          onSelectTab(.agents)
-        }
-      )
+      if !quotaService.agents.isEmpty {
+        AIAgentQuickRow(
+          onSelectAgentsTab: {
+            onSelectTab(.agents)
+          }
+        )
+      }
 
       if adzanPlayer.isPlaying {
         AdzanBannerRow()
@@ -30,6 +33,11 @@ struct DashboardNowSection: View {
       }
 
       VolumeHUDQuickRow()
+    }
+    .onAppear {
+      if !quotaService.hasCompletedInitialScan && !quotaService.isScanning {
+        quotaService.checkInstalledAgents()
+      }
     }
   }
 

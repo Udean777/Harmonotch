@@ -1,81 +1,194 @@
 import SwiftUI
 
-struct ThemePalette {
-  let surfaceBackground: Color
-  let surfaceBorder: Color
-  let cardBackground: Color
-  let cardBorder: Color
-  let badgeBackground: Color
-  let divider: Color
-  let textPrimary: Color
-  let textSecondary: Color
-  let textTertiary: Color
-  let accentAmber: Color
-  let accentGreen: Color
-  let accentCyan: Color
-  let accentRed: Color
-  let tabBarBackground: Color
-  let tabActiveBackground: Color
-  let tabActiveText: Color
-  let tabInactiveText: Color
-}
+import AppKit
+import SwiftUI
 
 struct AppTheme {
   static var isDark: Bool {
     ThemeManager.shared.isDarkMode
   }
 
-  private static var palette: ThemePalette {
-    switch ThemeManager.shared.currentStyle {
-    case .monochrome:
-      return isDark ? .monochromeDark : .monochromeLight
-    case .catppuccin:
-      return isDark ? .catppuccinMocha : .catppuccinLatte
-    }
+  // MARK: - Surfaces & Backgrounds (Soft, Eye-Friendly Palette)
+
+  /// Main window/container surface:
+  /// Dark: Pure black for seamless physical Notch integration.
+  /// Light: Warm soft paper white (#F6F6F8) rather than harsh blinding pure white.
+  static var surfaceBackground: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? .black
+        : NSColor(srgbRed: 0.965, green: 0.965, blue: 0.972, alpha: 1.0)
+    }))
   }
 
-  static var surfaceBackground: Color { palette.surfaceBackground }
-  static var surfaceBorder: Color { palette.surfaceBorder }
-  static var cardBackground: Color { palette.cardBackground }
-  static var cardBorder: Color { palette.cardBorder }
-  static var badgeBackground: Color { palette.badgeBackground }
-  static var divider: Color { palette.divider }
-  static var textPrimary: Color { palette.textPrimary }
-  static var textSecondary: Color { palette.textSecondary }
-  static var textTertiary: Color { palette.textTertiary }
-  static var accentAmber: Color { palette.accentAmber }
-  static var accentGreen: Color { palette.accentGreen }
-  static var accentCyan: Color { palette.accentCyan }
-  static var accentRed: Color { palette.accentRed }
-  static var tabBarBackground: Color { palette.tabBarBackground }
-  static var tabActiveBackground: Color { palette.tabActiveBackground }
-  static var tabActiveText: Color { palette.tabActiveText }
-  static var tabInactiveText: Color { palette.tabInactiveText }
+  /// Subtle container outline.
+  static var surfaceBorder: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(white: 1.0, alpha: 0.12)
+        : NSColor(white: 0.0, alpha: 0.10)
+    }))
+  }
+
+  /// Cards embedded inside dashboard/drawer:
+  /// Dark: Soft dark graphite (#1A1A1E) instead of pitch black.
+  /// Light: Gentle muted background (#ECECEF) reducing glare.
+  static var cardBackground: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.102, green: 0.102, blue: 0.118, alpha: 1.0)
+        : NSColor(srgbRed: 0.925, green: 0.925, blue: 0.938, alpha: 1.0)
+    }))
+  }
+
+  /// Gentle card border.
+  static var cardBorder: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(white: 1.0, alpha: 0.12)
+        : NSColor(white: 0.0, alpha: 0.10)
+    }))
+  }
+
+  /// Interactive chips, icon containers, and badges: soft matte fill.
+  static var badgeBackground: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.155, green: 0.155, blue: 0.175, alpha: 1.0)
+        : NSColor(srgbRed: 0.865, green: 0.865, blue: 0.885, alpha: 1.0)
+    }))
+  }
+
+  /// Dividers separating sections.
+  static var divider: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(white: 1.0, alpha: 0.10)
+        : NSColor(white: 0.0, alpha: 0.08)
+    }))
+  }
+
+  // MARK: - Typography & Labels (Comfortable Reading, Zero Glare)
+
+  /// Primary text:
+  /// Dark: Calming soft white (#D8D8DC) rather than sharp 100% white.
+  /// Light: Gentle deep charcoal (#28282C) rather than stark 100% black.
+  static var textPrimary: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.85, green: 0.85, blue: 0.87, alpha: 1.0)
+        : NSColor(srgbRed: 0.16, green: 0.16, blue: 0.18, alpha: 1.0)
+    }))
+  }
+
+  /// Secondary text: muted, soothing tone.
+  static var textSecondary: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.62, green: 0.62, blue: 0.66, alpha: 1.0)
+        : NSColor(srgbRed: 0.38, green: 0.38, blue: 0.42, alpha: 1.0)
+    }))
+  }
+
+  /// Tertiary supporting metadata: subtle, calm tone.
+  static var textTertiary: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.52, green: 0.52, blue: 0.56, alpha: 1.0)
+        : NSColor(srgbRed: 0.46, green: 0.46, blue: 0.50, alpha: 1.0)
+    }))
+  }
+
+  // MARK: - Soft System Theme Accent Color (Follows macOS Accent Color)
+
+  /// The active macOS accent color set in System Settings, softened to avoid eye fatigue.
+  static var accent: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      let base = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? NSColor.systemBlue
+      if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+        // Soften slightly with warm white tone so it does not feel neon in dark mode
+        return base.blended(withFraction: 0.18, of: NSColor(white: 0.95, alpha: 1.0)) ?? base
+      } else {
+        // Comfortably saturated in light mode so it does not glow or strain
+        return base.blended(withFraction: 0.20, of: NSColor(white: 0.08, alpha: 1.0)) ?? base
+      }
+    }))
+  }
+
+  /// Warning / Pending / Prayer highlight follows the softened macOS Accent Color.
+  static var accentAmber: Color {
+    accent
+  }
+
+  /// Success / Charging / Active status follows the softened macOS Accent Color.
+  static var accentGreen: Color {
+    accent
+  }
+
+  /// Info / Current / System highlight follows the softened macOS Accent Color.
+  static var accentCyan: Color {
+    accent
+  }
+
+  /// High priority / Destructive status (softened systemRed that does not hurt the eyes).
+  static var accentRed: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.92, green: 0.38, blue: 0.40, alpha: 1.0)
+        : NSColor(srgbRed: 0.78, green: 0.16, blue: 0.20, alpha: 1.0)
+    }))
+  }
+
+  // MARK: - Tab Bar Navigation
+
+  static var tabBarBackground: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.09, green: 0.09, blue: 0.10, alpha: 1.0)
+        : NSColor(srgbRed: 0.90, green: 0.90, blue: 0.92, alpha: 1.0)
+    }))
+  }
+
+  static var tabActiveBackground: Color {
+    Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+      appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(white: 0.20, alpha: 1.0)
+        : NSColor(white: 0.98, alpha: 1.0)
+    }))
+  }
+
+  static var tabActiveText: Color {
+    textPrimary
+  }
+
+  static var tabInactiveText: Color {
+    textSecondary
+  }
 }
 
 enum AppTypography {
   static func micro(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
-    .system(size: 9, weight: weight, design: design)
-  }
-
-  static func caption2(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
-    .system(size: 9.5, weight: weight, design: design)
-  }
-
-  static func caption(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
     .system(size: 10, weight: weight, design: design)
   }
 
-  static func footnote(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+  static func caption2(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
     .system(size: 10.5, weight: weight, design: design)
   }
 
-  static func subheadline(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+  static func caption(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
     .system(size: 11, weight: weight, design: design)
   }
 
-  static func body(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+  static func footnote(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 11.5, weight: weight, design: design)
+  }
+
+  static func subheadline(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
     .system(size: 12, weight: weight, design: design)
+  }
+
+  static func body(_ weight: Font.Weight = .medium, design: Font.Design = .default) -> Font {
+    .system(size: 13, weight: weight, design: design)
   }
 }
 
@@ -133,99 +246,5 @@ extension View {
 
   func localizedThemedRoot() -> some View {
     modifier(LocalizedThemedRootModifier())
-  }
-}
-
-extension ThemePalette {
-  fileprivate static let monochromeDark = ThemePalette(
-    surfaceBackground: .black,
-    surfaceBorder: .white.opacity(0.12),
-    cardBackground: Color(red: 0.08, green: 0.08, blue: 0.08),
-    cardBorder: .white.opacity(0.18),
-    badgeBackground: Color(red: 0.12, green: 0.12, blue: 0.12),
-    divider: .white.opacity(0.10),
-    textPrimary: .white,
-    textSecondary: .white.opacity(0.70),
-    textTertiary: .white.opacity(0.45),
-    accentAmber: Color(hex: 0xF2C14E),
-    accentGreen: Color(hex: 0x6FCF97),
-    accentCyan: Color(hex: 0x6EC6E8),
-    accentRed: Color(hex: 0xFF7B87),
-    tabBarBackground: Color(red: 0.08, green: 0.08, blue: 0.08),
-    tabActiveBackground: Color(white: 0.20),
-    tabActiveText: .white,
-    tabInactiveText: .white.opacity(0.60)
-  )
-
-  fileprivate static let monochromeLight = ThemePalette(
-    surfaceBackground: .white,
-    surfaceBorder: .black.opacity(0.14),
-    cardBackground: Color(red: 0.95, green: 0.95, blue: 0.95),
-    cardBorder: .black.opacity(0.20),
-    badgeBackground: Color(red: 0.90, green: 0.90, blue: 0.90),
-    divider: .black.opacity(0.12),
-    textPrimary: .black,
-    textSecondary: .black.opacity(0.70),
-    textTertiary: .black.opacity(0.58),
-    accentAmber: Color(hex: 0x9A6700),
-    accentGreen: Color(hex: 0x2E7D32),
-    accentCyan: Color(hex: 0x006D77),
-    accentRed: Color(hex: 0xB3261E),
-    tabBarBackground: Color(red: 0.91, green: 0.91, blue: 0.92),
-    tabActiveBackground: .white,
-    tabActiveText: .black,
-    tabInactiveText: .black.opacity(0.55)
-  )
-
-  // Catppuccin uses mauve as the product accent, with semantic green, peach,
-  // blue, and red reserved for status and feature-specific feedback.
-  fileprivate static let catppuccinMocha = ThemePalette(
-    surfaceBackground: Color(hex: 0x1E1E2E),
-    surfaceBorder: Color(hex: 0x585B70),
-    cardBackground: Color(hex: 0x313244),
-    cardBorder: Color(hex: 0x45475A),
-    badgeBackground: Color(hex: 0x45475A),
-    divider: Color(hex: 0x45475A),
-    textPrimary: Color(hex: 0xCDD6F4),
-    textSecondary: Color(hex: 0xBAC2DE),
-    textTertiary: Color(hex: 0xA6ADC8),
-    accentAmber: Color(hex: 0xFAB387),
-    accentGreen: Color(hex: 0xA6E3A1),
-    accentCyan: Color(hex: 0x89DCEB),
-    accentRed: Color(hex: 0xF38BA8),
-    tabBarBackground: Color(hex: 0x181825),
-    tabActiveBackground: Color(hex: 0x313244),
-    tabActiveText: Color(hex: 0xCDD6F4),
-    tabInactiveText: Color(hex: 0x9399B2)
-  )
-
-  fileprivate static let catppuccinLatte = ThemePalette(
-    surfaceBackground: Color(hex: 0xEFF1F5),
-    surfaceBorder: Color(hex: 0x9CA0B0),
-    cardBackground: Color(hex: 0xE6E9EF),
-    cardBorder: Color(hex: 0xBCC0CC),
-    badgeBackground: Color(hex: 0xDCE0E8),
-    divider: Color(hex: 0xBCC0CC),
-    textPrimary: Color(hex: 0x4C4F69),
-    textSecondary: Color(hex: 0x5C5F77),
-    textTertiary: Color(hex: 0x6C6F85),
-    accentAmber: Color(hex: 0xFE640B),
-    accentGreen: Color(hex: 0x40A02B),
-    accentCyan: Color(hex: 0x179299),
-    accentRed: Color(hex: 0xD20F39),
-    tabBarBackground: Color(hex: 0xE6E9EF),
-    tabActiveBackground: Color(hex: 0xFFFFFF),
-    tabActiveText: Color(hex: 0x4C4F69),
-    tabInactiveText: Color(hex: 0x7C7F93)
-  )
-}
-
-extension Color {
-  fileprivate init(hex: UInt32) {
-    self.init(
-      red: Double((hex >> 16) & 0xFF) / 255,
-      green: Double((hex >> 8) & 0xFF) / 255,
-      blue: Double(hex & 0xFF) / 255
-    )
   }
 }

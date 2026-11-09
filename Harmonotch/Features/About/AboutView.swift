@@ -233,7 +233,7 @@ private struct AcknowledgementCard: View {
     HStack(alignment: .top, spacing: 10) {
       Image(systemName: iconName)
         .font(.system(size: 14))
-        .foregroundColor(.white)
+        .foregroundColor(AppTheme.textPrimary)
         .frame(width: 22, height: 22)
         .background(AppTheme.badgeBackground)
         .clipShape(RoundedRectangle(cornerRadius: 5))
@@ -241,30 +241,30 @@ private struct AcknowledgementCard: View {
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
           Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 11.5, weight: .semibold))
             .foregroundColor(AppTheme.textPrimary)
 
           Text("•")
-            .font(.system(size: 9))
+            .font(.system(size: 10))
             .foregroundColor(AppTheme.textTertiary)
 
           Text(author)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 10.5, weight: .medium))
             .foregroundColor(AppTheme.textSecondary)
 
           Spacer()
 
           Text(license)
-            .font(.system(size: 9, weight: .medium))
-            .foregroundColor(.white)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(AppTheme.textSecondary)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .background(Color.white.opacity(0.12))
+            .background(AppTheme.badgeBackground)
             .cornerRadius(4)
         }
 
         Text(description)
-          .font(.system(size: 10))
+          .font(.system(size: 10.5))
           .foregroundColor(AppTheme.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
 
@@ -274,18 +274,18 @@ private struct AcknowledgementCard: View {
               HStack(spacing: 3) {
                 Text(url.host?.contains("github") == true ? "GitHub" : "Website")
                 Image(systemName: "arrow.up.right")
-                  .font(.system(size: 8))
+                  .font(.system(size: 9))
               }
-              .font(.system(size: 9, weight: .medium))
-              .foregroundColor(.white)
+              .font(.system(size: 10, weight: .semibold))
+              .foregroundColor(AppTheme.accentCyan)
             }
           }
 
           if let onViewLicense = onViewLicense {
             Button(action: onViewLicense) {
               Text(L10n.About.viewLicense)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(.white)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(AppTheme.accentCyan)
             }
             .buttonStyle(.plain)
           }

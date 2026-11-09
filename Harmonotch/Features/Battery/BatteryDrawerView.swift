@@ -8,35 +8,35 @@ struct BatteryDrawerView: View {
   var body: some View {
     VStack(spacing: 12) {
       VStack(spacing: 8) {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
           Image(systemName: batteryIconName)
-            .font(.system(size: 20, weight: .bold))
+            .font(.system(size: 14.5, weight: .bold))
             .foregroundColor(batteryAccentColor)
 
           Text("\(batteryMonitor.currentCapacity)%")
-            .font(.system(size: 22, weight: .bold, design: .rounded))
+            .font(.system(size: 15, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundColor(AppTheme.textPrimary)
 
           Text(batteryMonitor.timeRemainingFormatted)
-            .font(.system(size: 12, weight: .medium))
+            .font(AppTypography.caption(.medium))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(1)
 
           Spacer(minLength: 4)
 
-          HStack(spacing: 5) {
+          HStack(spacing: 4.5) {
             Image(systemName: batteryMonitor.isPluggedIn ? "bolt.fill" : "batteryblock.fill")
-              .font(.system(size: 10, weight: .bold))
+              .font(.system(size: 9, weight: .bold))
               .foregroundColor(batteryMonitor.isPluggedIn ? AppTheme.accentGreen : AppTheme.textSecondary)
 
             Text(powerSourceLabel)
-              .font(.system(size: 11, weight: .semibold))
+              .font(AppTypography.caption2(.semibold))
               .foregroundColor(AppTheme.textPrimary)
               .lineLimit(1)
           }
-          .padding(.horizontal, 9)
-          .padding(.vertical, 4)
+          .padding(.horizontal, 8)
+          .padding(.vertical, 3.5)
           .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
               .fill(AppTheme.badgeBackground)
@@ -105,14 +105,14 @@ struct BatteryDrawerView: View {
           .font(.system(size: 12, weight: .semibold))
           .foregroundColor(clamshellAccentColor)
 
-        VStack(alignment: .leading, spacing: 1.5) {
+        VStack(alignment: .leading, spacing: 2) {
           HStack(spacing: 6) {
             Text(L10n.Clamshell.title)
-              .font(.system(size: 11, weight: .bold))
+              .font(.system(size: 11.5, weight: .bold))
               .foregroundColor(AppTheme.textPrimary)
 
             Text(clamshellStatusLabel)
-              .font(.system(size: 9.5, weight: .semibold))
+              .font(.system(size: 10, weight: .semibold))
               .foregroundColor(clamshellAccentColor)
               .padding(.horizontal, 6)
               .padding(.vertical, 1.5)
@@ -123,7 +123,7 @@ struct BatteryDrawerView: View {
           }
 
           Text(clamshellDetailText)
-            .font(.system(size: 9.5))
+            .font(.system(size: 10.5))
             .foregroundColor(AppTheme.textSecondary)
             .lineLimit(1)
         }
@@ -136,7 +136,7 @@ struct BatteryDrawerView: View {
               ProgressView()
                 .controlSize(.mini)
               Text(L10n.Clamshell.authorizing)
-                .font(.system(size: 9.5, weight: .medium))
+                .font(.system(size: 10.5, weight: .medium))
                 .foregroundColor(AppTheme.textSecondary)
             }
           } else {
@@ -145,15 +145,21 @@ struct BatteryDrawerView: View {
             }) {
               HStack(spacing: 4) {
                 Image(systemName: "lock.open.fill")
-                  .font(.system(size: 9, weight: .bold))
+                  .font(.system(size: 9.5, weight: .bold))
                 Text(L10n.Clamshell.setupPermission)
-                  .font(.system(size: 10, weight: .semibold, design: .rounded))
+                  .font(.system(size: 10.5, weight: .semibold, design: .rounded))
               }
-              .foregroundColor(.white)
-              .padding(.horizontal, 8)
-              .padding(.vertical, 4)
-              .background(AppTheme.accentCyan)
-              .cornerRadius(6)
+              .foregroundColor(AppTheme.textPrimary)
+              .padding(.horizontal, 9)
+              .padding(.vertical, 4.5)
+              .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                  .fill(AppTheme.accentCyan.opacity(0.20))
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                      .stroke(AppTheme.accentCyan.opacity(0.55), lineWidth: 0.8)
+                  )
+              )
             }
             .buttonStyle(.plain)
           }
@@ -248,25 +254,25 @@ struct BatteryStatCard: View {
   let value: String
 
   var body: some View {
-    HStack(spacing: 7) {
+    HStack(spacing: 6) {
       Image(systemName: icon)
-        .font(AppTypography.body(.semibold))
+        .font(AppTypography.caption(.semibold))
         .foregroundColor(iconColor)
 
       Text(title)
-        .font(AppTypography.subheadline(.medium))
+        .font(AppTypography.caption2(.medium))
         .foregroundColor(AppTheme.textSecondary)
         .lineLimit(1)
 
       Spacer(minLength: 4)
 
       Text(value)
-        .font(AppTypography.body(.bold, design: .rounded))
+        .font(AppTypography.footnote(.bold, design: .rounded))
         .monospacedDigit()
         .foregroundColor(AppTheme.textPrimary)
         .lineLimit(1)
     }
     .frame(maxWidth: .infinity)
-    .cardChrome(cornerRadius: 8, horizontalPadding: 10, verticalPadding: 8, lineWidth: 0.5)
+    .cardChrome(cornerRadius: 8, horizontalPadding: 9, verticalPadding: 6, lineWidth: 0.5)
   }
 }

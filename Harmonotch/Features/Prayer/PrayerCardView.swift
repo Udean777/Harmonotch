@@ -22,14 +22,14 @@ struct PrayerCardView: View {
       VStack(spacing: 1.5) {
         if item.isCurrent {
           Text(L10n.Prayer.currentBadge)
-            .font(.system(size: 7.5, weight: .bold))
+            .font(.system(size: 9.5, weight: .bold))
             .foregroundColor(AppTheme.accentGreen)
-            .tracking(0.3)
+            .tracking(0.2)
         } else if item.isNext {
           Text(L10n.Prayer.nextBadge)
-            .font(.system(size: 7.5, weight: .bold))
+            .font(.system(size: 9.5, weight: .bold))
             .foregroundColor(AppTheme.accentAmber)
-            .tracking(0.3)
+            .tracking(0.2)
         }
 
         Text(item.name)
